@@ -1,2 +1,3 @@
-mlxc/ui
+mlxc/qt/ui/*.py
 __pycache__
+!mlxc/qt/ui/__init__.py

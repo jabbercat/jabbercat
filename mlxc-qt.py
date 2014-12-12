@@ -15,9 +15,9 @@ import quamash
 
 app = Qt.QApplication(sys.argv)
 
-import mlxc.main
+import mlxc.qt
 
 asyncio.set_event_loop(quamash.QEventLoop(app=app))
 loop = asyncio.get_event_loop()
-mlxc.main.spawn_main(loop)
+mlxc.qt.spawn_main(loop)
 loop.run_forever()
