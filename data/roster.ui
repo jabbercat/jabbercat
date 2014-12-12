@@ -81,16 +81,25 @@
    </property>
   </action>
   <action name="action_add_contact">
+   <property name="icon">
+    <iconset theme="add"/>
+   </property>
    <property name="text">
     <string>Add contact…</string>
    </property>
   </action>
   <action name="action_add_groupchat">
+   <property name="icon">
+    <iconset theme="add"/>
+   </property>
    <property name="text">
     <string>Add group chat…</string>
    </property>
   </action>
   <action name="action_quit">
+   <property name="icon">
+    <iconset theme="application-exit"/>
+   </property>
    <property name="text">
     <string>Quit</string>
    </property>
