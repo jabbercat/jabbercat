@@ -5,30 +5,18 @@ import sys
 import PyQt4.Qt as Qt
 import PyQt4.uic
 
-import quamash
+os.environ["QUAMASH_QTIMPL"] = "PyQt4"
 
 sys.path.insert(0, os.path.abspath("../asyncio-xmpp"))
 sys.path.insert(0, os.path.abspath("../asyncio_xmpp"))
 
+import quamash
+
 app = Qt.QApplication(sys.argv)
 
-import mlxc.roster
-roster = mlxc.roster.Roster()
+import mlxc.main
+
 asyncio.set_event_loop(quamash.QEventLoop(app=app))
-
-@asyncio.coroutine
-def task():
-    roster.show()
-    settings = Qt.QSettings("zombofant.net", "mlxc")
-    trayicon = Qt.QSystemTrayIcon(roster)
-    trayicon.setIcon(Qt.QIcon.fromTheme("edit-copy"))
-    trayicon.setToolTip("Hello World!")
-    trayicon.setVisible(True)
-    print(trayicon.icon())
-
-    while True:
-        yield from asyncio.sleep(1)
-
-
 loop = asyncio.get_event_loop()
-loop.run_until_complete(task())
+asyncio.async(mlxc.main.main())
+loop.run_forever()
