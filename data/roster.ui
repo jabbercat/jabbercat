@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>221</width>
-    <height>378</height>
+    <width>213</width>
+    <height>488</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -31,6 +31,94 @@
     </item>
    </layout>
   </widget>
+  <widget class="QMenuBar" name="menuBar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>213</width>
+     <height>24</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="menuRoster">
+    <property name="title">
+     <string>Roster</string>
+    </property>
+    <addaction name="action_new_conversation"/>
+    <addaction name="action_join_groupchat"/>
+    <addaction name="separator"/>
+    <addaction name="action_add_contact"/>
+    <addaction name="action_add_groupchat"/>
+    <addaction name="separator"/>
+    <addaction name="action_quit"/>
+   </widget>
+   <widget class="QMenu" name="menuView">
+    <property name="title">
+     <string>View</string>
+    </property>
+    <addaction name="action_show_offline_users"/>
+    <addaction name="action_show_empty_groups"/>
+   </widget>
+   <widget class="QMenu" name="menuTools">
+    <property name="title">
+     <string>Tools</string>
+    </property>
+    <addaction name="action_account_manager"/>
+    <addaction name="separator"/>
+   </widget>
+   <addaction name="menuRoster"/>
+   <addaction name="menuView"/>
+   <addaction name="menuTools"/>
+  </widget>
+  <action name="action_new_conversation">
+   <property name="text">
+    <string>New conversation…</string>
+   </property>
+  </action>
+  <action name="action_join_groupchat">
+   <property name="text">
+    <string>Join chatroom…</string>
+   </property>
+  </action>
+  <action name="action_add_contact">
+   <property name="text">
+    <string>Add contact…</string>
+   </property>
+  </action>
+  <action name="action_add_groupchat">
+   <property name="text">
+    <string>Add group chat…</string>
+   </property>
+  </action>
+  <action name="action_quit">
+   <property name="text">
+    <string>Quit</string>
+   </property>
+  </action>
+  <action name="action_show_offline_users">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Show offline users</string>
+   </property>
+  </action>
+  <action name="action_show_empty_groups">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Show empty groups</string>
+   </property>
+  </action>
+  <action name="action_account_manager">
+   <property name="text">
+    <string>Account manager…</string>
+   </property>
+  </action>
  </widget>
  <resources/>
  <connections/>
