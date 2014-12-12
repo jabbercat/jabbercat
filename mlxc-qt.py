@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import asyncio
 import os.path
 import sys
@@ -18,5 +19,5 @@ import mlxc.main
 
 asyncio.set_event_loop(quamash.QEventLoop(app=app))
 loop = asyncio.get_event_loop()
-asyncio.async(mlxc.main.main())
+mlxc.main.spawn_main(loop)
 loop.run_forever()
