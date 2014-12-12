@@ -3,14 +3,11 @@ import asyncio
 import os.path
 import sys
 
-import PyQt4.Qt as Qt
-import PyQt4.uic
-
 os.environ["QUAMASH_QTIMPL"] = "PyQt4"
-
 sys.path.insert(0, os.path.abspath("../asyncio-xmpp"))
 sys.path.insert(0, os.path.abspath("../asyncio_xmpp"))
 
+import mlxc.qt.Qt as Qt
 import quamash
 
 app = Qt.QApplication(sys.argv)
