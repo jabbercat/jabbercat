@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import asyncio
+import logging
 import os.path
 import sys
 
@@ -13,6 +14,9 @@ import quamash
 app = Qt.QApplication(sys.argv)
 
 import mlxc.qt
+
+logging.basicConfig(level=logging.DEBUG)
+logging.getLogger("quamash").setLevel(logging.WARN)
 
 asyncio.set_event_loop(quamash.QEventLoop(app=app))
 loop = asyncio.get_event_loop()

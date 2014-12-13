@@ -22,7 +22,7 @@
         <string>Local account</string>
        </property>
        <property name="buddy">
-        <cstring>comboBox</cstring>
+        <cstring>local_account</cstring>
        </property>
       </widget>
      </item>
@@ -70,7 +70,7 @@
       <widget class="QLineEdit" name="lineEdit"/>
      </item>
      <item row="0" column="1">
-      <widget class="QComboBox" name="comboBox"/>
+      <widget class="QComboBox" name="local_account"/>
      </item>
      <item row="3" column="1">
       <widget class="QComboBox" name="comboBox_2">
@@ -113,7 +113,7 @@
   </layout>
  </widget>
  <tabstops>
-  <tabstop>comboBox</tabstop>
+  <tabstop>local_account</tabstop>
   <tabstop>contact_jid</tabstop>
   <tabstop>lineEdit_3</tabstop>
   <tabstop>comboBox_2</tabstop>

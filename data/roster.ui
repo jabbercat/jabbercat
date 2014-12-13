@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>213</width>
-    <height>488</height>
+    <width>242</width>
+    <height>536</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -36,7 +36,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>213</width>
+     <width>242</width>
      <height>24</height>
     </rect>
    </property>
@@ -59,16 +59,16 @@
     <addaction name="action_show_offline_users"/>
     <addaction name="action_show_empty_groups"/>
    </widget>
-   <widget class="QMenu" name="menuTools">
+   <widget class="QMenu" name="menuAccounts">
     <property name="title">
-     <string>Tools</string>
+     <string>Accounts</string>
     </property>
     <addaction name="action_account_manager"/>
     <addaction name="separator"/>
    </widget>
    <addaction name="menuRoster"/>
    <addaction name="menuView"/>
-   <addaction name="menuTools"/>
+   <addaction name="menuAccounts"/>
   </widget>
   <action name="action_new_conversation">
    <property name="text">
@@ -125,7 +125,7 @@
   </action>
   <action name="action_account_manager">
    <property name="text">
-    <string>Account manager…</string>
+    <string>Manage accounts…</string>
    </property>
   </action>
  </widget>
