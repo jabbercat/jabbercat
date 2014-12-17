@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>242</width>
+    <width>245</width>
     <height>536</height>
    </rect>
   </property>
@@ -18,7 +18,29 @@
     <item>
      <layout class="QVBoxLayout" name="verticalLayout">
       <item>
-       <widget class="QTreeView" name="roster_view"/>
+       <widget class="QTreeView" name="roster_view">
+        <property name="dragEnabled">
+         <bool>true</bool>
+        </property>
+        <property name="dragDropMode">
+         <enum>QAbstractItemView::DragDrop</enum>
+        </property>
+        <property name="defaultDropAction">
+         <enum>Qt::MoveAction</enum>
+        </property>
+        <property name="alternatingRowColors">
+         <bool>true</bool>
+        </property>
+        <property name="selectionBehavior">
+         <enum>QAbstractItemView::SelectItems</enum>
+        </property>
+        <property name="allColumnsShowFocus">
+         <bool>true</bool>
+        </property>
+        <property name="headerHidden">
+         <bool>true</bool>
+        </property>
+       </widget>
       </item>
       <item>
        <layout class="QHBoxLayout" name="horizontalLayout">
@@ -36,9 +58,15 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>242</width>
-     <height>24</height>
+     <width>245</width>
+     <height>26</height>
     </rect>
+   </property>
+   <property name="defaultUp">
+    <bool>false</bool>
+   </property>
+   <property name="nativeMenuBar">
+    <bool>true</bool>
    </property>
    <widget class="QMenu" name="menuRoster">
     <property name="title">
@@ -82,7 +110,9 @@
   </action>
   <action name="action_add_contact">
    <property name="icon">
-    <iconset theme="add"/>
+    <iconset theme="add">
+     <normaloff/>
+    </iconset>
    </property>
    <property name="text">
     <string>Add contact…</string>
@@ -90,7 +120,9 @@
   </action>
   <action name="action_add_groupchat">
    <property name="icon">
-    <iconset theme="add"/>
+    <iconset theme="add">
+     <normaloff/>
+    </iconset>
    </property>
    <property name="text">
     <string>Add group chat…</string>
@@ -98,7 +130,9 @@
   </action>
   <action name="action_quit">
    <property name="icon">
-    <iconset theme="application-exit"/>
+    <iconset theme="application-exit">
+     <normaloff/>
+    </iconset>
    </property>
    <property name="text">
     <string>Quit</string>

@@ -4,7 +4,7 @@ import logging
 import os.path
 import sys
 
-os.environ["QUAMASH_QTIMPL"] = "PyQt4"
+os.environ["QUAMASH_QTIMPL"] = "PyQt5"
 sys.path.insert(0, os.path.abspath("../asyncio-xmpp"))
 sys.path.insert(0, os.path.abspath("../asyncio_xmpp"))
 
@@ -15,8 +15,8 @@ app = Qt.QApplication(sys.argv)
 
 import mlxc.qt
 
-logging.basicConfig(level=logging.DEBUG)
-logging.getLogger("quamash").setLevel(logging.WARN)
+# logging.basicConfig(level=logging.DEBUG)
+logging.getLogger("quamash").setLevel(logging.INFO)
 
 asyncio.set_event_loop(quamash.QEventLoop(app=app))
 loop = asyncio.get_event_loop()

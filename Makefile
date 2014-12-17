@@ -1,4 +1,4 @@
-BUILDUI=./utils/buildui.py
+BUILDUI=./utils/buildui.py -5
 
 UIC_SOURCE_FILES=$(wildcard data/*.ui)
 UIC_PYTHON_FILES=$(patsubst data/%.ui,mlxc/qt/ui/%.py,$(UIC_SOURCE_FILES))
