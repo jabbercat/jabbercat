@@ -13,12 +13,14 @@ import quamash
 
 app = Qt.QApplication(sys.argv)
 
-import mlxc.qt
+import mlxc.qt.main
 
-# logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.DEBUG)
 logging.getLogger("quamash").setLevel(logging.INFO)
+logging.getLogger("asyncio_xmpp").setLevel(logging.INFO)
 
 asyncio.set_event_loop(quamash.QEventLoop(app=app))
 loop = asyncio.get_event_loop()
-mlxc.qt.spawn_main(loop)
+main = mlxc.qt.main.MLXCQt(loop)
 loop.run_forever()
+sys.exit(main.returncode)

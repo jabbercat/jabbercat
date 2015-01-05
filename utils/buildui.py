@@ -25,4 +25,5 @@ if __name__ == "__main__":
         raise ValueError("Invalid version: {}".format(args.version))
 
     with open(args.pyfile, "w") as f:
+        f.write("#pylint: skip-file\n")
         uic.compileUi(args.uifile, f)
