@@ -23,4 +23,8 @@ asyncio.set_event_loop(quamash.QEventLoop(app=app))
 loop = asyncio.get_event_loop()
 main = mlxc.qt.main.MLXCQt(loop)
 loop.run_forever()
-sys.exit(main.returncode)
+result = main.returncode
+del main
+del app
+
+sys.exit(result)
