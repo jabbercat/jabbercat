@@ -26,5 +26,11 @@ loop.run_forever()
 result = main.returncode
 del main
 del app
+asyncio.set_event_loop(None)
+del loop
+
+# try very hard to evict app from memory...
+import gc
+gc.collect()
 
 sys.exit(result)
