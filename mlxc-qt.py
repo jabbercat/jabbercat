@@ -18,6 +18,8 @@ import mlxc.qt.main
 logging.basicConfig(level=logging.DEBUG)
 logging.getLogger("quamash").setLevel(logging.INFO)
 logging.getLogger("asyncio_xmpp").setLevel(logging.INFO)
+logging.getLogger("asyncio_xmpp.protocol").setLevel(logging.DEBUG)
+logging.getLogger("asyncio_xmpp.ssl_transport.trace").setLevel(logging.WARNING)
 
 asyncio.set_event_loop(quamash.QEventLoop(app=app))
 loop = asyncio.get_event_loop()
