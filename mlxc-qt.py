@@ -19,7 +19,7 @@ logging.getLogger("aioxmpp").setLevel(logging.DEBUG)
 
 asyncio.set_event_loop(quamash.QEventLoop(app=app))
 loop = asyncio.get_event_loop()
-main = mlxcqt.main.MLXCQt(loop)
+main = mlxcqt.main.QtMain(loop)
 returncode = loop.run_until_complete(main.run())
 del main
 del app
