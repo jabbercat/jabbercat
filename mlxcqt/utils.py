@@ -68,4 +68,10 @@ def exec_async(dlg, set_modal=Qt.Qt.WindowModal):
     if set_modal is not None:
         dlg.windowModality = set_modal
     dlg.show()
-    return (yield from future)
+    try:
+        return (yield from future)
+    except asyncio.CancelledError:
+        print("being cancelled, rejecting dialogue and re-raising")
+        dlg.finished.disconnect(done)
+        dlg.reject()
+        raise

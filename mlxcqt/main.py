@@ -170,6 +170,7 @@ class RosterWindow(Qt.QMainWindow, Ui_roster_window):
             self.mlxc.client.set_global_presence(
                 aioxmpp.structs.PresenceState(available=False)
             )
+            self.mlxc.client.stop_all()
 
     def closeEvent(self, event):
         result = super().closeEvent(event)
@@ -185,9 +186,23 @@ class MLXCQt:
         self.roster = RosterWindow(self)
 
     @asyncio.coroutine
+    def test_foo(self):
+        dlg = Qt.QMessageBox(Qt.QMessageBox.Warning, "foo", "bar")
+        try:
+            print("result {}".format((yield from utils.exec_async(dlg))))
+        except asyncio.CancelledError:
+            print("cancelled")
+
+    @asyncio.coroutine
     def run(self, main_future):
         self.client.load_state()
         self.roster.show()
+
+        task = asyncio.async(self.test_foo())
+        task.add_done_callback(utils.asyncified_done)
+        yield from asyncio.sleep(1)
+        task.cancel()
+
         yield from main_future
         self.client.save_state()
 

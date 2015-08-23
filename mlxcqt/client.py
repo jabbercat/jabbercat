@@ -2,7 +2,7 @@ import asyncio
 
 import mlxc.client
 
-from . import Qt, model_adaptor, check_certificate
+from . import Qt, model_adaptor, check_certificate, password_prompt
 
 
 class AccountsModel(Qt.QAbstractListModel):
@@ -99,6 +99,18 @@ class AccountManager(mlxc.client.AccountManager):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.qmodel = AccountsModel(self, None)
+
+    @asyncio.coroutine
+    def password_provider(self, jid, nattempt):
+        if nattempt == 0:
+            try:
+                return (yield from super().password_provider(jid, nattempt))
+            except KeyError:
+                pass
+
+        dlg = password_prompt.DlgPasswordPrompt(jid)
+        cont, password, store = yield from dlg.run()
+        return password
 
 
 class Client(mlxc.client.Client):

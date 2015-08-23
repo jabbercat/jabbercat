@@ -5,6 +5,8 @@ import unittest.mock
 import aioxmpp.callbacks
 import aioxmpp.structs
 
+from aioxmpp.testutils import CoroutineMock, run_coroutine
+
 import mlxc.client
 
 import mlxcqt.client as client
@@ -303,6 +305,41 @@ class TestClient(unittest.TestCase):
     def test_uses_mlxcqt_AccountManager(self):
         self.assertIs(client.Client.AccountManager,
                       client.AccountManager)
+
+    def setUp(self):
+        self.c = client.Client()
+
+    def test__decide_on_certificate_prompts_user(self):
+        account = object()
+        verifier = object()
+        accept = object()
+        store = object()
+
+        with contextlib.ExitStack() as stack:
+            DlgCheckCertificate = stack.enter_context(unittest.mock.patch(
+                "mlxcqt.check_certificate.DlgCheckCertificate"
+            ))
+            DlgCheckCertificate().run = CoroutineMock()
+            DlgCheckCertificate().run.return_value = accept, store
+            DlgCheckCertificate.mock_calls.clear()
+
+            result = run_coroutine(
+                self.c._decide_on_certificate(account, verifier)
+            )
+
+        self.assertSequenceEqual(
+            DlgCheckCertificate.mock_calls,
+            [
+                unittest.mock.call(account, verifier),
+                unittest.mock.call().run()
+            ]
+        )
+
+        self.assertEqual(
+            result,
+            accept
+        )
+
 
 
 # foo
