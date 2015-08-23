@@ -120,4 +120,6 @@ class Client(mlxc.client.Client):
     def _decide_on_certificate(self, account, verifier):
         dlg = check_certificate.DlgCheckCertificate(account, verifier)
         accept, store = yield from dlg.run()
+        if accept and store:
+            self.pin_store.pin(account.jid.domain, verifier.leaf_x509)
         return accept

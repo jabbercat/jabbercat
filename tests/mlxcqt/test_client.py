@@ -313,14 +313,13 @@ class TestClient(unittest.TestCase):
         account = object()
         verifier = object()
         accept = object()
-        store = object()
 
         with contextlib.ExitStack() as stack:
             DlgCheckCertificate = stack.enter_context(unittest.mock.patch(
                 "mlxcqt.check_certificate.DlgCheckCertificate"
             ))
             DlgCheckCertificate().run = CoroutineMock()
-            DlgCheckCertificate().run.return_value = accept, store
+            DlgCheckCertificate().run.return_value = accept, False
             DlgCheckCertificate.mock_calls.clear()
 
             result = run_coroutine(
@@ -339,6 +338,84 @@ class TestClient(unittest.TestCase):
             result,
             accept
         )
+
+    def test__decide_on_certificate_pins_if_user_allows(self):
+        base = unittest.mock.Mock()
+
+        verifier = base.verifier
+        account = base.account
+
+        with contextlib.ExitStack() as stack:
+            DlgCheckCertificate = stack.enter_context(unittest.mock.patch(
+                "mlxcqt.check_certificate.DlgCheckCertificate",
+                new=base.DlgCheckCertificate
+            ))
+            DlgCheckCertificate().run = CoroutineMock()
+            DlgCheckCertificate().run.return_value = True, True
+
+            pin_store = stack.enter_context(unittest.mock.patch.object(
+                self.c,
+                "pin_store",
+                new=base.pin_store
+            ))
+
+            base.mock_calls.clear()
+
+            result = run_coroutine(
+                self.c._decide_on_certificate(account, verifier)
+            )
+
+        calls = list(base.mock_calls)
+        self.assertSequenceEqual(
+            calls,
+            [
+                unittest.mock.call.DlgCheckCertificate(account, verifier),
+                unittest.mock.call.DlgCheckCertificate().run(),
+                unittest.mock.call.pin_store.pin(
+                    account.jid.domain,
+                    verifier.leaf_x509
+                )
+            ]
+        )
+
+        self.assertTrue(result)
+
+    def test__decide_on_certificate_does_not_pin_unaccepted(self):
+        base = unittest.mock.Mock()
+
+        verifier = base.verifier
+        account = base.account
+
+        with contextlib.ExitStack() as stack:
+            DlgCheckCertificate = stack.enter_context(unittest.mock.patch(
+                "mlxcqt.check_certificate.DlgCheckCertificate",
+                new=base.DlgCheckCertificate
+            ))
+            DlgCheckCertificate().run = CoroutineMock()
+            DlgCheckCertificate().run.return_value = False, True
+
+            pin_store = stack.enter_context(unittest.mock.patch.object(
+                self.c,
+                "pin_store",
+                new=base.pin_store
+            ))
+
+            base.mock_calls.clear()
+
+            result = run_coroutine(
+                self.c._decide_on_certificate(account, verifier)
+            )
+
+        calls = list(base.mock_calls)
+        self.assertSequenceEqual(
+            calls,
+            [
+                unittest.mock.call.DlgCheckCertificate(account, verifier),
+                unittest.mock.call.DlgCheckCertificate().run(),
+            ]
+        )
+
+        self.assertFalse(result)
 
 
 
