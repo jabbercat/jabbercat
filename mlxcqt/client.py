@@ -85,7 +85,7 @@ class AccountsModel(Qt.QAbstractListModel):
         if role != Qt.Qt.DisplayRole:
             return None
 
-        return "JID"
+        return Qt.translate("dlg_account_manager", "JID")
 
     def flags(self, index):
         flags = Qt.Qt.ItemIsEnabled | Qt.Qt.ItemIsSelectable

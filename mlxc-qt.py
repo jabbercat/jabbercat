@@ -17,6 +17,20 @@ logging.basicConfig(level=logging.DEBUG)
 logging.getLogger("quamash").setLevel(logging.INFO)
 logging.getLogger("aioxmpp").setLevel(logging.DEBUG)
 
+locale = Qt.QLocale.system().name()
+qttr = Qt.QTranslator(parent=app)
+if not qttr.load("qt_" + locale,
+                 Qt.QLibraryInfo.location(Qt.QLibraryInfo.TranslationsPath)):
+    logging.warning("failed to load Qt translations for %s", locale)
+else:
+    app.installTranslator(qttr)
+
+qttr = Qt.QTranslator(parent=app)
+if not qttr.load("qttranslations/mlxcqt_" + locale):
+    logging.warning("failed to load MLXC translations for %s", locale)
+else:
+    app.installTranslator(qttr)
+
 asyncio.set_event_loop(quamash.QEventLoop(app=app))
 loop = asyncio.get_event_loop()
 main = mlxcqt.main.QtMain(loop)
