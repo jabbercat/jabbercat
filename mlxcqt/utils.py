@@ -68,4 +68,4 @@ def exec_async(dlg, set_modal=Qt.Qt.WindowModal):
     if set_modal is not None:
         dlg.windowModality = set_modal
     dlg.show()
-    yield from future
+    return (yield from future)

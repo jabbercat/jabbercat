@@ -152,11 +152,24 @@ class RosterWindow(Qt.QMainWindow, Ui_roster_window):
         self.action_account_manager.triggered.connect(
             self._on_account_manager)
 
+        self.online_selector.stateChanged.connect(
+            self._on_online_state_changed)
+
     def _on_quit(self):
         self.mlxc.main.quit()
 
     def _on_account_manager(self):
         self.account_manager.show()
+
+    def _on_online_state_changed(self, state):
+        if state == Qt.Qt.Checked:
+            self.mlxc.client.set_global_presence(
+                aioxmpp.structs.PresenceState(available=True)
+            )
+        else:
+            self.mlxc.client.set_global_presence(
+                aioxmpp.structs.PresenceState(available=False)
+            )
 
     def closeEvent(self, event):
         result = super().closeEvent(event)

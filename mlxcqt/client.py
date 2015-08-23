@@ -1,6 +1,8 @@
+import asyncio
+
 import mlxc.client
 
-from . import Qt, model_adaptor
+from . import Qt, model_adaptor, check_certificate
 
 
 class AccountsModel(Qt.QAbstractListModel):
@@ -101,3 +103,9 @@ class AccountManager(mlxc.client.AccountManager):
 
 class Client(mlxc.client.Client):
     AccountManager = AccountManager
+
+    @asyncio.coroutine
+    def _decide_on_certificate(self, account, verifier):
+        dlg = check_certificate.DlgCheckCertificate(account, verifier)
+        accept, store = yield from dlg.run()
+        return accept

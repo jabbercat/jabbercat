@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>601</width>
-    <height>395</height>
+    <width>603</width>
+    <height>388</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -29,7 +29,7 @@
       </size>
      </property>
      <property name="accessibleDescription">
-      <string>List of accounts. Press enter to edit selected account.</string>
+      <string>List of accounts. Press enter to edit and space to enable or disable selected account.</string>
      </property>
      <property name="editTriggers">
       <set>QAbstractItemView::NoEditTriggers</set>
@@ -117,30 +117,12 @@
     </layout>
    </item>
   </layout>
-  <action name="action_new_account">
-   <property name="icon">
-    <iconset theme="list-add">
-     <normaloff/>
-    </iconset>
-   </property>
+  <action name="action_add_existing_account">
    <property name="text">
-    <string>New account…</string>
+    <string>Add</string>
    </property>
    <property name="toolTip">
-    <string>Add a new account</string>
-   </property>
-  </action>
-  <action name="action_delete_account">
-   <property name="icon">
-    <iconset theme="list-remove">
-     <normaloff/>
-    </iconset>
-   </property>
-   <property name="text">
-    <string>Delete account</string>
-   </property>
-   <property name="toolTip">
-    <string>Delete selected account</string>
+    <string>Add existing account</string>
    </property>
   </action>
  </widget>
@@ -159,8 +141,8 @@
    <slot>accept()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>546</x>
-     <y>381</y>
+     <x>548</x>
+     <y>374</y>
     </hint>
     <hint type="destinationlabel">
      <x>597</x>

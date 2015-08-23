@@ -15,7 +15,7 @@ import mlxcqt.main
 
 logging.basicConfig(level=logging.DEBUG)
 logging.getLogger("quamash").setLevel(logging.INFO)
-logging.getLogger("aioxmpp").setLevel(logging.DEBUG)
+logging.getLogger("aioxmpp").setLevel(logging.WARNING)
 
 locale = Qt.QLocale.system().name()
 qttr = Qt.QTranslator(parent=app)

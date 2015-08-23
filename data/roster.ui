@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>245</width>
+    <width>274</width>
     <height>536</height>
    </rect>
   </property>
@@ -14,46 +14,87 @@
    <string>My little XMPP client</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <layout class="QVBoxLayout" name="verticalLayout_2">
-    <property name="topMargin">
-     <number>0</number>
-    </property>
+   <layout class="QVBoxLayout" name="verticalLayout">
     <item>
-     <layout class="QVBoxLayout" name="verticalLayout">
+     <widget class="QTreeView" name="roster_view">
+      <property name="dragEnabled">
+       <bool>true</bool>
+      </property>
+      <property name="dragDropMode">
+       <enum>QAbstractItemView::DragDrop</enum>
+      </property>
+      <property name="defaultDropAction">
+       <enum>Qt::MoveAction</enum>
+      </property>
+      <property name="alternatingRowColors">
+       <bool>true</bool>
+      </property>
+      <property name="selectionBehavior">
+       <enum>QAbstractItemView::SelectItems</enum>
+      </property>
+      <property name="uniformRowHeights">
+       <bool>true</bool>
+      </property>
+      <property name="allColumnsShowFocus">
+       <bool>true</bool>
+      </property>
+      <property name="headerHidden">
+       <bool>true</bool>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <layout class="QHBoxLayout" name="horizontalLayout_2">
       <item>
-       <widget class="QTreeView" name="roster_view">
-        <property name="dragEnabled">
-         <bool>true</bool>
+       <widget class="QCheckBox" name="online_selector">
+        <property name="toolTip">
+         <string>Global online/offline switch.</string>
         </property>
-        <property name="dragDropMode">
-         <enum>QAbstractItemView::DragDrop</enum>
-        </property>
-        <property name="defaultDropAction">
-         <enum>Qt::MoveAction</enum>
-        </property>
-        <property name="alternatingRowColors">
-         <bool>true</bool>
-        </property>
-        <property name="selectionBehavior">
-         <enum>QAbstractItemView::SelectItems</enum>
-        </property>
-        <property name="uniformRowHeights">
-         <bool>true</bool>
-        </property>
-        <property name="allColumnsShowFocus">
-         <bool>true</bool>
-        </property>
-        <property name="headerHidden">
-         <bool>true</bool>
+        <property name="text">
+         <string>Online</string>
         </property>
        </widget>
       </item>
       <item>
-       <layout class="QHBoxLayout" name="horizontalLayout">
+       <widget class="QComboBox" name="presence_state_selector">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="toolTip">
+         <string>Presence state which is shown to your contacts.</string>
+        </property>
+        <property name="currentIndex">
+         <number>1</number>
+        </property>
         <item>
-         <widget class="QComboBox" name="presence_state_selector"/>
+         <property name="text">
+          <string>Free for chat</string>
+         </property>
         </item>
-       </layout>
+        <item>
+         <property name="text">
+          <string>Available</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Away</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Not available</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Do not disturb</string>
+         </property>
+        </item>
+       </widget>
       </item>
      </layout>
     </item>
@@ -64,8 +105,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>245</width>
-     <height>26</height>
+     <width>274</width>
+     <height>19</height>
     </rect>
    </property>
    <property name="defaultUp">
