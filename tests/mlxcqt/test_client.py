@@ -2,6 +2,9 @@ import contextlib
 import unittest
 import unittest.mock
 
+import aioxmpp.callbacks
+import aioxmpp.structs
+
 import mlxc.client
 
 import mlxcqt.client as client
@@ -28,6 +31,15 @@ class TestAccountsModel(unittest.TestCase):
                 unittest.mock.call.ModelListAdaptor(
                     base.accounts._jidlist,
                     model
+                ),
+                unittest.mock.call.accounts.on_account_enabled.connect(
+                    model._account_enabled
+                ),
+                unittest.mock.call.accounts.on_account_disabled.connect(
+                    model._account_disabled
+                ),
+                unittest.mock.call.accounts.on_account_refresh.connect(
+                    model._account_refresh
                 )
             ]
         )
@@ -35,6 +47,9 @@ class TestAccountsModel(unittest.TestCase):
     def setUp(self):
         self.base = unittest.mock.Mock()
         self.base.accounts = unittest.mock.MagicMock()
+        self.base.accounts.on_account_enabled = aioxmpp.callbacks.AdHocSignal()
+        self.base.accounts.on_account_disabled = aioxmpp.callbacks.AdHocSignal()
+        self.base.accounts.on_account_refresh = aioxmpp.callbacks.AdHocSignal()
         self.accounts = self.base.accounts
         self.model = client.AccountsModel(self.accounts)
 
@@ -109,6 +124,155 @@ class TestAccountsModel(unittest.TestCase):
              Qt.Qt.ItemIsSelectable |
              Qt.Qt.ItemIsUserCheckable),
             self.model.flags(self.model.index(0, parent=Qt.QModelIndex()))
+        )
+
+    def test_data_returns_enabledness_for_check_state_role(self):
+        self.accounts.__len__.return_value = 1
+        self.accounts.__getitem__().enabled = True
+        index = self.model.index(0, parent=Qt.QModelIndex())
+        self.assertEqual(
+            self.model.data(index, Qt.Qt.CheckStateRole),
+            Qt.Qt.Checked,
+        )
+        self.accounts.__getitem__().enabled = False
+        self.assertEqual(
+            self.model.data(index, Qt.Qt.CheckStateRole),
+            Qt.Qt.Unchecked
+        )
+
+    def test_setData_with_positive_check_state_enables_account(self):
+        self.accounts.__len__.return_value = 1
+        index = self.model.index(0, parent=Qt.QModelIndex())
+        self.model.setData(index, Qt.Qt.Checked, Qt.Qt.CheckStateRole)
+        self.assertIn(
+            unittest.mock.call.set_account_enabled(
+                self.accounts[0].jid,
+                True),
+            self.accounts.mock_calls
+        )
+        self.assertNotIn(
+            unittest.mock.call.set_account_enabled(
+                self.accounts[0].jid,
+                False),
+            self.accounts.mock_calls
+        )
+
+    def test_setData_with_negative_check_state_disables_account(self):
+        self.accounts.__len__.return_value = 1
+        index = self.model.index(0, parent=Qt.QModelIndex())
+        self.model.setData(index, Qt.Qt.Unchecked, Qt.Qt.CheckStateRole)
+        self.assertIn(
+            unittest.mock.call.set_account_enabled(
+                self.accounts[0].jid,
+                False),
+            self.accounts.mock_calls
+        )
+        self.assertNotIn(
+            unittest.mock.call.set_account_enabled(
+                self.accounts[0].jid,
+                True),
+            self.accounts.mock_calls
+        )
+
+    def test_call_dataChanged_when_account_gets_enabled(self):
+        account = object()
+
+        self.accounts.__len__.return_value = 1
+
+        self.base.mock_calls.clear()
+
+        with contextlib.ExitStack() as stack:
+            dataChanged = stack.enter_context(unittest.mock.patch.object(
+                self.model,
+                "dataChanged",
+                new=self.base.dataChanged
+            ))
+            index = stack.enter_context(unittest.mock.patch.object(
+                self.model,
+                "index",
+                new=self.base.index_
+            ))
+
+            self.accounts.on_account_enabled(account)
+
+        calls = list(self.base.mock_calls)
+        self.assertSequenceEqual(
+            calls,
+            [
+                unittest.mock.call.accounts.account_index(account),
+                unittest.mock.call.index_(self.accounts.account_index(),
+                                          column=0,
+                                          parent=Qt.QModelIndex()),
+                unittest.mock.call.dataChanged.emit(index(), index(),
+                                                    [Qt.Qt.CheckStateRole])
+            ]
+        )
+
+    def test_call_dataChanged_when_account_gets_disabled(self):
+        account = object()
+
+        self.accounts.__len__.return_value = 1
+
+        self.base.mock_calls.clear()
+
+        with contextlib.ExitStack() as stack:
+            dataChanged = stack.enter_context(unittest.mock.patch.object(
+                self.model,
+                "dataChanged",
+                new=self.base.dataChanged
+            ))
+            index = stack.enter_context(unittest.mock.patch.object(
+                self.model,
+                "index",
+                new=self.base.index_
+            ))
+
+            self.accounts.on_account_disabled(account)
+
+        calls = list(self.base.mock_calls)
+        self.assertSequenceEqual(
+            calls,
+            [
+                unittest.mock.call.accounts.account_index(account),
+                unittest.mock.call.index_(self.accounts.account_index(),
+                                          column=0,
+                                          parent=Qt.QModelIndex()),
+                unittest.mock.call.dataChanged.emit(index(), index(),
+                                                    [Qt.Qt.CheckStateRole])
+            ]
+        )
+
+    def test_call_dataChanged_when_account_gets_refreshed(self):
+        account = object()
+
+        self.accounts.__len__.return_value = 1
+
+        self.base.mock_calls.clear()
+
+        with contextlib.ExitStack() as stack:
+            dataChanged = stack.enter_context(unittest.mock.patch.object(
+                self.model,
+                "dataChanged",
+                new=self.base.dataChanged
+            ))
+            index = stack.enter_context(unittest.mock.patch.object(
+                self.model,
+                "index",
+                new=self.base.index_
+            ))
+
+            self.accounts.on_account_refresh(account)
+
+        calls = list(self.base.mock_calls)
+        self.assertSequenceEqual(
+            calls,
+            [
+                unittest.mock.call.accounts.account_index(account),
+                unittest.mock.call.index_(self.accounts.account_index(),
+                                          column=0,
+                                          parent=Qt.QModelIndex()),
+                unittest.mock.call.dataChanged.emit(index(), index())
+            ]
         )
 
 

@@ -11,6 +11,29 @@ class AccountsModel(Qt.QAbstractListModel):
             accounts._jidlist,
             self)
 
+        self._accounts.on_account_enabled.connect(
+            self._account_enabled)
+        self._accounts.on_account_disabled.connect(
+            self._account_disabled)
+        self._accounts.on_account_refresh.connect(
+            self._account_refresh)
+
+    def _account_enabled_changed(self, account):
+        row = self._accounts.account_index(account)
+        index = self.index(row, column=0, parent=Qt.QModelIndex())
+        self.dataChanged.emit(index, index, [Qt.Qt.CheckStateRole])
+
+    def _account_enabled(self, account):
+        self._account_enabled_changed(account)
+
+    def _account_disabled(self, account, reason=None):
+        self._account_enabled_changed(account)
+
+    def _account_refresh(self, account):
+        row = self._accounts.account_index(account)
+        index = self.index(row, column=0, parent=Qt.QModelIndex())
+        self.dataChanged.emit(index, index)
+
     def rowCount(self, index):
         if index.isValid():
             return 0
@@ -22,14 +45,37 @@ class AccountsModel(Qt.QAbstractListModel):
 
         row = index.row()
 
+        try:
+            account = self._accounts[row]
+        except IndexError:
+            return None
+
         if role == Qt.Qt.DisplayRole:
-            try:
-                account = self._accounts[row]
-            except IndexError:
-                return None
             return str(account.jid)
+        elif role == Qt.Qt.CheckStateRole:
+            return Qt.Qt.Checked if account.enabled else Qt.Qt.Unchecked
 
         return None
+
+    def setData(self, index, value, role):
+        if not index.isValid():
+            return False
+
+        row = index.row()
+
+        if role == Qt.Qt.CheckStateRole:
+            if value == Qt.Qt.Checked:
+                self._accounts.set_account_enabled(
+                    self._accounts[row].jid,
+                    True)
+                return True
+            elif value == Qt.Qt.Unchecked:
+                self._accounts.set_account_enabled(
+                    self._accounts[row].jid,
+                    False)
+                return True
+
+        return False
 
     def headerData(self, section, orientation, role):
         if orientation != Qt.Qt.Horizontal:
