@@ -8,6 +8,7 @@ import aioxmpp.structs
 from aioxmpp.testutils import CoroutineMock, run_coroutine
 
 import mlxc.client
+import mlxc.config
 
 import mlxcqt.client as client
 
@@ -307,7 +308,7 @@ class TestClient(unittest.TestCase):
                       client.AccountManager)
 
     def setUp(self):
-        self.c = client.Client()
+        self.c = client.Client(mlxc.config.make_config_manager())
 
     def test__decide_on_certificate_prompts_user(self):
         account = object()

@@ -190,7 +190,7 @@ class MLXCQt:
         self.client.load_state()
         self.roster.show()
         yield from main_future
-        self.client.save_state()
+        self.client.config_manager.writeback()
 
 
 class QtMain(mlxc.main.Main):
