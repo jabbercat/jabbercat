@@ -1,4 +1,5 @@
 import asyncio
+import bisect
 import contextlib
 import functools
 
@@ -53,10 +54,12 @@ def block_widget(widget):
         widget.setCursor(prev_cursor)
         widget.setEnabled(True)
 
+
 @asyncio.coroutine
 def block_widget_for_coro(widget, coro):
     with block_widget(widget):
         yield from coro
+
 
 @asyncio.coroutine
 def exec_async(dlg, set_modal=Qt.Qt.WindowModal):
@@ -75,3 +78,115 @@ def exec_async(dlg, set_modal=Qt.Qt.WindowModal):
         dlg.finished.disconnect(done)
         dlg.reject()
         raise
+
+
+class JoinedListsModel(Qt.QAbstractListModel):
+    def __init__(self, *models, parent=None):
+        super().__init__(parent=parent)
+        self._models = tuple(models)
+        self._reset()
+        for model in self._models:
+            self._link_model(model)
+
+    def _link_model(self, model):
+        model.rowsInserted.connect(self._rowsInserted)
+        model.rowsMoved.connect(self._rowsMoved)
+        model.rowsRemoved.connect(self._rowsRemoved)
+        model.columnsInserted.connect(self._columnsInserted)
+        model.columnsMoved.connect(self._columnsMoved)
+        model.columnsRemoved.connect(self._columnsRemoved)
+        model.modelAboutToBeReset.connect(self._modelAboutToBeReset)
+        model.modelReset.connect(self._modelReset)
+        model.rowsAboutToBeInserted.connect(functools.partial(
+            self._rowsAboutToBeInserted,
+            model
+        ))
+        model.rowsAboutToBeMoved.connect(functools.partial(
+            self._rowsAboutToBeMoved,
+            model
+        ))
+        model.rowsAboutToBeRemoved.connect(functools.partial(
+            self._rowsAboutToBeRemoved,
+            model
+        ))
+
+    def _rowsInserted(self):
+        self.endInsertRows()
+
+    def _rowsMoved(self):
+        self.endMoveRows()
+
+    def _rowsRemoved(self):
+        self.endRemoveRows()
+
+    def _columnsInserted(self):
+        self.endInsertColumns()
+
+    def _columnsMoved(self):
+        self.endMoveColumns()
+
+    def _columnsRemoved(self):
+        self.endRemoveColumns()
+
+    def _modelAboutToBeReset(self):
+        self.beginResetModel()
+        self._mapping.clear()
+
+    def _modelReset(self):
+        self._reset()
+        self.endResetModel()
+
+    def _rowsAboutToBeInserted(self, model, index, start, end):
+        modeli = self._models.index(model)
+        offset = self._mapping[modeli]
+        self.beginInsertRows(index, start+offset, end+offset)
+        added_rows = (end - start)+1
+        for i in range(modeli+1, len(self._models)):
+            self._mapping[i] += added_rows
+        self._row_count += added_rows
+
+    def _rowsAboutToBeMoved(self, model,
+                            src_index, start, end,
+                            dst_index, child):
+        modeli = self._models.index(model)
+        offset = self._mapping[modeli]
+        self.beginMoveRows(src_index, start+offset, end+offset,
+                           dst_index, child+offset)
+
+    def _rowsAboutToBeRemoved(self, model, index, start, end):
+        modeli = self._models.index(model)
+        offset = self._mapping[modeli]
+        self.beginRemoveRows(index, start+offset, end+offset)
+        removed_rows = (end - start)+1
+        for i in range(modeli+1, len(self._models)):
+            self._mapping[i] -= removed_rows
+        self._row_count -= removed_rows
+
+    def _reset(self):
+        mapping = [None]*len(self._models)
+        offset = 0
+        for i, model in enumerate(self._models):
+            mapping[i] = offset
+            offset += model.rowCount()
+        self._row_count = offset
+        self._mapping = mapping
+
+    def _map_to_model(self, index):
+        modeli = bisect.bisect(self._mapping, index.row())-1
+        model = self._models[modeli]
+        model_offset = self._mapping[modeli]
+        return model, model_offset
+
+
+    def rowCount(self, index=Qt.QModelIndex()):
+        if not index.isValid():
+            return self._row_count
+        return 0
+
+    def data(self, index, role=Qt.Qt.DisplayRole):
+        model, offset = self._map_to_model(index)
+        return model.data(model.index(index.row()-offset), role)
+
+    def flags(self, index):
+        model, offset = self._map_to_model(index)
+        return model.flags(model.index(index.row()-offset))
