@@ -154,9 +154,7 @@ class RosterWindow(Qt.QMainWindow, Ui_roster_window):
         self.action_account_manager.triggered.connect(
             self._on_account_manager)
 
-        self.online_selector.stateChanged.connect(
-            self._on_online_state_changed)
-        full_model = utils.JoinedListsModel(
+        self.presence_states_qmodel = utils.JoinedListsModel(
             utils.DictItemModel(mlxc.instrumentable_list.ModelList([
                 {
                     "flags": Qt.Qt.ItemIsEnabled,
@@ -207,9 +205,11 @@ class RosterWindow(Qt.QMainWindow, Ui_roster_window):
             self.mlxc.client.presence_states_qmodel
         )
         self.presence_state_selector.setModel(
-            full_model
+            self.presence_states_qmodel
         )
-        self.presence_state_selector.setCurrentIndex(2)
+        self.presence_state_selector.setCurrentIndex(6)
+        self.presence_state_selector.activated.connect(
+            self._on_presence_state_changed)
 
     def _on_quit(self):
         self.mlxc.main.quit()
@@ -217,16 +217,16 @@ class RosterWindow(Qt.QMainWindow, Ui_roster_window):
     def _on_account_manager(self):
         self.account_manager.show()
 
-    def _on_online_state_changed(self, state):
-        if state == Qt.Qt.Checked:
-            self.mlxc.client.set_global_presence(
-                aioxmpp.structs.PresenceState(available=True)
-            )
-        else:
-            self.mlxc.client.set_global_presence(
-                aioxmpp.structs.PresenceState(available=False)
-            )
-            self.mlxc.client.stop_all()
+    def _on_presence_state_changed(self, index):
+        state = self.presence_states_qmodel.data(
+            self.presence_states_qmodel.index(index),
+            Qt.Qt.UserRole
+        )
+
+        if isinstance(state, aioxmpp.structs.PresenceState):
+            state = mlxc.client.FundamentalPresenceState(state)
+
+        self.mlxc.client.apply_presence_state(state)
 
     def closeEvent(self, event):
         result = super().closeEvent(event)

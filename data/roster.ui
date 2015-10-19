@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>274</width>
+    <width>217</width>
     <height>536</height>
    </rect>
   </property>
@@ -44,59 +44,45 @@
      </widget>
     </item>
     <item>
-     <layout class="QHBoxLayout" name="horizontalLayout_2">
+     <widget class="QComboBox" name="presence_state_selector">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="toolTip">
+       <string>Your availability as shown to your contacts.</string>
+      </property>
+      <property name="currentIndex">
+       <number>1</number>
+      </property>
       <item>
-       <widget class="QCheckBox" name="online_selector">
-        <property name="toolTip">
-         <string>Global online/offline switch.</string>
-        </property>
-        <property name="text">
-         <string>Online</string>
-        </property>
-       </widget>
+       <property name="text">
+        <string>Free for chat</string>
+       </property>
       </item>
       <item>
-       <widget class="QComboBox" name="presence_state_selector">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="toolTip">
-         <string>Presence state which is shown to your contacts.</string>
-        </property>
-        <property name="currentIndex">
-         <number>1</number>
-        </property>
-        <item>
-         <property name="text">
-          <string>Free for chat</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Available</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Away</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Not available</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Do not disturb</string>
-         </property>
-        </item>
-       </widget>
+       <property name="text">
+        <string>Available</string>
+       </property>
       </item>
-     </layout>
+      <item>
+       <property name="text">
+        <string>Away</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>Not available</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>Do not disturb</string>
+       </property>
+      </item>
+     </widget>
     </item>
    </layout>
   </widget>
@@ -105,7 +91,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>274</width>
+     <width>217</width>
      <height>19</height>
     </rect>
    </property>
@@ -136,7 +122,7 @@
    </widget>
    <widget class="QMenu" name="menuAccounts">
     <property name="title">
-     <string>Accounts</string>
+     <string>Acco&amp;unts</string>
     </property>
     <addaction name="action_account_manager"/>
     <addaction name="separator"/>
@@ -147,12 +133,12 @@
   </widget>
   <action name="action_new_conversation">
    <property name="text">
-    <string>New conversation…</string>
+    <string>&amp;New conversation…</string>
    </property>
   </action>
   <action name="action_join_groupchat">
    <property name="text">
-    <string>Join chatroom…</string>
+    <string>&amp;Join chatroom…</string>
    </property>
   </action>
   <action name="action_add_contact">
@@ -162,7 +148,7 @@
     </iconset>
    </property>
    <property name="text">
-    <string>Add contact…</string>
+    <string>&amp;Add contact…</string>
    </property>
   </action>
   <action name="action_add_groupchat">
@@ -172,7 +158,7 @@
     </iconset>
    </property>
    <property name="text">
-    <string>Add group chat…</string>
+    <string>Add &amp;group chat…</string>
    </property>
   </action>
   <action name="action_quit">
@@ -182,7 +168,7 @@
     </iconset>
    </property>
    <property name="text">
-    <string>Quit</string>
+    <string>&amp;Quit</string>
    </property>
   </action>
   <action name="action_show_offline_users">
@@ -190,7 +176,7 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Show offline users</string>
+    <string>&amp;Show offline users</string>
    </property>
   </action>
   <action name="action_show_empty_groups">
@@ -201,12 +187,12 @@
     <bool>false</bool>
    </property>
    <property name="text">
-    <string>Show empty groups</string>
+    <string>Show &amp;empty groups</string>
    </property>
   </action>
   <action name="action_account_manager">
    <property name="text">
-    <string>Manage accounts…</string>
+    <string>&amp;Manage accounts…</string>
    </property>
   </action>
  </widget>
