@@ -294,3 +294,75 @@ class TestJoinedListsModel(unittest.TestCase):
             ]
         )
         self.assertEqual(3, self.model.rowCount())
+
+
+class TestDictItemModel(unittest.TestCase):
+    def test_init(self):
+        base = unittest.mock.Mock()
+        with contextlib.ExitStack() as stack:
+            ModelListAdaptor = stack.enter_context(
+                unittest.mock.patch(
+                    "mlxcqt.model_adaptor.ModelListAdaptor",
+                    new=base.ModelListAdaptor
+                )
+            )
+
+            model = utils.DictItemModel(base.items)
+
+        self.assertSequenceEqual(
+            base.mock_calls,
+            [
+                unittest.mock.call.ModelListAdaptor(
+                    base.items,
+                    model
+                ),
+            ]
+        )
+
+    def setUp(self):
+        self.items = unittest.mock.MagicMock()
+        self.model = utils.DictItemModel(self.items)
+        self.items.mock_calls.clear()
+
+    def test_is_QAbstractListModel(self):
+        self.assertIsInstance(self.model, Qt.QAbstractListModel)
+
+    def test_rowCount_returns_length_for_invalid_index(self):
+        self.assertEqual(
+            self.model.rowCount(Qt.QModelIndex()),
+            len(self.items)
+        )
+
+    def test_rowCount_returns_zero_for_valid_index(self):
+        self.items.__len__.return_value = 2
+        self.assertEqual(self.model.rowCount(self.model.index(0)), 0)
+
+    def test_data_returns_dict_entry(self):
+        self.items.__len__.return_value = 2
+        index = self.model.index(0)
+        role = object()
+        self.items.mock_calls.clear()
+        value = self.model.data(index, role)
+        self.assertSequenceEqual(
+            self.items.mock_calls,
+            [
+                unittest.mock._Call(("__getitem__", (0,), {})),
+                unittest.mock._Call(("__getitem__().get", (role,), {})),
+            ]
+        )
+
+    def test_flags_returns_dict_entry_with_sensible_default(self):
+        self.items.__len__.return_value = 2
+        index = self.model.index(0)
+        self.items.mock_calls.clear()
+        value = self.model.flags(index)
+        self.assertSequenceEqual(
+            self.items.mock_calls,
+            [
+                unittest.mock._Call(("__getitem__", (0,), {})),
+                unittest.mock._Call((
+                    "__getitem__().get",
+                    ("flags", Qt.Qt.ItemIsSelectable | Qt.Qt.ItemIsEnabled),
+                    {})),
+            ]
+        )

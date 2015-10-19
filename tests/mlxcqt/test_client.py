@@ -62,6 +62,12 @@ class TestAccountsModel(unittest.TestCase):
             len(self.accounts)
         )
 
+    def test_rowCount_returns_accounts_length_for_default_model_index(self):
+        self.assertEqual(
+            self.model.rowCount(),
+            len(self.accounts)
+        )
+
     def test_rowCount_returns_zero_for_valid_model_index(self):
         index = self.model.index(0, parent=Qt.QModelIndex())
         self.assertEqual(self.model.rowCount(index), 0)
@@ -83,6 +89,14 @@ class TestAccountsModel(unittest.TestCase):
         index = self.model.index(0, parent=Qt.QModelIndex())
         self.assertEqual(
             self.model.data(index, Qt.Qt.DisplayRole),
+            str(self.accounts[0].jid)
+        )
+
+    def test_data_returns_str_of_accounts_jid_for_default_role(self):
+        self.accounts.__len__.return_value = 1
+        index = self.model.index(0, parent=Qt.QModelIndex())
+        self.assertEqual(
+            self.model.data(index),
             str(self.accounts[0].jid)
         )
 
@@ -279,6 +293,71 @@ class TestAccountsModel(unittest.TestCase):
         )
 
 
+class TestCustomPresenceStateModel(unittest.TestCase):
+    def setUp(self):
+        self.base = unittest.mock.Mock()
+        self.base.presence_states = unittest.mock.MagicMock()
+        self.presence_states = self.base.presence_states
+        self.model = client.CustomPresenceStateModel(self.presence_states)
+
+    def test_rowCount_returns_length_for_invalid_model_index(self):
+        self.assertEqual(
+            self.model.rowCount(Qt.QModelIndex()),
+            len(self.presence_states)
+        )
+
+    def test_rowCount_returns_length_for_default_model_index(self):
+        self.assertEqual(
+            self.model.rowCount(),
+            len(self.presence_states)
+        )
+
+    def test_rowCount_returns_zero_for_valid_model_index(self):
+        self.presence_states.__len__.return_value = 1
+        index = self.model.index(0, parent=Qt.QModelIndex())
+        self.assertTrue(index.isValid())
+        self.assertEqual(
+            self.model.rowCount(index),
+            0
+        )
+
+    def test_data_returns_None_for_invalid_model_index(self):
+        self.assertIsNone(
+            self.model.data(Qt.QModelIndex(), object())
+        )
+
+    def test_data_returns_None_for_non_display_roles(self):
+        self.presence_states.__len__.return_value = 1
+        index = self.model.index(0, parent=Qt.QModelIndex())
+        self.assertIsNone(
+            self.model.data(index, Qt.Qt.ToolTipRole)
+        )
+
+    def test_data_returns_name_for_display_role(self):
+        self.presence_states.__len__.return_value = 1
+        index = self.model.index(0, parent=Qt.QModelIndex())
+        self.assertEqual(
+            self.model.data(index, Qt.Qt.DisplayRole),
+            self.presence_states[0].name
+        )
+
+    def test_data_returns_name_for_default_role(self):
+        self.presence_states.__len__.return_value = 1
+        index = self.model.index(0, parent=Qt.QModelIndex())
+        self.assertEqual(
+            self.model.data(index),
+            self.presence_states[0].name
+        )
+
+    def test_data_returns_item_for_user_role(self):
+        self.presence_states.__len__.return_value = 1
+        index = self.model.index(0, parent=Qt.QModelIndex())
+        self.assertEqual(
+            self.model.data(index, Qt.Qt.UserRole),
+            self.presence_states[0]
+        )
+
+
 class TestAccountManager(unittest.TestCase):
     def test_is_mlxc_account_manager(self):
         self.assertTrue(issubclass(
@@ -309,6 +388,12 @@ class TestClient(unittest.TestCase):
 
     def setUp(self):
         self.c = client.Client(mlxc.config.make_config_manager())
+
+    def test_presence_states_qmodel_is_CustomPresenceStateModel(self):
+        self.assertIsInstance(
+            self.c.presence_states_qmodel,
+            client.CustomPresenceStateModel
+        )
 
     def test__decide_on_certificate_prompts_user(self):
         account = object()

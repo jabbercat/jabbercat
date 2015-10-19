@@ -3,7 +3,7 @@ import bisect
 import contextlib
 import functools
 
-from . import Qt
+from . import Qt, model_adaptor
 
 
 def asyncified_done(task):
@@ -190,3 +190,26 @@ class JoinedListsModel(Qt.QAbstractListModel):
     def flags(self, index):
         model, offset = self._map_to_model(index)
         return model.flags(model.index(index.row()-offset))
+
+
+class DictItemModel(Qt.QAbstractListModel):
+    def __init__(self, items, parent=None):
+        super().__init__(parent=parent)
+        self._items = items
+        self._adaptor = model_adaptor.ModelListAdaptor(
+            items,
+            self
+        )
+
+    def rowCount(self, index=Qt.QModelIndex()):
+        if index.isValid():
+            return 0
+        return len(self._items)
+
+    def data(self, index, role=Qt.Qt.DisplayRole):
+        return self._items[index.row()].get(role)
+
+    def flags(self, index):
+        return self._items[index.row()].get(
+            "flags",
+            Qt.Qt.ItemIsSelectable | Qt.Qt.ItemIsEnabled)

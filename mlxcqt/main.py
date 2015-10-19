@@ -3,7 +3,9 @@ import asyncio
 import aioxmpp.structs
 
 import mlxc.client
+import mlxc.config
 import mlxc.main
+import mlxc.instrumentable_list
 
 import mlxcqt.model_adaptor as model_adaptor
 
@@ -139,10 +141,10 @@ class DlgAccountManager(Qt.QDialog, Ui_dlg_account_manager):
 
 
 class RosterWindow(Qt.QMainWindow, Ui_roster_window):
-    def __init__(self, mlxc):
+    def __init__(self, main):
         super().__init__()
 
-        self.mlxc = mlxc
+        self.mlxc = main
         self.account_manager = DlgAccountManager(self)
 
         self.setupUi(self)
@@ -154,6 +156,60 @@ class RosterWindow(Qt.QMainWindow, Ui_roster_window):
 
         self.online_selector.stateChanged.connect(
             self._on_online_state_changed)
+        full_model = utils.JoinedListsModel(
+            utils.DictItemModel(mlxc.instrumentable_list.ModelList([
+                {
+                    "flags": Qt.Qt.ItemIsEnabled,
+                    Qt.Qt.DisplayRole: "Set all accounts to",
+                    Qt.Qt.AccessibleDescriptionRole: "separator",
+                },
+                {
+                    Qt.Qt.DisplayRole: "Free for chat",
+                    Qt.Qt.UserRole: aioxmpp.structs.PresenceState(
+                        available=True,
+                        show="chat"),
+                },
+                {
+                    Qt.Qt.DisplayRole: "Available",
+                    Qt.Qt.UserRole: aioxmpp.structs.PresenceState(
+                        available=True,
+                        show=None),
+                },
+                {
+                    Qt.Qt.DisplayRole: "Away",
+                    Qt.Qt.UserRole: aioxmpp.structs.PresenceState(
+                        available=True,
+                        show="away"),
+                },
+                {
+                    Qt.Qt.DisplayRole: "Not available",
+                    Qt.Qt.UserRole: aioxmpp.structs.PresenceState(
+                        available=True,
+                        show="xa"),
+                },
+                {
+                    Qt.Qt.DisplayRole: "Do not disturb",
+                    Qt.Qt.UserRole: aioxmpp.structs.PresenceState(
+                        available=True,
+                        show="dnd"),
+                },
+                {
+                    Qt.Qt.DisplayRole: "Offline",
+                    Qt.Qt.UserRole: aioxmpp.structs.PresenceState(),
+                },
+                {
+                    "flags": Qt.Qt.ItemIsEnabled,
+                    Qt.Qt.DisplayRole: "Custom configuration",
+                    Qt.Qt.AccessibleDescriptionRole: "separator",
+                }
+
+            ])),
+            self.mlxc.client.presence_states_qmodel
+        )
+        self.presence_state_selector.setModel(
+            full_model
+        )
+        self.presence_state_selector.setCurrentIndex(2)
 
     def _on_quit(self):
         self.mlxc.main.quit()
@@ -182,7 +238,7 @@ class MLXCQt:
     def __init__(self, main, event_loop):
         self.main = main
         self.loop = event_loop
-        self.client = client.Client()
+        self.client = client.Client(mlxc.config.make_config_manager())
         self.roster = RosterWindow(self)
 
     @asyncio.coroutine

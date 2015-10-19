@@ -1,5 +1,7 @@
 import asyncio
 
+import aioxmpp.structs
+
 import mlxc.client
 
 from . import Qt, model_adaptor, check_certificate, password_prompt
@@ -36,12 +38,12 @@ class AccountsModel(Qt.QAbstractListModel):
         index = self.index(row, column=0, parent=Qt.QModelIndex())
         self.dataChanged.emit(index, index)
 
-    def rowCount(self, index):
+    def rowCount(self, index=Qt.QModelIndex()):
         if index.isValid():
             return 0
         return len(self._accounts)
 
-    def data(self, index, role):
+    def data(self, index, role=Qt.Qt.DisplayRole):
         if not index.isValid():
             return None
 
@@ -95,6 +97,38 @@ class AccountsModel(Qt.QAbstractListModel):
         return flags
 
 
+class CustomPresenceStateModel(Qt.QAbstractListModel):
+    def __init__(self, presence_states, parent=None):
+        super().__init__(parent=parent)
+        self._presence_states = presence_states
+        self._adaptor = model_adaptor.ModelListAdaptor(
+            presence_states,
+            self)
+
+    def rowCount(self, index=Qt.QModelIndex()):
+        if index.isValid():
+            return 0
+        return len(self._presence_states)
+
+    def data(self, index, role=Qt.Qt.DisplayRole):
+        if not index.isValid():
+            return None
+
+        row = index.row()
+
+        state = self._presence_states[row]
+
+        if role == Qt.Qt.DisplayRole:
+            return state.name
+        elif role == Qt.Qt.UserRole:
+            return state
+
+        return None
+
+    def get_presence_state(self, index):
+        return self._presence_states[index]
+
+
 class AccountManager(mlxc.client.AccountManager):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -115,6 +149,11 @@ class AccountManager(mlxc.client.AccountManager):
 
 class Client(mlxc.client.Client):
     AccountManager = AccountManager
+
+    def __init__(self, config_manager):
+        super().__init__(config_manager)
+        self.presence_states_qmodel = CustomPresenceStateModel(
+            self.presence_states)
 
     @asyncio.coroutine
     def _decide_on_certificate(self, account, verifier):
