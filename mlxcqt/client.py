@@ -97,7 +97,7 @@ class AccountsModel(Qt.QAbstractListModel):
         return flags
 
 
-class CustomPresenceStateModel(Qt.QAbstractListModel):
+class CustomPresenceStateModel(Qt.QAbstractTableModel):
     def __init__(self, presence_states, parent=None):
         super().__init__(parent=parent)
         self._presence_states = presence_states
@@ -110,20 +110,48 @@ class CustomPresenceStateModel(Qt.QAbstractListModel):
             return 0
         return len(self._presence_states)
 
+    def columnCount(self, index=Qt.QModelIndex()):
+        return 2
+
     def data(self, index, role=Qt.Qt.DisplayRole):
         if not index.isValid():
             return None
 
         row = index.row()
+        column = index.column()
 
         state = self._presence_states[row]
 
-        if role == Qt.Qt.DisplayRole:
-            return state.name
-        elif role == Qt.Qt.UserRole:
-            return state
+        if column == 0:
+            if role == Qt.Qt.DisplayRole:
+                return state.name
+            elif role == Qt.Qt.UserRole:
+                return state
+        elif column == 1:
+            if role == Qt.Qt.DisplayRole:
+                try:
+                    return state.get_status_for_locale(
+                        aioxmpp.structs.LanguageRange.fromstr(
+                            Qt.QLocale.system().bcp47Name()
+                        ),
+                        try_none=True
+                    ).text
+                except KeyError:
+                    pass
 
         return None
+
+    def headerData(self, index, orientation, role):
+        if role != Qt.Qt.DisplayRole or orientation != Qt.Qt.Horizontal:
+            return super().headerData(index, orientation, role)
+
+        try:
+            return [
+                "Name",
+                "Default status message"
+            ][index]
+        except IndexError:
+            return super().headerData(index, orientation, role)
 
     def get_presence_state(self, index):
         return self._presence_states[index]

@@ -14,6 +14,8 @@ from .ui.dlg_account_manager import Ui_dlg_account_manager
 from .ui.dlg_account_editor import Ui_dlg_account_editor
 from .ui.roster import Ui_roster_window
 
+from .custom_presence_states import DlgCustomPresenceStates
+
 
 class DlgAccountEditor(Qt.QDialog, Ui_dlg_account_editor):
     def __init__(self, dlg_account_manager, account):
@@ -146,6 +148,7 @@ class RosterWindow(Qt.QMainWindow, Ui_roster_window):
 
         self.mlxc = main
         self.account_manager = DlgAccountManager(self)
+        self.custom_presence_states = DlgCustomPresenceStates(self)
 
         self.setupUi(self)
 
@@ -153,6 +156,8 @@ class RosterWindow(Qt.QMainWindow, Ui_roster_window):
             self._on_quit)
         self.action_account_manager.triggered.connect(
             self._on_account_manager)
+        self.action_edit_custom_presence_states.triggered.connect(
+            self._on_custom_presence_states)
 
         self.presence_states_qmodel = utils.JoinedListsModel(
             utils.DictItemModel(mlxc.instrumentable_list.ModelList([
@@ -216,6 +221,9 @@ class RosterWindow(Qt.QMainWindow, Ui_roster_window):
 
     def _on_account_manager(self):
         self.account_manager.show()
+
+    def _on_custom_presence_states(self):
+        self.custom_presence_states.show()
 
     def _on_presence_state_changed(self, index):
         state = self.presence_states_qmodel.data(

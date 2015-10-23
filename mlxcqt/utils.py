@@ -177,7 +177,6 @@ class JoinedListsModel(Qt.QAbstractListModel):
         model_offset = self._mapping[modeli]
         return model, model_offset
 
-
     def rowCount(self, index=Qt.QModelIndex()):
         if not index.isValid():
             return self._row_count
@@ -185,11 +184,17 @@ class JoinedListsModel(Qt.QAbstractListModel):
 
     def data(self, index, role=Qt.Qt.DisplayRole):
         model, offset = self._map_to_model(index)
-        return model.data(model.index(index.row()-offset), role)
+        return model.data(
+            model.index(
+                index.row()-offset,
+                index.column()),
+            role)
 
     def flags(self, index):
         model, offset = self._map_to_model(index)
-        return model.flags(model.index(index.row()-offset))
+        return model.flags(
+            model.index(index.row()-offset, index.column())
+        )
 
 
 class DictItemModel(Qt.QAbstractListModel):

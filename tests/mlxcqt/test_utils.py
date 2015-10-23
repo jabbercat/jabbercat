@@ -144,6 +144,7 @@ class TestJoinedListsModel(unittest.TestCase):
             self.assertTrue(index.isValid())
             self.assertEqual(index.row(), i)
             result = self.model.data(index, role)
+            model.index.assert_called_with(model_index, 0)
             model.data.assert_called_with(
                 model.index(model_index),
                 role
@@ -156,6 +157,7 @@ class TestJoinedListsModel(unittest.TestCase):
             self.assertTrue(index.isValid())
             self.assertEqual(index.row(), i)
             result = self.model.flags(index)
+            model.index.assert_called_with(model_index, 0)
             model.flags.assert_called_with(
                 model.index(model_index)
             )

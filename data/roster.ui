@@ -125,6 +125,7 @@
      <string>Acco&amp;unts</string>
     </property>
     <addaction name="action_account_manager"/>
+    <addaction name="action_edit_custom_presence_states"/>
     <addaction name="separator"/>
    </widget>
    <addaction name="menuRoster"/>
@@ -193,6 +194,11 @@
   <action name="action_account_manager">
    <property name="text">
     <string>&amp;Manage accounts…</string>
+   </property>
+  </action>
+  <action name="action_edit_custom_presence_states">
+   <property name="text">
+    <string>Edit &amp;custom presence states…</string>
    </property>
   </action>
  </widget>

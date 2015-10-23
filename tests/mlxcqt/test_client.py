@@ -314,11 +314,23 @@ class TestCustomPresenceStateModel(unittest.TestCase):
 
     def test_rowCount_returns_zero_for_valid_model_index(self):
         self.presence_states.__len__.return_value = 1
-        index = self.model.index(0, parent=Qt.QModelIndex())
+        index = self.model.index(0, 0, parent=Qt.QModelIndex())
         self.assertTrue(index.isValid())
         self.assertEqual(
             self.model.rowCount(index),
             0
+        )
+
+    def test_columnCount_returns_two(self):
+        self.assertEqual(
+            self.model.columnCount(),
+            2
+        )
+
+    def test_columnCount_returns_two_for_valid_indices(self):
+        self.assertEqual(
+            self.model.columnCount(self.model.index(0, 0)),
+            2
         )
 
     def test_data_returns_None_for_invalid_model_index(self):
@@ -328,14 +340,14 @@ class TestCustomPresenceStateModel(unittest.TestCase):
 
     def test_data_returns_None_for_non_display_roles(self):
         self.presence_states.__len__.return_value = 1
-        index = self.model.index(0, parent=Qt.QModelIndex())
+        index = self.model.index(0, 0, parent=Qt.QModelIndex())
         self.assertIsNone(
             self.model.data(index, Qt.Qt.ToolTipRole)
         )
 
-    def test_data_returns_name_for_display_role(self):
+    def test_data_returns_name_for_display_role_in_first_column(self):
         self.presence_states.__len__.return_value = 1
-        index = self.model.index(0, parent=Qt.QModelIndex())
+        index = self.model.index(0, 0, parent=Qt.QModelIndex())
         self.assertEqual(
             self.model.data(index, Qt.Qt.DisplayRole),
             self.presence_states[0].name
@@ -343,19 +355,54 @@ class TestCustomPresenceStateModel(unittest.TestCase):
 
     def test_data_returns_name_for_default_role(self):
         self.presence_states.__len__.return_value = 1
-        index = self.model.index(0, parent=Qt.QModelIndex())
+        index = self.model.index(0, 0, parent=Qt.QModelIndex())
         self.assertEqual(
             self.model.data(index),
             self.presence_states[0].name
         )
 
+    def test_data_returns_status_message_for_display_role_in_second_column(self):
+        self.presence_states.__len__.return_value = 1
+        index = self.model.index(0, 1, parent=Qt.QModelIndex())
+        result = self.model.data(index, Qt.Qt.DisplayRole)
+        self.presence_states[0].get_status_for_locale.assert_called_with(
+            aioxmpp.structs.LanguageRange.fromstr(
+                Qt.QLocale.system().bcp47Name()
+            ),
+            try_none=True
+        )
+        self.assertEqual(
+            result,
+            self.presence_states[0].get_status_for_locale().text
+        )
+
+    def test_data_deals_with_key_error_when_obtaining_status_message(self):
+        self.presence_states.__len__.return_value = 1
+        index = self.model.index(0, 1, parent=Qt.QModelIndex())
+        self.presence_states[0].get_status_for_locale.side_effect = KeyError()
+        result = self.model.data(index, Qt.Qt.DisplayRole)
+        self.assertEqual(
+            result,
+            None
+        )
+
     def test_data_returns_item_for_user_role(self):
         self.presence_states.__len__.return_value = 1
-        index = self.model.index(0, parent=Qt.QModelIndex())
+        index = self.model.index(0, 0, parent=Qt.QModelIndex())
         self.assertEqual(
             self.model.data(index, Qt.Qt.UserRole),
             self.presence_states[0]
         )
+
+    def test_headerData_returns_sensible_headers(self):
+        for i, s in enumerate([
+                "Name",
+                "Default status message",
+                ]):
+            self.assertEqual(
+                self.model.headerData(i, Qt.Qt.Horizontal, Qt.Qt.DisplayRole),
+                s
+            )
 
 
 class TestAccountManager(unittest.TestCase):
