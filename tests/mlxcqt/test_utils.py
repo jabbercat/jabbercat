@@ -368,3 +368,62 @@ class TestDictItemModel(unittest.TestCase):
                     {})),
             ]
         )
+
+
+class TestJIDValidator(unittest.TestCase):
+    def setUp(self):
+        self.validator = utils.JIDValidator()
+
+    def test_return_intermediate_for_partial_jid(self):
+        pos = object()
+        self.assertEqual(
+            (Qt.QValidator.Intermediate, "foo@", pos),
+            self.validator.validate("foo@", pos)
+        )
+        self.assertEqual(
+            (Qt.QValidator.Intermediate, "@bar", pos),
+            self.validator.validate("@bar", pos)
+        )
+        self.assertEqual(
+            (Qt.QValidator.Intermediate, "foo/", pos),
+            self.validator.validate("foo/", pos)
+        )
+        self.assertEqual(
+            (Qt.QValidator.Intermediate, "/foo", pos),
+            self.validator.validate("/foo", pos)
+        )
+
+    def test_accept_complete_jid(self):
+        pos = object()
+        self.assertEqual(
+            (Qt.QValidator.Acceptable, "foo@bar.baz/fnord", pos),
+            self.validator.validate("foo@bar.baz/fnord", pos)
+        )
+        pos = object()
+        self.assertEqual(
+            (Qt.QValidator.Acceptable, "foo@bar.baz", pos),
+            self.validator.validate("foo@bar.baz", pos)
+        )
+        pos = object()
+        self.assertEqual(
+            (Qt.QValidator.Acceptable, "bar.baz/fnord", pos),
+            self.validator.validate("bar.baz/fnord", pos)
+        )
+        pos = object()
+        self.assertEqual(
+            (Qt.QValidator.Acceptable, "bar.baz", pos),
+            self.validator.validate("bar.baz", pos)
+        )
+        pos = object()
+        self.assertEqual(
+            (Qt.QValidator.Acceptable, "a@foo/bar/", pos),
+            self.validator.validate("a@foo/bar/", pos)
+        )
+
+    def test_reject_too_long_jids(self):
+        pos = object()
+        self.assertEqual(
+            (Qt.QValidator.Invalid, "fooo"*1024, pos),
+            self.validator.validate("fooo"*1024, pos)
+        )
+

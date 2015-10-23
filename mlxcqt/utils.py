@@ -3,6 +3,8 @@ import bisect
 import contextlib
 import functools
 
+import aioxmpp.structs
+
 from . import Qt, model_adaptor
 
 
@@ -218,3 +220,19 @@ class DictItemModel(Qt.QAbstractListModel):
         return self._items[index.row()].get(
             "flags",
             Qt.Qt.ItemIsSelectable | Qt.Qt.ItemIsEnabled)
+
+
+class JIDValidator(Qt.QValidator):
+    def validate(self, text, pos):
+        try:
+            jid = aioxmpp.structs.JID.fromstr(text)
+            return (Qt.QValidator.Acceptable, text, pos)
+        except ValueError:
+            # explicitly allow partial jids, i.e. those with empty localpart or
+            # resource
+            if     (text.endswith("@") or
+                    text.startswith("@") or
+                    text.endswith("/") or
+                    text.startswith("/")):
+                return (Qt.QValidator.Intermediate, text, pos)
+            return (Qt.QValidator.Invalid, text, pos)
