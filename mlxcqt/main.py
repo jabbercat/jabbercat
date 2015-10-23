@@ -15,6 +15,7 @@ from .ui.dlg_account_editor import Ui_dlg_account_editor
 from .ui.roster import Ui_roster_window
 
 from .custom_presence_states import DlgCustomPresenceStates
+from .input_jid import DlgInputJID
 
 
 class DlgAccountEditor(Qt.QDialog, Ui_dlg_account_editor):
@@ -104,20 +105,38 @@ class DlgAccountManager(Qt.QDialog, Ui_dlg_account_manager):
         self.setupUi(self)
         self.setModal(False)
 
-        model_wrapper = Qt.QSortFilterProxyModel(self)
-        model_wrapper.setSourceModel(self.accounts.qmodel)
-        model_wrapper.setSortLocaleAware(True)
-        model_wrapper.setSortCaseSensitivity(False)
-        model_wrapper.setSortRole(Qt.Qt.DisplayRole)
-        model_wrapper.setDynamicSortFilter(True)
+        btn = self.button_box.button(Qt.QDialogButtonBox.Close)
+        btn.setAutoDefault(False)
+        btn.setDefault(False)
 
-        self.account_list.setModel(model_wrapper)
+        self.model_wrapper = Qt.QSortFilterProxyModel()
+        self.model_wrapper.setSourceModel(self.accounts.qmodel)
+        self.model_wrapper.setSortLocaleAware(True)
+        self.model_wrapper.setSortCaseSensitivity(False)
+        self.model_wrapper.setSortRole(Qt.Qt.DisplayRole)
+        self.model_wrapper.setDynamicSortFilter(True)
+
+        self.account_list.setModel(self.model_wrapper)
         self.account_list.setSelectionBehavior(Qt.QTableView.SelectRows);
         self.account_list.setSelectionMode(Qt.QTableView.SingleSelection);
         self.account_list.setSortingEnabled(True)
         self.account_list.sortByColumn(0, Qt.Qt.AscendingOrder)
 
         self.account_list.activated.connect(self._account_list_activated)
+
+        self.acc_add_existing.setDefaultAction(
+            self.action_add_existing_account
+        )
+        self.acc_delete.setDefaultAction(
+            self.action_delete_selected_account
+        )
+
+        self.action_add_existing_account.triggered.connect(
+            self._on_add_existing_account
+        )
+        self.action_delete_selected_account.triggered.connect(
+            self._on_delete_selected_account
+        )
 
         self._modified = False
 
@@ -127,19 +146,47 @@ class DlgAccountManager(Qt.QDialog, Ui_dlg_account_manager):
         if not index.isValid():
             return
 
-        account = self.mlxc.client.accounts[index.row()]
+        index = self.model_wrapper.mapToSource(index)
+        account = self.accounts[index.row()]
 
         dlg = DlgAccountEditor(self, account)
         yield from utils.exec_async(dlg)
 
+    @utils.asyncify
     @asyncio.coroutine
-    def _change_account_to(self, account):
-        if self._current_account is account:
+    def _on_add_existing_account(self, checked):
+        jid = yield from DlgInputJID(
+            self.tr("Add registered account"),
+            self.tr("Input the bare Jabber ID of the account you have"),
+            self).run()
+        if jid is None:
             return
 
-        self.tabs.setCurrentIndex(0)
-        self._current_account = account
-        yield from self._reset_current()
+        account = self.accounts.new_account(jid)
+
+    @utils.asyncify
+    @asyncio.coroutine
+    def _on_delete_selected_account(self, checked):
+        index = self.account_list.selectionModel().currentIndex()
+        if not index.isValid():
+            return
+        index = self.model_wrapper.mapToSource(index)
+
+        account = self.accounts[index.row()]
+
+        msgbox = Qt.QMessageBox(
+            Qt.QMessageBox.Warning,
+            self.tr("Delete account"),
+            self.tr("""\
+Are you sure you want to delete the account {jid}?
+
+This will delete all local information related to the account, but leave the account on the server untouched.""".format(jid=account.jid)),
+            Qt.QMessageBox.Yes | Qt.QMessageBox.No,
+            self)
+        msgbox.setWindowModality(Qt.Qt.WindowModal)
+        result = yield from utils.exec_async(msgbox)
+        if result == Qt.QMessageBox.Yes:
+            self.accounts.remove_account(account)
 
 
 class RosterWindow(Qt.QMainWindow, Ui_roster_window):
