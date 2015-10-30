@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>217</width>
-    <height>536</height>
+    <height>539</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -28,9 +28,6 @@
       </property>
       <property name="alternatingRowColors">
        <bool>true</bool>
-      </property>
-      <property name="selectionBehavior">
-       <enum>QAbstractItemView::SelectItems</enum>
       </property>
       <property name="uniformRowHeights">
        <bool>true</bool>

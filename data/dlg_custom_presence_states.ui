@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>569</width>
-    <height>427</height>
+    <width>603</width>
+    <height>388</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -16,11 +16,17 @@
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
     <widget class="QTableView" name="state_list">
+     <property name="editTriggers">
+      <set>QAbstractItemView::NoEditTriggers</set>
+     </property>
      <property name="selectionMode">
       <enum>QAbstractItemView::SingleSelection</enum>
      </property>
      <property name="selectionBehavior">
       <enum>QAbstractItemView::SelectRows</enum>
+     </property>
+     <property name="showGrid">
+      <bool>false</bool>
      </property>
      <property name="sortingEnabled">
       <bool>true</bool>
@@ -42,25 +48,16 @@
    <item>
     <layout class="QHBoxLayout" name="horizontalLayout">
      <item>
-      <widget class="QToolButton" name="toolButton">
-       <property name="toolTip">
-        <string>Add new custom presence state</string>
-       </property>
+      <widget class="QToolButton" name="cps_add">
        <property name="text">
-        <string>Add new</string>
+        <string>...</string>
        </property>
       </widget>
      </item>
      <item>
-      <widget class="QToolButton" name="toolButton_2">
-       <property name="toolTip">
-        <string>Delete selected custom presence state</string>
-       </property>
+      <widget class="QToolButton" name="cps_delete_selected">
        <property name="text">
-        <string>Delete</string>
-       </property>
-       <property name="shortcut">
-        <string>Del</string>
+        <string>...</string>
        </property>
       </widget>
      </item>
@@ -85,11 +82,30 @@
       <enum>Qt::Horizontal</enum>
      </property>
      <property name="standardButtons">
-      <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
+      <set>QDialogButtonBox::Close</set>
      </property>
     </widget>
    </item>
   </layout>
+  <action name="action_add_new">
+   <property name="text">
+    <string>Add new</string>
+   </property>
+   <property name="toolTip">
+    <string>Add new presence state</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+N</string>
+   </property>
+  </action>
+  <action name="action_delete_selected">
+   <property name="text">
+    <string>Delete</string>
+   </property>
+   <property name="shortcut">
+    <string>Del</string>
+   </property>
+  </action>
  </widget>
  <resources/>
  <connections>
@@ -100,8 +116,8 @@
    <slot>accept()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>248</x>
-     <y>254</y>
+     <x>257</x>
+     <y>417</y>
     </hint>
     <hint type="destinationlabel">
      <x>157</x>
@@ -116,8 +132,8 @@
    <slot>reject()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>316</x>
-     <y>260</y>
+     <x>325</x>
+     <y>417</y>
     </hint>
     <hint type="destinationlabel">
      <x>286</x>

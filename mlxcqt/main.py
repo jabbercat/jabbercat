@@ -8,6 +8,7 @@ import mlxc.main
 import mlxc.instrumentable_list
 
 import mlxcqt.model_adaptor as model_adaptor
+import mlxcqt.roster
 
 from . import Qt, utils, client
 from .ui.dlg_account_manager import Ui_dlg_account_manager
@@ -262,6 +263,13 @@ class RosterWindow(Qt.QMainWindow, Ui_roster_window):
         self.presence_state_selector.setCurrentIndex(6)
         self.presence_state_selector.activated.connect(
             self._on_presence_state_changed)
+
+        self.mlxc.client.summon(mlxc.roster.Plugin)
+
+        roster_model = mlxcqt.roster.RosterTreeModel(
+            self.mlxc.client.roster,
+            parent=self)
+        self.roster_view.setModel(roster_model)
 
     def _on_quit(self):
         self.mlxc.main.quit()

@@ -34,18 +34,21 @@
      <property name="editTriggers">
       <set>QAbstractItemView::NoEditTriggers</set>
      </property>
+     <property name="selectionMode">
+      <enum>QAbstractItemView::SingleSelection</enum>
+     </property>
+     <property name="selectionBehavior">
+      <enum>QAbstractItemView::SelectRows</enum>
+     </property>
      <property name="showGrid">
       <bool>false</bool>
      </property>
      <property name="sortingEnabled">
       <bool>true</bool>
      </property>
-     <property name="wordWrap">
+     <property name="cornerButtonEnabled">
       <bool>false</bool>
      </property>
-     <attribute name="horizontalHeaderVisible">
-      <bool>true</bool>
-     </attribute>
      <attribute name="horizontalHeaderHighlightSections">
       <bool>false</bool>
      </attribute>

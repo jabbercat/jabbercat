@@ -20,10 +20,9 @@ class DlgCheckCertificate(Qt.QDialog, Ui_dlg_check_certificate):
             Qt.translate(
                 "dlg_check_certificate",
                 "While connecting the account {account_jid}, the certificate of"
-                " the server {peer_hostname} could not be verified. Below is the"
-                " information MLXC is sure about:").format(
+                " the server could not be verified. Below is the information"
+                " MLXC is sure about:").format(
                     account_jid=account.jid,
-                    peer_hostname="foobar"
                 )
         )
 

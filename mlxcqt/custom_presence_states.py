@@ -15,12 +15,26 @@ class DlgCustomPresenceStates(Qt.QDialog, Ui_dlg_custom_presence_states):
         self.setupUi(self)
         self.setModal(False)
 
-        model_wrapper = Qt.QSortFilterProxyModel(self)
-        model_wrapper.setSourceModel(self.presence_states_qmodel)
-        model_wrapper.setSortLocaleAware(True)
-        model_wrapper.setSortCaseSensitivity(False)
-        model_wrapper.setSortRole(Qt.Qt.DisplayRole)
-        model_wrapper.setDynamicSortFilter(True)
+        self.model_wrapper = Qt.QSortFilterProxyModel(self)
+        self.model_wrapper.setSourceModel(self.presence_states_qmodel)
+        self.model_wrapper.setSortLocaleAware(True)
+        self.model_wrapper.setSortCaseSensitivity(False)
+        self.model_wrapper.setSortRole(Qt.Qt.DisplayRole)
+        self.model_wrapper.setDynamicSortFilter(True)
 
-        self.state_list.setModel(model_wrapper)
+        self.state_list.setModel(self.model_wrapper)
         self.state_list.sortByColumn(0, Qt.Qt.AscendingOrder)
+
+        self.cps_add.setDefaultAction(self.action_add_new)
+        self.cps_delete_selected.setDefaultAction(
+            self.action_delete_selected
+        )
+
+        self.action_add_new.triggered.connect(
+            self._on_add_new
+        )
+
+    @utils.asyncify
+    @asyncio.coroutine
+    def _on_add_new(self, checked):
+        pass
