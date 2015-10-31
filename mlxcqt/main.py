@@ -1,4 +1,5 @@
 import asyncio
+import functools
 
 import aioxmpp.structs
 
@@ -6,6 +7,7 @@ import mlxc.client
 import mlxc.config
 import mlxc.main
 import mlxc.instrumentable_list
+import mlxc.utils
 
 import mlxcqt.model_adaptor as model_adaptor
 import mlxcqt.roster
@@ -207,6 +209,21 @@ class RosterWindow(Qt.QMainWindow, Ui_roster_window):
         self.action_edit_custom_presence_states.triggered.connect(
             self._on_custom_presence_states)
 
+        self.action_open_command_prompt.triggered.connect(
+            self.mlxc.open_command_prompt
+        )
+        print(self.action_open_command_prompt)
+        self.action_open_command_prompt.setParent(self)
+        self.action_open_command_prompt.setShortcuts([
+            Qt.QKeySequence("Alt+x"),
+            Qt.QKeySequence(":"),
+        ])
+        self.addAction(self.action_open_command_prompt)
+        print(self.actions())
+        print(self.action_open_command_prompt.isEnabled())
+        print(self.action_open_command_prompt.shortcuts())
+        print(self.action_open_command_prompt.associatedWidgets())
+
         self.presence_states_qmodel = utils.JoinedListsModel(
             utils.DictItemModel(mlxc.instrumentable_list.ModelList([
                 {
@@ -297,12 +314,144 @@ class RosterWindow(Qt.QMainWindow, Ui_roster_window):
         return result
 
 
+class CommandPromptPopup(Qt.QTreeWidget):
+    def __init__(self):
+        super().__init__()
+        self.setRootIsDecorated(False)
+        self.setWindowFlags(Qt.Qt.ToolTip)
+
+        self.setMinimumSize(Qt.QSize(400, 100))
+        self.setMaximumSize(Qt.QSize(730, 350))
+
+        self.header().setVisible(False)
+
+
+class CommandPrompt(Qt.QLineEdit):
+    def __init__(self):
+        super().__init__()
+        abort_shortcut = Qt.QShortcut(Qt.QKeySequence("Escape"), self)
+        abort_shortcut.activated.connect(
+            self._abort
+        )
+        abort_shortcut.setContext(Qt.Qt.ApplicationShortcut)
+
+        self._popup = CommandPromptPopup()
+        self._popup.installEventFilter(self)
+        self.installEventFilter(self)
+
+    def _wait_for_confirm(self):
+        def triggered(*args):
+            nonlocal fut, triggered
+            fut.set_result(None)
+
+        def disconnect(fut):
+            nonlocal triggered
+            self.returnPressed.disconnect(triggered)
+
+        fut = asyncio.Future()
+        fut.add_done_callback(disconnect)
+        self.returnPressed.connect(triggered)
+        return fut
+
+    def _close(self):
+        self.setParent(None)
+        self._popup.hide()
+
+    def eventFilter(self, obj, ev):
+        if ev.type() == Qt.QEvent.FocusOut:
+            print(ev)
+            if not self.hasFocus() and not self._popup.hasFocus():
+                self._abort()
+        return super().eventFilter(obj, ev)
+
+    def focusEvent(self, ev):
+        if ev.type() == Qt.QEvent.FocusIn:
+            self._popup.show()
+        return super().focusEvent(ev)
+
+    def _show_popup(self):
+        rect = self.geometry()
+        below = self.mapToGlobal(Qt.QPoint(0, self.height()))
+        above = self.mapToGlobal(Qt.QPoint(0, 0))
+
+        screen_space = Qt.QApplication.desktop().availableGeometry(
+            Qt.QApplication.desktop().screenNumber(self)
+        )
+        space_below = screen_space.height() - below.y()
+        space_above = above.y() - screen_space.y()
+
+        min_size = self._popup.minimumSize()
+        max_size = self._popup.maximumSize()
+
+        # try to place it below the input first
+
+        if min_size.height() < space_below:
+            final_rect = Qt.QRect(
+                below.x(), below.y(),
+                min_size.width(), min(space_below, max_size.height())
+            )
+        elif min_size.height() < space_above:
+            height = min(space_above, max_size.height())
+            final_rect = Qt.QRect(
+                above.x(), above.y() - height,
+                min_size.width(), height,
+            )
+        else:
+            final_rect = Qt.QRect(
+                above.x(), 0,
+                min_size.width(), screen_space.height()
+            )
+
+        width = min(screen_space.width(), max_size.width())
+        final_rect.setWidth(width)
+        if final_rect.right() >= screen_space.right():
+            final_rect.setRight(screen_space.right())
+            final_rect.setLeft(final_rect.right() - width)
+
+        self._popup.setGeometry(final_rect)
+        self._popup.show()
+
+    @asyncio.coroutine
+    def _prompt(self):
+        self.setText("")
+        self._show_popup()
+        yield from self._wait_for_confirm()
+        self._close()
+
+    def open_at_window(self, window):
+        if self.parent() is not None:
+            raise RuntimeError("Command prompt is already open")
+
+        if isinstance(window, Qt.QMainWindow):
+            parent = window.centralWidget()
+        else:
+            parent = window
+
+        parent.layout().addWidget(self)
+        self.setFocus()
+        self._task = mlxc.utils.logged_async(
+            self._prompt(),
+            name="command prompt"
+        )
+
+    def _abort(self):
+        self._task.cancel()
+        self._close()
+
+
 class MLXCQt:
     def __init__(self, main, event_loop):
         self.main = main
         self.loop = event_loop
         self.client = client.Client(mlxc.config.make_config_manager())
         self.roster = RosterWindow(self)
+        self._command_prompt = CommandPrompt()
+
+    def open_command_prompt(self):
+        if self._command_prompt.parent() is not None:
+            return
+        active_window = Qt.QApplication.activeWindow()
+        self._command_prompt.open_at_window(active_window)
 
     @asyncio.coroutine
     def run(self, main_future):

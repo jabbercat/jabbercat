@@ -427,3 +427,90 @@ class TestJIDValidator(unittest.TestCase):
             self.validator.validate("fooo"*1024, pos)
         )
 
+
+class TestDragNDropUtils(unittest.TestCase):
+    def test_start_drag_returns_key(self):
+        o = object()
+        with unittest.mock.patch("mlxcqt.utils._dragndrop_rng") as rng:
+            key = utils.start_drag(o)
+
+        rng.getrandbits.assert_called_with(64)
+        rng.getrandbits().to_bytes.assert_called_with(8, 'little')
+        self.assertEqual(
+            key,
+            rng.getrandbits().to_bytes()
+        )
+
+    def test_pop_drag_returns_data_stored_with_start_drag_if_key_matches(self):
+        o = object()
+        with unittest.mock.patch("mlxcqt.utils._dragndrop_rng") as rng:
+            key = utils.start_drag(o)
+            data = utils.pop_drag(key)
+
+        self.assertIs(o, data)
+
+    def test_pop_drag_returns_None_if_key_mismatches(self):
+        o = object()
+        with unittest.mock.patch("mlxcqt.utils._dragndrop_rng") as rng:
+            key = utils.start_drag(o)
+            data = utils.pop_drag(object())
+
+        self.assertIsNone(data)
+
+    def test_pop_drag_returns_None_on_second_call_if_first_had_incorrect_key(self):
+        o = object()
+        with unittest.mock.patch("mlxcqt.utils._dragndrop_rng") as rng:
+            key = utils.start_drag(o)
+            data1 = utils.pop_drag(object())
+            data2 = utils.pop_drag(key)
+
+        self.assertIsNone(data1)
+        self.assertIsNone(data2)
+
+    def test_pop_drag_returns_None_on_second_call_if_first_had_correct_key(self):
+        o = object()
+        with unittest.mock.patch("mlxcqt.utils._dragndrop_rng") as rng:
+            key = utils.start_drag(o)
+            data1 = utils.pop_drag(key)
+            data2 = utils.pop_drag(key)
+
+        self.assertIs(data1, o)
+        self.assertIsNone(data2)
+
+    def test_pop_drag_returns_None_if_not_initialised(self):
+        self.assertIsNone(utils.pop_drag(object()))
+
+    def test_get_drag_returns_data_stored_with_start_drag_if_key_matches(self):
+        o = object()
+        with unittest.mock.patch("mlxcqt.utils._dragndrop_rng") as rng:
+            key = utils.start_drag(o)
+            data = utils.get_drag(key)
+
+        self.assertIs(o, data)
+
+    def test_get_drag_returns_None_if_key_mismatches(self):
+        o = object()
+        with unittest.mock.patch("mlxcqt.utils._dragndrop_rng") as rng:
+            key = utils.start_drag(o)
+            data = utils.get_drag(object())
+
+        self.assertIsNone(data)
+
+    def test_get_drag_the_same_data_on_each_call(self):
+        o = object()
+        with unittest.mock.patch("mlxcqt.utils._dragndrop_rng") as rng:
+            key = utils.start_drag(o)
+            data1 = utils.get_drag(key)
+            data2 = utils.get_drag(key)
+
+        self.assertIs(data1, o)
+        self.assertIs(data2, o)
+
+    def test_get_drag_returns_None_if_not_initialised(self):
+        self.assertIsNone(utils.get_drag(object()))
+
+    def test_drag_mime_type(self):
+        self.assertEqual(
+            utils.DRAG_MIME_TYPE,
+            "application/vnd.net.zombofant.mlxc.drag-key"
+        )

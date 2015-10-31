@@ -2,6 +2,7 @@ import asyncio
 import bisect
 import contextlib
 import functools
+import random
 
 import aioxmpp.structs
 
@@ -236,3 +237,35 @@ class JIDValidator(Qt.QValidator):
                     text.startswith("/")):
                 return (Qt.QValidator.Intermediate, text, pos)
             return (Qt.QValidator.Invalid, text, pos)
+
+
+_dragndrop_rng = random.SystemRandom()
+_dragndrop_state = None, None
+
+DRAG_MIME_TYPE = "application/vnd.net.zombofant.mlxc.drag-key"
+
+
+def start_drag(data):
+    global _dragndrop_state
+    key = _dragndrop_rng.getrandbits(64).to_bytes(8, 'little')
+    _dragndrop_state = key, data
+    return key
+
+
+def pop_drag(key):
+    global _dragndrop_state
+    stored_key, stored_data = _dragndrop_state
+    _dragndrop_state = None, None
+    if stored_key != key:
+        return None
+
+    return stored_data
+
+
+def get_drag(key):
+    global _dragndrop_state
+    stored_key, stored_data = _dragndrop_state
+    if stored_key != key:
+        return None
+
+    return stored_data
