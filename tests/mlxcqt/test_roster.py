@@ -56,16 +56,16 @@ class TestViaView(unittest.TestCase):
         del self.item
 
 
-class TestContactView(unittest.TestCase):
+class TestMetaContactView(unittest.TestCase):
     def setUp(self):
         self.item = aioxmpp.roster.Item(TEST_PEER_JID1)
         self.via = mlxc.roster.Via(TEST_ACCOUNT_JID, self.item)
-        self.contact = mlxc.roster.Contact()
-        self.view = mlxcqt.roster.ContactView(self.contact)
+        self.contact = mlxc.roster.MetaContact()
+        self.view = mlxcqt.roster.MetaContactView(self.contact)
 
     def test_data_returns_label_in_DisplayRole(self):
         with unittest.mock.patch.object(
-                mlxc.roster.Contact,
+                mlxc.roster.MetaContact,
                 "label") as label:
             self.assertEqual(
                 self.view.data(0, Qt.Qt.DisplayRole),
@@ -79,7 +79,8 @@ class TestContactView(unittest.TestCase):
         self.assertIsNone(self.view.data(1, Qt.Qt.DisplayRole))
 
     def test_attaches_to_Contact(self):
-        self.assertIs(mlxc.roster.Contact.View, mlxcqt.roster.ContactView)
+        self.assertIs(mlxc.roster.MetaContact.View,
+                      mlxcqt.roster.MetaContactView)
 
     def tearDown(self):
         del self.view
@@ -128,10 +129,10 @@ class TestRosterTreeModel(unittest.TestCase):
             mlxc.roster.Group(
                 "A",
                 initial=[
-                    mlxc.roster.Contact(initial=[
+                    mlxc.roster.MetaContact(initial=[
                         mlxc.roster.Via(TEST_ACCOUNT_JID, self.item1),
                     ]),
-                    mlxc.roster.Contact(initial=[
+                    mlxc.roster.MetaContact(initial=[
                         mlxc.roster.Via(TEST_ACCOUNT_JID, self.item2),
                     ]),
                 ]
@@ -139,7 +140,7 @@ class TestRosterTreeModel(unittest.TestCase):
             mlxc.roster.Group(
                 "B",
                 initial=[
-                    mlxc.roster.Contact(initial=[
+                    mlxc.roster.MetaContact(initial=[
                         mlxc.roster.Via(TEST_ACCOUNT_JID, self.item1),
                     ]),
                 ]

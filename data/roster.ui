@@ -192,10 +192,16 @@
    <property name="text">
     <string>&amp;Manage accounts…</string>
    </property>
+   <property name="toolTip">
+    <string>Add, remove or modify accounts</string>
+   </property>
   </action>
   <action name="action_edit_custom_presence_states">
    <property name="text">
     <string>Edit &amp;custom presence states…</string>
+   </property>
+   <property name="toolTip">
+    <string>Add, remove or modify custom presence states</string>
    </property>
   </action>
  </widget>
