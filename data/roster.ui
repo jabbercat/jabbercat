@@ -29,6 +29,9 @@
       <property name="alternatingRowColors">
        <bool>true</bool>
       </property>
+      <property name="autoExpandDelay">
+       <number>1000</number>
+      </property>
       <property name="uniformRowHeights">
        <bool>true</bool>
       </property>
@@ -202,6 +205,23 @@
    </property>
    <property name="toolTip">
     <string>Add, remove or modify custom presence states</string>
+   </property>
+  </action>
+  <action name="action_open_command_prompt">
+   <property name="text">
+    <string>Command prompt</string>
+   </property>
+   <property name="toolTip">
+    <string>Open the command prompt in the current window. Use the shortcut instead of this button to open it in a different window than this one.</string>
+   </property>
+   <property name="shortcut">
+    <string>Alt+X</string>
+   </property>
+   <property name="shortcutContext">
+    <enum>Qt::ApplicationShortcut</enum>
+   </property>
+   <property name="priority">
+    <enum>QAction::HighPriority</enum>
    </property>
   </action>
  </widget>
