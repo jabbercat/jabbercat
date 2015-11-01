@@ -421,6 +421,268 @@ class TestAccountManager(unittest.TestCase):
             client.AccountsModel
         )
 
+    def test_password_provider_asks_super_on_first_attempt_and_returns(self):
+        jid = object()
+        value = object()
+
+        base = unittest.mock.Mock()
+        base.super_password_provider = CoroutineMock()
+        base.super_password_provider.return_value = value
+        base.DlgPasswordPrompt().run = CoroutineMock()
+
+        with contextlib.ExitStack() as stack:
+            stack.enter_context(unittest.mock.patch.object(
+                mlxc.client.AccountManager,
+                "password_provider",
+                new=base.super_password_provider
+            ))
+
+            stack.enter_context(unittest.mock.patch.object(
+                self.manager,
+                "_prompt_password",
+                new=base.prompt_password
+            ))
+
+            result = run_coroutine(self.manager.password_provider(jid, 0))
+
+        base.super_password_provider.assert_called_with(jid, 0)
+
+        self.assertEqual(
+            result,
+            value
+        )
+
+    def test_password_provider_asks_user_on_next_attempts(self):
+        jid = object()
+        value = object()
+        password = object()
+
+        base = unittest.mock.Mock()
+        base.super_password_provider = CoroutineMock()
+        base.super_password_provider.return_value = value
+        base.prompt_password = CoroutineMock()
+        base.prompt_password.return_value = password
+
+        base.mock_calls.clear()
+
+        with contextlib.ExitStack() as stack:
+            stack.enter_context(unittest.mock.patch.object(
+                mlxc.client.AccountManager,
+                "password_provider",
+                new=base.super_password_provider
+            ))
+
+            stack.enter_context(unittest.mock.patch.object(
+                self.manager,
+                "_prompt_password",
+                new=base.prompt_password
+            ))
+
+            result = run_coroutine(self.manager.password_provider(jid, 1))
+
+        calls = list(base.mock_calls)
+        self.assertSequenceEqual(
+            calls,
+            [
+                unittest.mock.call.prompt_password(jid),
+            ]
+        )
+
+        self.assertEqual(
+            result,
+            password
+        )
+
+    def test_password_provider_asks_user_if_super_lookup_fails(self):
+        jid = object()
+        value = object()
+        password = object()
+
+        base = unittest.mock.Mock()
+        base.super_password_provider = CoroutineMock()
+        base.super_password_provider.return_value = value
+        base.prompt_password = CoroutineMock()
+        base.prompt_password.return_value = password
+
+        base.mock_calls.clear()
+
+        with contextlib.ExitStack() as stack:
+            stack.enter_context(unittest.mock.patch.object(
+                mlxc.client.AccountManager,
+                "password_provider",
+                new=base.super_password_provider
+            ))
+            base.super_password_provider.side_effect = KeyError()
+
+            stack.enter_context(unittest.mock.patch.object(
+                self.manager,
+                "_prompt_password",
+                new=base.prompt_password
+            ))
+
+            result = run_coroutine(self.manager.password_provider(jid, 0))
+
+        calls = list(base.mock_calls)
+        self.assertSequenceEqual(
+            calls,
+            [
+                unittest.mock.call.super_password_provider(jid, 0),
+                unittest.mock.call.prompt_password(jid),
+            ]
+        )
+
+        self.assertEqual(
+            result,
+            password
+        )
+
+    def test__prompt_password_uses_dialog_to_prompt_user(self):
+        jid = object()
+        cont, password, store = object(), object(), False
+
+        base = unittest.mock.Mock()
+        base.DlgPasswordPrompt().run = CoroutineMock()
+        base.DlgPasswordPrompt().run.return_value = cont, password, store
+        base.set_stored_password = CoroutineMock()
+        base.keyring_is_safe = object()
+
+        base.mock_calls.clear()
+
+        with contextlib.ExitStack() as stack:
+            stack.enter_context(unittest.mock.patch(
+                "mlxcqt.password_prompt.DlgPasswordPrompt",
+                new=base.DlgPasswordPrompt
+            ))
+
+            stack.enter_context(unittest.mock.patch.object(
+                self.manager,
+                "set_stored_password",
+                new=base.set_stored_password
+            ))
+
+            stack.enter_context(unittest.mock.patch.object(
+                self.manager,
+                "keyring_is_safe",
+                new=base.keyring_is_safe
+            ))
+
+            result = run_coroutine(self.manager._prompt_password(jid))
+
+        calls = list(base.mock_calls)
+        self.assertSequenceEqual(
+            calls,
+            [
+                unittest.mock.call.DlgPasswordPrompt(
+                    jid,
+                    can_store=base.keyring_is_safe),
+                unittest.mock.call.DlgPasswordPrompt().run(),
+            ]
+        )
+
+        self.assertEqual(
+            result,
+            password
+        )
+
+    def test__prompt_password_stores_password_if_asked_for(self):
+        jid = object()
+        cont, password, store = object(), object(), True
+
+        base = unittest.mock.Mock()
+        base.DlgPasswordPrompt().run = CoroutineMock()
+        base.DlgPasswordPrompt().run.return_value = cont, password, store
+        base.set_stored_password = CoroutineMock()
+        base.keyring_is_safe = object()
+
+        base.mock_calls.clear()
+
+        with contextlib.ExitStack() as stack:
+            stack.enter_context(unittest.mock.patch(
+                "mlxcqt.password_prompt.DlgPasswordPrompt",
+                new=base.DlgPasswordPrompt
+            ))
+
+            stack.enter_context(unittest.mock.patch.object(
+                self.manager,
+                "set_stored_password",
+                new=base.set_stored_password
+            ))
+
+            stack.enter_context(unittest.mock.patch.object(
+                self.manager,
+                "keyring_is_safe",
+                new=base.keyring_is_safe
+            ))
+
+            result = run_coroutine(self.manager._prompt_password(jid))
+
+        calls = list(base.mock_calls)
+        self.assertSequenceEqual(
+            calls,
+            [
+                unittest.mock.call.DlgPasswordPrompt(
+                    jid,
+                    can_store=base.keyring_is_safe),
+                unittest.mock.call.DlgPasswordPrompt().run(),
+                unittest.mock.call.set_stored_password(jid, password),
+            ]
+        )
+
+        self.assertEqual(
+            result,
+            password
+        )
+
+    def test__prompt_password_ignores_PasswordStoreIsUnsafe(self):
+        jid = object()
+        cont, password, store = object(), object(), True
+
+        base = unittest.mock.Mock()
+        base.DlgPasswordPrompt().run = CoroutineMock()
+        base.DlgPasswordPrompt().run.return_value = cont, password, store
+        base.set_stored_password = CoroutineMock()
+        base.set_stored_password.side_effect = mlxc.client.PasswordStoreIsUnsafe()
+        base.keyring_is_safe = object()
+
+        base.mock_calls.clear()
+
+        with contextlib.ExitStack() as stack:
+            stack.enter_context(unittest.mock.patch(
+                "mlxcqt.password_prompt.DlgPasswordPrompt",
+                new=base.DlgPasswordPrompt
+            ))
+
+            stack.enter_context(unittest.mock.patch.object(
+                self.manager,
+                "set_stored_password",
+                new=base.set_stored_password
+            ))
+
+            stack.enter_context(unittest.mock.patch.object(
+                self.manager,
+                "keyring_is_safe",
+                new=base.keyring_is_safe
+            ))
+
+            result = run_coroutine(self.manager._prompt_password(jid))
+
+        calls = list(base.mock_calls)
+        self.assertSequenceEqual(
+            calls,
+            [
+                unittest.mock.call.DlgPasswordPrompt(
+                    jid,
+                    can_store=base.keyring_is_safe),
+                unittest.mock.call.DlgPasswordPrompt().run(),
+                unittest.mock.call.set_stored_password(jid, password),
+            ]
+        )
+
+        self.assertEqual(
+            result,
+            password
+        )
+
 
 class TestClient(unittest.TestCase):
     def test_is_mlxc_client(self):

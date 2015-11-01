@@ -163,6 +163,22 @@ class AccountManager(mlxc.client.AccountManager):
         self.qmodel = AccountsModel(self, None)
 
     @asyncio.coroutine
+    def _prompt_password(self, jid):
+        dlg = password_prompt.DlgPasswordPrompt(
+            jid,
+            can_store=self.keyring_is_safe
+        )
+        cont, password, store = yield from dlg.run()
+
+        if store:
+            try:
+                yield from self.set_stored_password(jid, password)
+            except mlxc.client.PasswordStoreIsUnsafe:
+                pass
+
+        return password
+
+    @asyncio.coroutine
     def password_provider(self, jid, nattempt):
         if nattempt == 0:
             try:
@@ -170,9 +186,7 @@ class AccountManager(mlxc.client.AccountManager):
             except KeyError:
                 pass
 
-        dlg = password_prompt.DlgPasswordPrompt(jid)
-        cont, password, store = yield from dlg.run()
-        return password
+        return (yield from self._prompt_password(jid))
 
 
 class Client(mlxc.client.Client):
