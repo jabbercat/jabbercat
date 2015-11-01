@@ -78,6 +78,13 @@ class DlgAccountEditor(Qt.QDialog, Ui_dlg_account_editor):
                 )
             except mlxc.client.PasswordStoreIsUnsafe:
                 pass
+        else:
+            try:
+                yield from self.accounts.set_stored_password(
+                    self.account.jid,
+                    None)
+            except mlxc.client.PasswordStoreIsUnsafe:
+                pass
 
         self.account.allow_unencrypted = (
             self.acc_require_encryption.checkState() != Qt.Qt.Checked
