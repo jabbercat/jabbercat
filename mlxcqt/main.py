@@ -221,8 +221,8 @@ class MainWindow(Qt.QMainWindow):
         delegate = RosterItemDelegate(self.ui.roster_view)
         self.ui.roster_view.setItemDelegate(delegate)
 
-        #self.ui.conversations_view.setModel(self.main.conversations_model)
-        #self.ui.conversations_view.expandAll()
+        # self.ui.conversations_view.setModel(self.main.conversations_model)
+        # self.ui.conversations_view.expandAll()
 
         view = webview.CustomWebView(self.ui.conversation_pages)
         view.setUrl(Qt.QUrl("qrc:/html/index.html"))

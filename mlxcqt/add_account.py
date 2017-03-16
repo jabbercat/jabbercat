@@ -7,6 +7,7 @@ import PyQt5.Qt as Qt
 import aioxmpp
 
 import mlxc.client
+import mlxc.config
 
 from .ui import (
     dlg_add_account_page_credentials,
@@ -156,6 +157,7 @@ class PageConnecting(AddAccountWizardPage):
             Qt.QFontDatabase.FixedFont
         ))
 
+        self.ui.expert_log.hide()
         self.ui.expert_switch.stateChanged.connect(
             self._expert_switch_changed,
         )
@@ -170,9 +172,9 @@ class PageConnecting(AddAccountWizardPage):
 
     def _expert_switch_changed(self, new_state):
         if new_state == Qt.Qt.Checked:
-            self.ui.log.show()
+            self.ui.expert_log.show()
         else:
-            self.ui.log.hide()
+            self.ui.expert_log.hide()
 
     def reset_ui_state(self):
         self.ui.expert_switch.setCheckState(Qt.Qt.Unchecked)
@@ -342,3 +344,5 @@ class DlgAddAccount(Qt.QWizard):
             )
         except mlxc.client.PasswordStoreIsUnsafe:
             pass
+
+        mlxc.config.config_manager.writeback()
