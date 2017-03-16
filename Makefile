@@ -3,6 +3,8 @@ BUILDUI=./utils/buildui.py -5
 UIC_SOURCE_FILES=$(wildcard data/*.ui)
 UIC_PYTHON_FILES=$(patsubst data/%.ui,mlxcqt/ui/%.py,$(UIC_SOURCE_FILES))
 
+RESOURCE_SOURCES=$(addprefix data/,$(shell xpath -e 'RCC/qresource/file/text()' data/resources.qrc 2>/dev/null))
+
 TS_FILES=$(wildcard translations/*.ts)
 
 all: $(UIC_PYTHON_FILES)
@@ -19,5 +21,7 @@ lrelease: $(TS_FILES)
 $(UIC_PYTHON_FILES): mlxcqt/ui/%.py: data/%.ui
 	$(BUILDUI) $< $@
 
+resources.rcc: data/resources.qrc $(RESOURCE_SOURCES)
+	cd data; rcc --binary -o ../$@ resources.qrc
 
 .PHONY: lupdate

@@ -10,6 +10,7 @@ import mlxcqt.Qt as Qt
 import quamash
 
 app = Qt.QApplication(sys.argv)
+app.setQuitOnLastWindowClosed(False)
 
 import mlxcqt.main
 
@@ -31,17 +32,23 @@ if not qttr.load("qttranslations/mlxcqt_" + locale):
 else:
     app.installTranslator(qttr)
 
+Qt.QResource.registerResource("resources.rcc")
+
 asyncio.set_event_loop(quamash.QEventLoop(app=app))
 loop = asyncio.get_event_loop()
 main = mlxcqt.main.QtMain(loop)
-returncode = loop.run_until_complete(main.run())
-del main
-del app
-asyncio.set_event_loop(None)
-del loop
-
-# try very hard to evict app from memory...
-import gc
-gc.collect()
+try:
+    returncode = loop.run_until_complete(main.run())
+finally:
+    loop.close()
+    # try very hard to evict parts from memory
+    import gc
+    gc.collect()
+    del main
+    gc.collect()
+    del app
+    asyncio.set_event_loop(None)
+    del loop
+    gc.collect()
 
 sys.exit(returncode)

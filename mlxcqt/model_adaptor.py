@@ -6,14 +6,14 @@ class ModelListAdaptor:
         super().__init__()
         self.model = model
 
-        mlist.begin_insert_rows = self.begin_insert_rows
-        mlist.end_insert_rows = self.end_insert_rows
+        mlist.begin_insert_rows.connect(self.begin_insert_rows)
+        mlist.end_insert_rows.connect(self.end_insert_rows)
 
-        mlist.begin_remove_rows = self.begin_remove_rows
-        mlist.end_remove_rows = self.end_remove_rows
+        mlist.begin_remove_rows.connect(self.begin_remove_rows)
+        mlist.end_remove_rows.connect(self.end_remove_rows)
 
-        mlist.begin_move_rows = self.begin_move_rows
-        mlist.end_move_rows = self.end_move_rows
+        mlist.begin_move_rows.connect(self.begin_move_rows)
+        mlist.end_move_rows.connect(self.end_move_rows)
 
     def begin_insert_rows(self, _, index1, index2):
         self.model.beginInsertRows(

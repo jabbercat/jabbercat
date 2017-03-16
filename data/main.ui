@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Main</class>
+ <widget class="QMainWindow" name="Main">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>913</width>
+    <height>584</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>My Little XMPP Client</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QVBoxLayout" name="verticalLayout">
+    <item>
+     <widget class="QSplitter" name="splitter_2">
+      <property name="orientation">
+       <enum>Qt::Horizontal</enum>
+      </property>
+      <widget class="QSplitter" name="splitter">
+       <property name="orientation">
+        <enum>Qt::Vertical</enum>
+       </property>
+       <property name="handleWidth">
+        <number>2</number>
+       </property>
+       <widget class="QListView" name="roster_view">
+        <property name="movement">
+         <enum>QListView::Free</enum>
+        </property>
+       </widget>
+       <widget class="QTreeView" name="conversations_view">
+        <property name="rootIsDecorated">
+         <bool>false</bool>
+        </property>
+        <property name="itemsExpandable">
+         <bool>false</bool>
+        </property>
+        <attribute name="headerVisible">
+         <bool>false</bool>
+        </attribute>
+       </widget>
+      </widget>
+      <widget class="QStackedWidget" name="conversation_pages">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+         <horstretch>1</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+      </widget>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>913</width>
+     <height>25</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="menuMLXC">
+    <property name="title">
+     <string>M&amp;LXC</string>
+    </property>
+    <addaction name="action_manage_accounts"/>
+   </widget>
+   <addaction name="menuMLXC"/>
+  </widget>
+  <widget class="QStatusBar" name="statusbar"/>
+  <action name="action_manage_accounts">
+   <property name="text">
+    <string>Configure accounts …</string>
+   </property>
+   <property name="toolTip">
+    <string>Add and remove XMPP accounts</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Alt+Shift+A</string>
+   </property>
+  </action>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

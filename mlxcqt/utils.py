@@ -2,9 +2,15 @@ import asyncio
 import bisect
 import contextlib
 import functools
+import hashlib
+import math
 import random
+import struct
+import unicodedata
 
 import aioxmpp.structs
+
+import mlxc.utils
 
 from . import Qt, model_adaptor
 
@@ -67,12 +73,15 @@ def block_widget_for_coro(widget, coro):
 @asyncio.coroutine
 def exec_async(dlg, set_modal=Qt.Qt.WindowModal):
     future = asyncio.Future()
+
     def done(result):
         nonlocal future
         future.set_result(result)
+        dlg.finished.disconnect(done)
+
     dlg.finished.connect(done)
     if set_modal is not None:
-        dlg.windowModality = set_modal
+        dlg.setWindowModality(set_modal)
     dlg.show()
     try:
         return (yield from future)
@@ -226,12 +235,12 @@ class DictItemModel(Qt.QAbstractListModel):
 class JIDValidator(Qt.QValidator):
     def validate(self, text, pos):
         try:
-            jid = aioxmpp.structs.JID.fromstr(text)
+            aioxmpp.structs.JID.fromstr(text)
             return (Qt.QValidator.Acceptable, text, pos)
         except ValueError:
             # explicitly allow partial jids, i.e. those with empty localpart or
             # resource
-            if     (text.endswith("@") or
+            if (not text or text.endswith("@") or
                     text.startswith("@") or
                     text.endswith("/") or
                     text.startswith("/")):
@@ -269,3 +278,18 @@ def get_drag(key):
         return None
 
     return stored_data
+
+
+def text_to_qtcolor(text, in_contrast_with):
+    if in_contrast_with is not None:
+        in_contrast_with = (
+            in_contrast_with.redF(),
+            in_contrast_with.greenF(),
+            in_contrast_with.blueF()
+        )
+
+    r, g, b = mlxc.utils.text_to_colour(
+        text,
+        in_contrast_with,
+    )
+    return Qt.QColor(r*255, g*255, b*255)
