@@ -63,6 +63,11 @@ class RosterModel(Qt.QAbstractListModel):
             return 0
         return len(self.items)
 
+    def item_wrapper_from_index(self, index):
+        if not index.isValid():
+            return None
+        return self.items[index.row()]
+
     def data(self, index, role):
         if not index.isValid():
             return None
@@ -222,3 +227,8 @@ class Roster:
 
         for token, event in zip(presence_tokens, self.PRESENCE_EVENT_LIST):
             getattr(presence, event).disconnect(token)
+
+        for i in reversed(range(len(self.items))):
+            item = self.items[i]
+            if item.account is account:
+                del self.items[i]

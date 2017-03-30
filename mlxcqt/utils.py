@@ -280,16 +280,46 @@ def get_drag(key):
     return stored_data
 
 
-def text_to_qtcolor(text, in_contrast_with):
-    if in_contrast_with is not None:
-        in_contrast_with = (
-            in_contrast_with.redF(),
-            in_contrast_with.greenF(),
-            in_contrast_with.blueF()
-        )
-
+def text_to_qtcolor(text):
     r, g, b = mlxc.utils.text_to_colour(
         text,
-        in_contrast_with,
     )
     return Qt.QColor(r*255, g*255, b*255)
+
+
+def make_avatar_picture(identifier, avatar_size):
+    PADDING = 2
+
+    colour = text_to_qtcolor(identifier)
+    pic = Qt.QPicture()
+    painter = Qt.QPainter(pic)
+    pen_colour = Qt.QColor(colour)
+    pen_colour.setAlpha(127)
+    painter.setPen(Qt.QPen(pen_colour))
+    painter.setBrush(colour)
+    painter.drawRect(
+        Qt.QRectF(
+            0, 0,
+            avatar_size, avatar_size
+        )
+    )
+
+    painter.setRenderHint(Qt.QPainter.Antialiasing, True)
+
+    painter.setPen(Qt.QPen(Qt.QColor(255, 255, 255, 255)))
+    painter.setBrush(Qt.QBrush())
+    avatar_font = Qt.QFontDatabase.systemFont(Qt.QFontDatabase.GeneralFont)
+    avatar_font.setPixelSize(avatar_size*0.85-2*PADDING)
+    avatar_font.setWeight(Qt.QFont.Thin)
+    painter.setFont(avatar_font)
+    painter.drawText(
+        Qt.QRectF(
+            PADDING, PADDING,
+            avatar_size-PADDING*2,
+            avatar_size-PADDING*2,
+        ),
+        Qt.Qt.AlignHCenter | Qt.Qt.AlignVCenter | Qt.Qt.TextSingleLine,
+        identifier[0].upper(),
+    )
+
+    return pic

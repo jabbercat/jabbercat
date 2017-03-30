@@ -1,15 +1,17 @@
 import asyncio
-import functools
-import logging
 import random
 
 import aioxmpp
+import aioxmpp.im.p2p
 
 import mlxc.conversation
 import mlxc.main
 import mlxc.utils
 
-from . import Qt, client, roster, utils, conversation, webview, account_manager
+from . import (
+    Qt, client, roster, utils, account_manager,
+    conversation, models,
+)
 
 from .ui.main import Ui_Main
 
@@ -25,6 +27,8 @@ class RosterItemDelegate(Qt.QItemDelegate):
     TAG_PADDING = 2
     TAG_FONT_SIZE = 0.9
     NAME_FONT_SIZE = 1.1
+
+    MAX_AVATAR_SIZE = 48
 
     def __init__(self, parent=None):
         super().__init__(parent=parent)
@@ -59,6 +63,7 @@ class RosterItemDelegate(Qt.QItemDelegate):
 
     def paint(self, painter, option, index):
         item = index.data(roster.RosterModel.ITEM_ROLE)
+        name_font, tag_font = self._get_fonts(option.font)
 
         painter.setRenderHint(Qt.QPainter.Antialiasing, False)
         painter.setPen(Qt.Qt.NoPen)
@@ -68,26 +73,76 @@ class RosterItemDelegate(Qt.QItemDelegate):
             painter.setBrush(Qt.QBrush(option.backgroundBrush))
         painter.drawRect(option.rect)
 
-        painter.setPen(Qt.Qt.NoPen)
-        painter.setBrush(Qt.QColor(*item.account.colour))
-        painter.drawRect(
-            Qt.QRect(
-                option.rect.topLeft(),
-                option.rect.topLeft() + Qt.QPoint(
-                    self.LEFT_PADDING - self.PADDING,
-                    option.rect.height(),
-                )
-            )
+        name = index.data()
+
+        colour = utils.text_to_qtcolor(
+            name,
         )
 
-        painter.setRenderHint(Qt.QPainter.Antialiasing, True)
+        # painter.drawRect(
+        #     Qt.QRect(
+        #         option.rect.topLeft(),
+        #         option.rect.topLeft() + Qt.QPoint(
+        #             self.LEFT_PADDING - self.PADDING,
+        #             option.rect.height()-1,
+        #         )
+        #     )
+        # )
+
+        avatar_size = min(option.rect.height() - self.PADDING * 2,
+                          self.MAX_AVATAR_SIZE)
+
+        avatar_origin = option.rect.topLeft()
+        avatar_origin = avatar_origin + Qt.QPoint(
+            self.PADDING+self.SPACING,
+            option.rect.height()/2 - avatar_size/2
+        )
+
+        pic = utils.make_avatar_picture(name, avatar_size)
+        painter.drawPicture(avatar_origin, pic)
+
+        # pen_colour = Qt.QColor(colour)
+        # pen_colour.setAlpha(127)
+        # painter.setPen(Qt.QPen(pen_colour))
+        # painter.setBrush(colour)
+
+        # avatar_rect = Qt.QRectF(
+        #     avatar_origin,
+        #     avatar_origin + Qt.QPoint(avatar_size, avatar_size)
+        # )
+
+        # # painter.drawRoundedRect(
+        # #     avatar_rect,
+        # #     avatar_size / 24, avatar_size / 24,
+        # # )
+
+        # painter.drawRect(
+        #     avatar_rect,
+        # )
+
+        # painter.setRenderHint(Qt.QPainter.Antialiasing, True)
+
+        # painter.setPen(Qt.QPen(Qt.QColor(255, 255, 255, 255)))
+        # painter.setBrush(Qt.QBrush())
+        # avatar_font = Qt.QFont(name_font)
+        # avatar_font.setPixelSize(avatar_size*0.85-2*self.PADDING)
+        # avatar_font.setWeight(Qt.QFont.Thin)
+        # painter.setFont(avatar_font)
+        # painter.drawText(
+        #     Qt.QRectF(
+        #         avatar_origin + Qt.QPoint(self.PADDING, self.PADDING),
+        #         avatar_origin + Qt.QPoint(avatar_size-self.PADDING*2,
+        #                                   avatar_size-self.PADDING*2),
+        #     ),
+        #     Qt.Qt.AlignHCenter | Qt.Qt.AlignVCenter | Qt.Qt.TextSingleLine,
+        #     name[0].upper(),
+        # )
 
         if option.state & Qt.QStyle.State_Selected:
             painter.setPen(option.palette.highlightedText().color())
         else:
             painter.setPen(option.palette.text().color())
 
-        name_font, tag_font = self._get_fonts(option.font)
         name_font.setWeight(Qt.QFont.Bold)
         name_metrics = Qt.QFontMetrics(name_font)
         painter.setFont(name_font)
@@ -95,7 +150,8 @@ class RosterItemDelegate(Qt.QItemDelegate):
         tag_metrics = Qt.QFontMetrics(tag_font)
 
         top_left = option.rect.topLeft() + Qt.QPoint(
-            self.LEFT_PADDING+self.SPACING, self.PADDING
+            self.LEFT_PADDING+self.SPACING*2+avatar_size,
+            self.PADDING
         )
 
         name_rect = Qt.QRect(
@@ -105,8 +161,6 @@ class RosterItemDelegate(Qt.QItemDelegate):
                 name_metrics.ascent() + name_metrics.descent(),
             )
         )
-
-        name = index.data()
 
         # import hashlib
         # hash_ = hashlib.sha1()
@@ -165,11 +219,11 @@ class RosterItemDelegate(Qt.QItemDelegate):
 
             colour = utils.text_to_qtcolor(
                 group_norm,
-                None,
             )
 
             painter.setPen(Qt.QPen(Qt.Qt.NoPen))
             painter.setBrush(Qt.QBrush(colour))
+
             painter.drawRoundedRect(
                 Qt.QRectF(top_left, top_left + Qt.QPoint(
                     width + 2*self.TAG_PADDING,
@@ -220,17 +274,72 @@ class MainWindow(Qt.QMainWindow):
         self.ui.roster_view.setModel(sorted_roster)
         delegate = RosterItemDelegate(self.ui.roster_view)
         self.ui.roster_view.setItemDelegate(delegate)
-
-        # self.ui.conversations_view.setModel(self.main.conversations_model)
-        # self.ui.conversations_view.expandAll()
-
-        view = webview.CustomWebView(self.ui.conversation_pages)
-        view.setUrl(Qt.QUrl("qrc:/html/index.html"))
-        self.ui.conversation_pages.addWidget(view)
+        self.ui.roster_view.activated.connect(self._roster_item_activated)
 
         self.ui.action_manage_accounts.triggered.connect(
             self.account_manager.open
         )
+
+        self.convmanager = mlxc.conversation.ConversationManager()
+        self.main.identities.on_identity_added.connect(
+            self._identity_added
+        )
+        self.main.identities.on_identity_removed.connect(
+            self.convmanager.handle_identity_removed
+        )
+
+        self.main.client.on_client_prepare.connect(
+            self.convmanager.handle_client_prepare,
+        )
+        self.main.client.on_client_stopped.connect(
+            self.convmanager.handle_client_stopped,
+        )
+
+        self.__convmap = {}
+        self.__conversation_model = models.ConversationsModel(
+            self.convmanager.tree
+        )
+        self.ui.conversations_view.setModel(
+            self.__conversation_model
+        )
+        self.ui.conversations_view.activated.connect(
+            self._conversation_item_activated
+        )
+
+        self.convmanager.on_conversation_added.connect(
+            self._conversation_added
+        )
+
+    def _conversation_added(self, wrapper):
+        conv = wrapper.conversation
+        page = conversation.ConversationView(conv)
+        self.__convmap[wrapper.conversation] = page
+        self.ui.conversation_pages.addWidget(page)
+        self.ui.conversation_pages.setCurrentWidget(page)
+
+    def _identity_added(self, identity):
+        self.convmanager.handle_identity_added(identity)
+        self.ui.conversations_view.expandAll()
+
+    def _conversation_item_activated(self, index):
+        node = index.internalPointer()
+        if isinstance(node.object_, mlxc.conversation.ConversationNode):
+            conv = node.object_.conversation
+            page = self.__convmap[conv]
+            self.ui.conversation_pages.setCurrentWidget(page)
+
+    @utils.asyncify
+    @asyncio.coroutine
+    def _roster_item_activated(self, index):
+        item = self.main.roster.model.item_wrapper_from_index(
+            self.ui.roster_view.model().mapToSource(index)
+        )
+        client = self.main.client.client_by_account(item.account)
+        p2p_convs = client.summon(aioxmpp.im.p2p.Service)
+        print("starting conversation with", item.jid)
+        conv = yield from p2p_convs.get_conversation(item.jid)
+        page = self.__convmap[conv]
+        self.ui.conversation_pages.setCurrentWidget(page)
 
     def closeEvent(self, ev):
         result = super().closeEvent(ev)
@@ -246,28 +355,6 @@ class QtMain(mlxc.main.Main):
         self.roster = roster.Roster()
         self.client.on_client_prepare.connect(self.roster.connect_client)
         self.client.on_client_stopped.connect(self.roster.disconnect_client)
-
-        # acc = self.identities.new_account(
-        #     private,
-        #     aioxmpp.JID.fromstr("jonas@wielicki.name"),
-        #     tuple(round(v*255) for v in mlxc.utils.text_to_colour(
-        #         "jonas@wielicki.name",
-        #         None,
-        #     ))
-        # )
-        # self.identities.set_account_enabled(acc, False)
-
-        # work = self.identities.new_identity("Work")
-
-        # acc = self.identities.new_account(
-        #     work,
-        #     aioxmpp.JID.fromstr("jonas@zombofant.net"),
-        #     tuple(round(v*255) for v in mlxc.utils.text_to_colour(
-        #         "jonas@zombofant.net",
-        #         None,
-        #     ))
-        # )
-        # self.identities.set_account_enabled(acc, False)
 
         self.window = MainWindow(self)
 

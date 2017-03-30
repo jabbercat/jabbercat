@@ -1,118 +1,200 @@
+import asyncio
+import functools
+
+from datetime import datetime
+
+import aioxmpp.im.p2p
+import aioxmpp.im.service
+import aioxmpp.structs
+
 import mlxc.conversation
 
-from . import Qt, webview
+from . import Qt, utils, models
+
+from .ui import p2p_conversation
 
 
-class ConversationsModel(Qt.QAbstractItemModel):
-    def __init__(self, tree):
-        super().__init__()
-        self.tree = tree
-        self.tree.begin_insert_rows.connect(self._begin_insert_rows)
-        self.tree.end_insert_rows.connect(self._end_insert_rows)
-
-        self.tree.begin_remove_rows.connect(self._begin_remove_rows)
-        self.tree.end_remove_rows.connect(self._end_remove_rows)
-
-    def _begin_insert_rows(self, node, index1, index2):
-        parent_mi = self.node_to_index(node)
-        self.beginInsertRows(parent_mi, index1, index2)
-
-    def _end_insert_rows(self):
-        self.endInsertRows()
-
-    def _begin_remove_rows(self, node, index1, index2):
-        parent_mi = self.node_to_index(node)
-        self.beginRemoveRows(parent_mi, index1, index2)
-
-    def _end_remove_rows(self):
-        self.endRemoveRows()
-
-    def node_to_index(self, node, column=0):
-        if node.parent is None:
-            return Qt.QModelIndex()
-        if not isinstance(node, mlxc.instrumentable_list.ModelTreeNode):
-            node = node._node
-        return self.createIndex(
-            node.parent_index,
-            column,
-            node,
-        )
-
-    def rowCount(self, parent):
-        if not parent.isValid():
-            return len(self.tree.root)
-        node = parent.internalPointer()
-        return len(node)
-
-    def columnCount(self, parent):
-        return 1
-
-    def _ident_data(self, node, column, role):
-        if role == Qt.Qt.DisplayRole:
-            return str(node.identity.name)
-
-    def _conv_data(self, node, column, role):
-        if role == Qt.Qt.DisplayRole:
-            return str(node.peer_jid)
-
-    def data(self, index, role):
-        if index.isValid():
-            node = index.internalPointer()
-        else:
-            node = self.tree.root
-
-        node = node.object_
-
-        if isinstance(node, mlxc.conversation.ConversationIdentity):
-            return self._ident_data(node, index.column(), role)
-        elif isinstance(node, mlxc.conversation.Conversation):
-            return self._conv_data(node, index.column(), role)
-
-    def index(self, row, column, parent):
-        parent = (self.tree.root
-                  if not parent.isValid()
-                  else parent.internalPointer())
-        return self.node_to_index(parent[row], column)
-
-    def parent(self, index):
-        if not index.isValid():
-            return Qt.QModelIndex()
-        return self.node_to_index(index.internalPointer().parent)
+def _connect_and_store_token(tokens, signal, handler):
+    tokens.append(
+        (signal, signal.connect(handler))
+    )
 
 
-class ConversationHistoryView(Qt.QWebEngineView):
-    pass
+class MessageInfo(Qt.QTextBlockUserData):
+    from_ = None
 
 
 class ConversationView(Qt.QWidget):
-    pass
-
-
-class PeerConversationView(ConversationView):
-    pass
-
-
-class ConversationsController:
-    def __init__(self, conversations, conversations_view, parent=None):
+    def __init__(self, conversation):
         super().__init__()
-        self.conversations = conversations
-        self.view = conversations_view
-        self.conversations.on_conversation_started.connect(
-            self.on_conversation_started,
-        )
-        self.conversations.on_conversation_stopped.connect(
-            self.on_conversation_stopped,
+        self.ui = p2p_conversation.Ui_P2PView()
+        self.ui.setupUi(self)
+
+        self.ui.title_label.setText(
+            "Conversation with {}".format(conversation.peer_jid)
         )
 
-        view = webview.CustomWebView(parent=self)
-        view.setUrl(Qt.QUrl("qrc:/html/index.html"))
-        self.addWidget(view)
+        self.ui.message_input.installEventFilter(self)
 
-    def on_conversation_started(self, conversation):
-        view = webview.CustomWebView(parent=self)
-        view.setUrl(Qt.QUrl("qrc:/html/conversation-template.html"))
-        self._conversation_views[conversation] = view
-        self.addWidget(view)
+        # self.ui.history.setMaximumBlockCount(100)
 
-    def on_conversation_stopped(self, conversation):
-        pass
+        self.__conversation = conversation
+        self.__tokens = []
+        _connect_and_store_token(
+            self.__tokens,
+            conversation.on_message_received,
+            functools.partial(self.add_message, sent=False),
+        )
+        _connect_and_store_token(
+            self.__tokens,
+            conversation.on_message_sent,
+            functools.partial(self.add_message, sent=True),
+        )
+        self.__msgidmap = {}
+
+    def eventFilter(self, obj, ev):
+        if obj is not self.ui.message_input:
+            return False
+        if ev.type() != Qt.QEvent.KeyPress:
+            return False
+
+        if ev.key() == Qt.Qt.Key_Return:
+            if ev.modifiers() == Qt.Qt.NoModifier:
+                if not self.ui.message_input.document().isEmpty():
+                    self._send_message()
+                return True
+
+        return False
+
+    @utils.asyncify
+    @asyncio.coroutine
+    def _send_message(self):
+        body = self.ui.message_input.toPlainText()
+        msg = aioxmpp.Message(type_="chat")
+        msg.body[None] = body
+        self.ui.message_input.clear()
+        yield from self.__conversation.send_message(msg)
+
+    def _message_frame_format(self):
+        fmt = Qt.QTextFrameFormat()
+        return fmt
+
+    def add_message(self, message, sent):
+        if not message.body:
+            return
+
+        from_ = message.from_
+        if from_ is None:
+            from_ = "me"
+        else:
+            from_ = str(from_.bare())
+
+        info = MessageInfo()
+        info.from_ = from_
+
+        doc = self.ui.history.document()
+
+        if doc.isEmpty():
+            last_block = None
+            prev_from = None
+            cursor = Qt.QTextCursor(doc)
+        else:
+            cursor = doc.rootFrame().childFrames()[-1].lastCursorPosition()
+            last_block = cursor.block()
+            prev_from = last_block.userData().from_
+
+        if prev_from != from_:
+            cursor = Qt.QTextCursor(doc)
+            cursor.movePosition(Qt.QTextCursor.End)
+            fmt = self._message_frame_format()
+            outer_frame = cursor.insertFrame(fmt)
+            # start new part
+            fmt = Qt.QTextFrameFormat()
+            fmt.setWidth(Qt.QTextLength(Qt.QTextLength.FixedLength, 48))
+            fmt.setHeight(Qt.QTextLength(Qt.QTextLength.FixedLength, 48))
+            fmt.setBackground(Qt.QBrush(utils.text_to_qtcolor(from_)))
+            fmt.setMargin(4)
+            fmt.setPosition(Qt.QTextFrameFormat.FloatLeft)
+            cursor.insertFrame(fmt)
+            cursor.insertText(from_[0].upper())
+            cursor.movePosition(Qt.QTextCursor.NextCharacter)
+            tmp_cursor = outer_frame.firstCursorPosition()
+            tmp_cursor.block().setVisible(False)
+            last_block = None
+
+        if last_block is not None:
+            cursor.insertBlock()
+        cursor.insertText("{}: {}".format(
+            datetime.now().replace(microsecond=0).time(),
+            message.body.lookup([
+                aioxmpp.structs.LanguageRange.fromstr("*")
+            ]).strip()
+        ))
+        cursor.block().setUserData(info)
+
+        # fmt = self._message_frame_format()
+
+        # if doc.isEmpty():
+        #     cursor = Qt.QTextCursor(doc)
+        #     cursor.movePosition(Qt.QTextCursor.End)
+        # else:
+        #     last_frame = doc.rootFrame().childFrames()[-1]
+        #     cursor = last_frame.lastCursorPosition()
+        #     cursor.movePosition(Qt.QTextCursor.NextCharacter)
+
+        # cursor.insertFrame(fmt)
+        # cursor.insertText("{} {}: {}".format(
+        #     datetime.now().replace(microsecond=0).time(),
+        #     from_,
+        #     message.body.lookup([
+        #         aioxmpp.structs.LanguageRange.fromstr("*")
+        #     ]).strip()
+        # ))
+
+
+# class ConversationsController(mlxc.conversation.Conversations):
+#     def __init__(self, identities, client):
+#         super().__init__(identities, client)
+#         self._conversation_views = {}
+#         self.__view = None
+#         self.__pages = None
+#         self.model = models.ConversationsModel(self.tree)
+#         self.on_conversation_node_created.connect(self._new_conversation)
+
+#     @property
+#     def pages(self):
+#         return self.__pages
+
+#     @pages.setter
+#     def pages(self, widget):
+#         self.__pages = widget
+
+#     @property
+#     def view(self):
+#         return self.__view
+
+#     @view.setter
+#     def view(self, widget):
+#         self.__view = widget
+#         self.__view.setModel(self.model)
+#         for identity_wrapper in self.tree.root:
+#             self.__view.expand(
+#                 self.model.node_to_index(
+#                     identity_wrapper._node
+#                 )
+#             )
+
+#     def _identity_added(self, identity):
+#         super()._identity_added(identity)
+#         if self.__view is not None:
+#             self.__view.expand(
+#                 self.model.node_to_index(
+#                     self.tree.root[-1]._node
+#                 )
+#             )
+
+#     def _new_conversation(self, wrapper):
+#         conversation = wrapper.conversation
+#         view = ConversationView(conversation)
+#         self._conversation_views[conversation] = view
+#         self.__pages.addWidget(view)

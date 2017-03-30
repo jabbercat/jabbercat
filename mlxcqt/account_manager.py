@@ -21,7 +21,7 @@ class DlgAccountManager(Qt.QDialog):
             parent=self
         )
 
-        self.model = models.AccountModel(identities._tree)
+        self.model = models.AccountModel(identities._tree, identities)
         self.ui.accounts_view.setModel(self.model)
         self.ui.accounts_view.selectionModel().currentRowChanged.connect(
             self._item_selected
@@ -65,10 +65,12 @@ class DlgAccountManager(Qt.QDialog):
             self.ui.accounts_view.setRootIndex(
                 self.model.node_to_index(self._identities.identities)
             )
+            self.ui.accounts_view.setRootIsDecorated(True)
         elif len(self._identities.identities) == 1:
             self.ui.accounts_view.setRootIndex(
                 self.model.node_to_index(self._identities.identities[0])
             )
+            self.ui.accounts_view.setRootIsDecorated(False)
 
     def _identity_added(self, identity):
         self._update_root()
