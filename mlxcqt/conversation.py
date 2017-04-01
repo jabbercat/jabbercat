@@ -42,13 +42,8 @@ class ConversationView(Qt.QWidget):
         self.__tokens = []
         _connect_and_store_token(
             self.__tokens,
-            conversation.on_message_received,
-            functools.partial(self.add_message, sent=False),
-        )
-        _connect_and_store_token(
-            self.__tokens,
-            conversation.on_message_sent,
-            functools.partial(self.add_message, sent=True),
+            conversation.on_message,
+            functools.partial(self.add_message),
         )
         self.__msgidmap = {}
 
@@ -79,77 +74,77 @@ class ConversationView(Qt.QWidget):
         fmt = Qt.QTextFrameFormat()
         return fmt
 
-    def add_message(self, message, sent):
+    def add_message(self, message, member, source):
         if not message.body:
             return
 
         from_ = message.from_
-        if from_ is None:
+        if member is self.__conversation.me:
             from_ = "me"
         else:
             from_ = str(from_.bare())
 
-        info = MessageInfo()
-        info.from_ = from_
+        # info = MessageInfo()
+        # info.from_ = from_
 
         doc = self.ui.history.document()
 
-        if doc.isEmpty():
-            last_block = None
-            prev_from = None
-            cursor = Qt.QTextCursor(doc)
-        else:
-            cursor = doc.rootFrame().childFrames()[-1].lastCursorPosition()
-            last_block = cursor.block()
-            prev_from = last_block.userData().from_
-
-        if prev_from != from_:
-            cursor = Qt.QTextCursor(doc)
-            cursor.movePosition(Qt.QTextCursor.End)
-            fmt = self._message_frame_format()
-            outer_frame = cursor.insertFrame(fmt)
-            # start new part
-            fmt = Qt.QTextFrameFormat()
-            fmt.setWidth(Qt.QTextLength(Qt.QTextLength.FixedLength, 48))
-            fmt.setHeight(Qt.QTextLength(Qt.QTextLength.FixedLength, 48))
-            fmt.setBackground(Qt.QBrush(utils.text_to_qtcolor(from_)))
-            fmt.setMargin(4)
-            fmt.setPosition(Qt.QTextFrameFormat.FloatLeft)
-            cursor.insertFrame(fmt)
-            cursor.insertText(from_[0].upper())
-            cursor.movePosition(Qt.QTextCursor.NextCharacter)
-            tmp_cursor = outer_frame.firstCursorPosition()
-            tmp_cursor.block().setVisible(False)
-            last_block = None
-
-        if last_block is not None:
-            cursor.insertBlock()
-        cursor.insertText("{}: {}".format(
-            datetime.now().replace(microsecond=0).time(),
-            message.body.lookup([
-                aioxmpp.structs.LanguageRange.fromstr("*")
-            ]).strip()
-        ))
-        cursor.block().setUserData(info)
-
-        # fmt = self._message_frame_format()
-
         # if doc.isEmpty():
+        #     last_block = None
+        #     prev_from = None
+        #     cursor = Qt.QTextCursor(doc)
+        # else:
+        #     cursor = doc.rootFrame().childFrames()[-1].lastCursorPosition()
+        #     last_block = cursor.block()
+        #     prev_from = last_block.userData().from_
+
+        # if prev_from != from_:
         #     cursor = Qt.QTextCursor(doc)
         #     cursor.movePosition(Qt.QTextCursor.End)
+        #     fmt = self._message_frame_format()
+        #     outer_frame = cursor.insertFrame(fmt)
+        #     # start new part
+        #     fmt = Qt.QTextFrameFormat()
+        #     fmt.setWidth(Qt.QTextLength(Qt.QTextLength.FixedLength, 48))
+        #     fmt.setHeight(Qt.QTextLength(Qt.QTextLength.FixedLength, 48))
+        #     fmt.setBackground(Qt.QBrush(utils.text_to_qtcolor(from_)))
+        #     fmt.setMargin(4)
+        #     fmt.setPosition(Qt.QTextFrameFormat.FloatLeft)
+        #     cursor.insertFrame(fmt)
+        #     cursor.insertText(from_[0].upper())
+        #     cursor.movePosition(Qt.QTextCursor.NextCharacter)
+        #     tmp_cursor = outer_frame.firstCursorPosition()
+        #     tmp_cursor.block().setVisible(False)
+        #     last_block = None
+
+        # if last_block is not None:
+        #     cursor.insertBlock()
+        # cursor.insertText("{}: {}".format(
+        #     datetime.now().replace(microsecond=0).time(),
+        #     message.body.lookup([
+        #         aioxmpp.structs.LanguageRange.fromstr("*")
+        #     ]).strip()
+        # ))
+        # cursor.block().setUserData(info)
+
+        # fmt = Qt.QTextFrameFormat()
+
+        # if doc.isEmpty():
+        cursor = Qt.QTextCursor(doc)
+        cursor.movePosition(Qt.QTextCursor.End)
         # else:
         #     last_frame = doc.rootFrame().childFrames()[-1]
         #     cursor = last_frame.lastCursorPosition()
         #     cursor.movePosition(Qt.QTextCursor.NextCharacter)
 
         # cursor.insertFrame(fmt)
-        # cursor.insertText("{} {}: {}".format(
-        #     datetime.now().replace(microsecond=0).time(),
-        #     from_,
-        #     message.body.lookup([
-        #         aioxmpp.structs.LanguageRange.fromstr("*")
-        #     ]).strip()
-        # ))
+        cursor.insertText("{} {}: {}\n".format(
+            datetime.now().replace(microsecond=0).time(),
+            from_,
+            message.body.lookup([
+                aioxmpp.structs.LanguageRange.fromstr("*")
+            ]).strip()
+        ))
 
 
 # class ConversationsController(mlxc.conversation.Conversations):
