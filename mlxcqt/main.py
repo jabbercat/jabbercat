@@ -285,7 +285,7 @@ class MainWindow(Qt.QMainWindow):
             self._identity_added
         )
         self.main.identities.on_identity_removed.connect(
-            self.convmanager.handle_identity_removed
+            self._identity_removed
         )
 
         self.main.client.on_client_prepare.connect(
@@ -317,8 +317,26 @@ class MainWindow(Qt.QMainWindow):
         self.ui.conversation_pages.addWidget(page)
         self.ui.conversation_pages.setCurrentWidget(page)
 
+    def _set_conversations_view_root(self):
+        if len(self.main.identities.identities) == 1:
+            self.ui.conversations_view.setRootIndex(
+                self.__conversation_model.node_to_index(
+                    self.convmanager.get_identity_wrapper(
+                        self.main.identities.identities[0]
+                    )
+                )
+            )
+        else:
+            self.ui.conversations_view.setRootIndex(Qt.QModelIndex())
+
     def _identity_added(self, identity):
         self.convmanager.handle_identity_added(identity)
+        self._set_conversations_view_root()
+        self.ui.conversations_view.expandAll()
+
+    def _identity_removed(self, identity):
+        self.convmanager.handle_identity_removed(identity)
+        self._set_conversations_view_root()
         self.ui.conversations_view.expandAll()
 
     def _conversation_item_activated(self, index):
