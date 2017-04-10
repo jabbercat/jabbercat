@@ -70,19 +70,25 @@
      <string>M&amp;LXC</string>
     </property>
     <addaction name="action_manage_accounts"/>
+    <addaction name="action_muc_join"/>
    </widget>
    <addaction name="menuMLXC"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <action name="action_manage_accounts">
    <property name="text">
-    <string>Configure accounts …</string>
+    <string>&amp;Configure accounts …</string>
    </property>
    <property name="toolTip">
     <string>Add and remove XMPP accounts</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+Alt+Shift+A</string>
+   </property>
+  </action>
+  <action name="action_muc_join">
+   <property name="text">
+    <string>Join Multi-User Chat…</string>
    </property>
   </action>
  </widget>

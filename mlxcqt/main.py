@@ -310,6 +310,10 @@ class MainWindow(Qt.QMainWindow):
             self._conversation_added
         )
 
+        self.ui.action_muc_join.triggered.connect(
+            self._join_muc,
+        )
+
     def _conversation_added(self, wrapper):
         conv = wrapper.conversation
         page = conversation.ConversationView(conv)
@@ -358,6 +362,16 @@ class MainWindow(Qt.QMainWindow):
         conv = yield from p2p_convs.get_conversation(item.jid)
         page = self.__convmap[conv]
         self.ui.conversation_pages.setCurrentWidget(page)
+
+    def _join_muc(self, *args):
+        first_account = self.main.identities.identities[0].accounts[0]
+        print(first_account)
+        client = self.main.client.client_by_account(first_account)
+        print(client)
+        jid, *_ = Qt.QInputDialog.getText(self, "Input MUC JID", "MUC JID")
+        jid = aioxmpp.JID.fromstr(jid).bare()
+        muc = client.summon(aioxmpp.MUCClient)
+        muc.join(jid, "MLXC Test")
 
     def closeEvent(self, ev):
         result = super().closeEvent(ev)

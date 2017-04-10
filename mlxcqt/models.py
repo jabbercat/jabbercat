@@ -190,7 +190,7 @@ class ConversationsModel(Qt.QAbstractItemModel):
 
     def _conv_data(self, node, column, role):
         if role == Qt.Qt.DisplayRole:
-            return str(node.conversation.peer_jid)
+            return str(node.conversation.jid)
 
     def data(self, index, role):
         if index.isValid():

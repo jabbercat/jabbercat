@@ -31,7 +31,7 @@ class ConversationView(Qt.QWidget):
         self.ui.setupUi(self)
 
         self.ui.title_label.setText(
-            "Conversation with {}".format(conversation.peer_jid)
+            "Conversation with {}".format(conversation.jid)
         )
 
         self.ui.message_input.installEventFilter(self)
@@ -78,7 +78,7 @@ class ConversationView(Qt.QWidget):
         if not message.body:
             return
 
-        from_ = message.from_
+        from_ = member.direct_jid or member.conversation_jid
         if member is self.__conversation.me:
             from_ = "me"
         else:
