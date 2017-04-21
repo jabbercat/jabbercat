@@ -6,15 +6,15 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>913</width>
-    <height>584</height>
+    <width>773</width>
+    <height>545</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>My Little XMPP Client</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <layout class="QVBoxLayout" name="verticalLayout">
+   <layout class="QHBoxLayout" name="horizontalLayout">
     <item>
      <widget class="QSplitter" name="splitter_2">
       <property name="orientation">
@@ -24,12 +24,12 @@
        <property name="orientation">
         <enum>Qt::Vertical</enum>
        </property>
-       <property name="handleWidth">
-        <number>2</number>
-       </property>
-       <widget class="QListView" name="roster_view">
-        <property name="movement">
-         <enum>QListView::Free</enum>
+       <widget class="QTabWidget" name="roster_tabs">
+        <property name="currentIndex">
+         <number>-1</number>
+        </property>
+        <property name="tabBarAutoHide">
+         <bool>true</bool>
         </property>
        </widget>
        <widget class="QTreeView" name="conversations_view">
@@ -61,7 +61,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>913</width>
+     <width>773</width>
      <height>25</height>
     </rect>
    </property>
@@ -72,7 +72,15 @@
     <addaction name="action_manage_accounts"/>
     <addaction name="action_muc_join"/>
    </widget>
+   <widget class="QMenu" name="menuContacts">
+    <property name="title">
+     <string>&amp;Contacts</string>
+    </property>
+    <addaction name="actionAdd_contact"/>
+    <addaction name="actionInvite_contact"/>
+   </widget>
    <addaction name="menuMLXC"/>
+   <addaction name="menuContacts"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <action name="action_manage_accounts">
@@ -88,7 +96,17 @@
   </action>
   <action name="action_muc_join">
    <property name="text">
-    <string>Join Multi-User Chat…</string>
+    <string>&amp;Join Multi-User Chat…</string>
+   </property>
+  </action>
+  <action name="actionAdd_contact">
+   <property name="text">
+    <string>Add contact…</string>
+   </property>
+  </action>
+  <action name="actionInvite_contact">
+   <property name="text">
+    <string>Invite contact…</string>
    </property>
   </action>
  </widget>

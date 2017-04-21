@@ -1,3 +1,4 @@
+import asyncio
 import functools
 import html
 import logging
@@ -9,10 +10,14 @@ import mlxc.instrumentable_list
 from . import Qt, model_adaptor
 
 
+logger = logging.getLogger(__name__)
+
+
 class ItemWrapper:
-    def __init__(self, roster_item, account, presence):
+    def __init__(self, roster_item, client, account, presence):
         super().__init__()
         self._item = roster_item
+        self.client = client
         self.account = account
         self.presence = presence
 
@@ -51,12 +56,21 @@ class ItemWrapper:
 
 class RosterModel(Qt.QAbstractListModel):
     ITEM_ROLE = Qt.Qt.UserRole + 1
+    TAGS_ROLE = Qt.Qt.UserRole + 2
+
+    on_set_name = aioxmpp.callbacks.Signal()
 
     def __init__(self, items):
         super().__init__()
         self.items = items
         self._adaptor = model_adaptor.ModelListAdaptor(
             self.items, self)
+
+    def _raw_item_index(self, raw_item):
+        for i, item in enumerate(self.items):
+            if item._item is raw_item:
+                return i
+        raise ValueError("wrapper for {!r} is not in list".format(raw_item))
 
     def rowCount(self, parent):
         if parent.isValid():
@@ -67,6 +81,18 @@ class RosterModel(Qt.QAbstractListModel):
         if not index.isValid():
             return None
         return self.items[index.row()]
+
+    def raw_item_changed(self, raw_item):
+        try:
+            index = self._raw_item_index(raw_item)
+        except ValueError:
+            logger.warning("item not found for update in roster model")
+            return
+        qtindex = self.index(index, 0)
+        self.dataChanged.emit(
+            qtindex,
+            qtindex,
+        )
 
     def data(self, index, role):
         if not index.isValid():
@@ -107,8 +133,27 @@ class RosterModel(Qt.QAbstractListModel):
                 html.escape(str(item.account.jid)),
                 rows="</tr><tr>".join(rows)
             )
+        elif role == Qt.Qt.EditRole:
+            return item.name or ""
         elif role == self.ITEM_ROLE:
             return item
+        elif role == self.TAGS_ROLE:
+            return "".join(sorted(
+                tag+"\n" for tag in item.groups
+            ))
+
+    def setData(self, index, value, role):
+        if not index.isValid():
+            return False
+        if role != Qt.Qt.EditRole:
+            return False
+        self.on_set_name(self.items[index.row()], value)
+        return True
+
+    def flags(self, index):
+        flags = super().flags(index)
+        flags |= Qt.Qt.ItemIsEditable
+        return flags
 
 
 class Roster:
@@ -129,7 +174,19 @@ class Roster:
         )
         self.items = mlxc.instrumentable_list.ModelList()
         self.model = RosterModel(self.items)
+        self.model.on_set_name.connect(
+            self._on_set_name,
+            self.model.on_set_name.SPAWN_WITH_LOOP(None)
+        )
         self._clients = {}
+
+    @asyncio.coroutine
+    def _on_set_name(self, item_wrapper, new_name):
+        _, roster, *_ = self._clients[item_wrapper.client]
+        yield from roster.set_entry(
+            item_wrapper.jid,
+            name=new_name,
+        )
 
     def connect_client(self, account, client):
         roster = client.summon(aioxmpp.RosterClient)
@@ -164,6 +221,7 @@ class Roster:
         account, _, _, presence, _ = self._clients[client]
         self.items.append(ItemWrapper(
             item,
+            client,
             account,
             presence.get_most_available_stanza(
                 item.jid.bare()
@@ -175,14 +233,17 @@ class Roster:
 
     def on_entry_name_changed(self, client, item):
         logging.debug("on_entry_name_changed(%r, %r)", client, item)
+        self.model.raw_item_changed(item)
 
     def on_entry_added_to_group(self, client, item, group_name):
         logging.debug("on_entry_added_to_group(%r, %r, %r)",
                       client, item, group_name)
+        self.model.raw_item_changed(item)
 
     def on_entry_removed_from_group(self, client, item, group_name):
         logging.debug("on_entry_removed_from_group(%r, %r, %r)",
                       client, item, group_name)
+        self.model.raw_item_changed(item)
 
     def _get_item_by_jid(self, bare_jid):
         for item in self.items:

@@ -2,6 +2,8 @@ import PyQt5.Qt as Qt
 
 import mlxc.instrumentable_list
 
+from . import model_adaptor
+
 
 class AccountModel(Qt.QAbstractItemModel):
     COLUMN_NAME = 0
@@ -215,3 +217,106 @@ class ConversationsModel(Qt.QAbstractItemModel):
         if not index.isValid():
             return Qt.QModelIndex()
         return self.node_to_index(index.internalPointer().parent)
+
+
+class RosterTagsSelectionModel(Qt.QAbstractListModel):
+    COLUMN_NAME = 0
+    COLUMN_COUNT = 1
+
+    def __init__(self, model_list, parent=None):
+        super().__init__(parent=parent)
+        self._model_list = model_list
+        self._to_add = set()
+        self._to_remove = set()
+        self._original = {}
+        self.__adaptor = model_adaptor.ModelListAdaptor(model_list, self)
+
+    def select_group(self, group):
+        try:
+            index = self._model_list.index(group)
+        except ValueError:
+            return
+
+        self._to_add.add(group)
+        qtindex = self.index(index, 0)
+        self.dataChanged.emit(
+            qtindex,
+            qtindex,
+            [Qt.Qt.CheckStateRole]
+        )
+
+    def setup(self, item_groups):
+        self._to_add.clear()
+        self._to_remove.clear()
+        if not item_groups:
+            self._original = {}
+            return
+        common = set(item_groups[0])
+        all = set(item_groups[0])
+        for groups in item_groups[1:]:
+            groups = set(groups)
+            common &= groups
+            all |= groups
+
+        self._original = {
+            group: (Qt.Qt.Checked
+                    if group in common
+                    else Qt.Qt.PartiallyChecked)
+            for group in all
+        }
+
+        self.dataChanged.emit(
+            self.index(0, 0),
+            self.index(len(self._model_list)-1, 0),
+            [Qt.Qt.CheckStateRole]
+        )
+
+    def rowCount(self, parent):
+        if parent.isValid():
+            return 0
+        return len(self._model_list)
+
+    def data(self, index, role):
+        if not index.isValid():
+            return
+
+        row = index.row()
+        if role == Qt.Qt.DisplayRole:
+            return self._model_list[row]
+        elif role == Qt.Qt.CheckStateRole:
+            group = self._model_list[row]
+            if group in self._to_add:
+                return Qt.Qt.Checked
+            elif group in self._to_remove:
+                return Qt.Qt.Unchecked
+            return self._original.get(group, Qt.Qt.Unchecked)
+
+    def setData(self, index, value, role):
+        if not index.isValid():
+            return False
+        if role != Qt.Qt.CheckStateRole:
+            return False
+
+        group = self._model_list[index.row()]
+        if value == Qt.Qt.Checked:
+            self._to_add.add(group)
+            self._to_remove.discard(group)
+            return True
+        elif value == Qt.Qt.Unchecked:
+            self._to_remove.add(group)
+            self._to_add.discard(group)
+            return True
+        elif value == Qt.Qt.PartiallyChecked:
+            self._to_add.discard(group)
+            self._to_remove.discard(group)
+            return True
+
+        return False
+
+    def flags(self, index):
+        group = self._model_list[index.row()]
+        flags = super().flags(index)
+        flags |= Qt.Qt.ItemIsUserCheckable
+        if self._original.get(group, Qt.Qt.Unchecked) == Qt.Qt.PartiallyChecked:
+            flags |= Qt.Qt.ItemIsTristate | Qt.Qt.ItemIsUserTristate
+        return flags

@@ -1,5 +1,8 @@
 import asyncio
+import functools
+import html
 import random
+import types
 
 import aioxmpp
 import aioxmpp.im.p2p
@@ -10,10 +13,11 @@ import mlxc.utils
 
 from . import (
     Qt, client, roster, utils, account_manager,
-    conversation, models,
+    conversation, models, roster_tags,
 )
 
 from .ui.main import Ui_Main
+from .ui.roster import Ui_RosterWidget
 
 
 _PEPPER = random.SystemRandom().getrandbits(64).to_bytes(64//8, "little")
@@ -29,6 +33,8 @@ class RosterItemDelegate(Qt.QItemDelegate):
     NAME_FONT_SIZE = 1.1
 
     MAX_AVATAR_SIZE = 48
+
+    on_tag_clicked = aioxmpp.callbacks.Signal()
 
     def __init__(self, parent=None):
         super().__init__(parent=parent)
@@ -61,17 +67,64 @@ class RosterItemDelegate(Qt.QItemDelegate):
 
         return Qt.QSize(0, total_height)
 
+    def _hits_tag(self, local_pos, option, item):
+        name_font, tag_font = self._get_fonts(option.font)
+        name_metrics = Qt.QFontMetrics(name_font)
+        tag_metrics = Qt.QFontMetrics(tag_font)
+
+        avatar_size = min(option.rect.height() - self.PADDING * 2,
+                          self.MAX_AVATAR_SIZE)
+
+        top_left = option.rect.topLeft() + Qt.QPoint(
+            self.LEFT_PADDING+self.SPACING*2+avatar_size,
+            self.PADDING
+        )
+
+        top_left += Qt.QPoint(
+            0,
+            name_metrics.ascent() + name_metrics.descent() + self.SPACING
+        )
+
+        top_left += Qt.QPoint(
+            self.TAG_MARGIN,
+            tag_metrics.ascent() + tag_metrics.descent() + self.SPACING
+        )
+        groups = sorted(
+            ((group_full,
+              mlxc.utils.normalise_text_for_hash(group_full))
+             for group_full in item.groups),
+            key=lambda x: x[1]
+        )
+        for group, group_norm in groups:
+            width = tag_metrics.width(group)
+
+            tag_rect = Qt.QRectF(top_left, top_left + Qt.QPoint(
+                width + 2*self.TAG_PADDING,
+                tag_metrics.ascent() + tag_metrics.descent() +
+                2*self.TAG_PADDING
+            ))
+
+            if tag_rect.contains(local_pos):
+                return group
+
+            top_left += Qt.QPoint(
+                self.TAG_MARGIN + 2*self.TAG_PADDING + width,
+                0
+            )
+
+        return None
+
     def paint(self, painter, option, index):
         item = index.data(roster.RosterModel.ITEM_ROLE)
         name_font, tag_font = self._get_fonts(option.font)
 
         painter.setRenderHint(Qt.QPainter.Antialiasing, False)
         painter.setPen(Qt.Qt.NoPen)
-        if option.state & Qt.QStyle.State_Selected:
-            painter.setBrush(Qt.QBrush(option.palette.highlight()))
-        else:
-            painter.setBrush(Qt.QBrush(option.backgroundBrush))
-        painter.drawRect(option.rect)
+        style = option.widget.style() or Qt.QApplication.style()
+        style.drawControl(Qt.QStyle.CE_ItemViewItem, option, painter,
+                          option.widget)
+
+        cursor_pos = option.widget.mapFromGlobal(Qt.QCursor.pos())
 
         name = index.data()
 
@@ -143,7 +196,6 @@ class RosterItemDelegate(Qt.QItemDelegate):
         else:
             painter.setPen(option.palette.text().color())
 
-        name_font.setWeight(Qt.QFont.Bold)
         name_metrics = Qt.QFontMetrics(name_font)
         painter.setFont(name_font)
 
@@ -221,15 +273,20 @@ class RosterItemDelegate(Qt.QItemDelegate):
                 group_norm,
             )
 
+            tag_rect = Qt.QRectF(top_left, top_left + Qt.QPoint(
+                width + 2*self.TAG_PADDING,
+                tag_metrics.ascent() + tag_metrics.descent() +
+                2*self.TAG_PADDING
+            ))
+
+            if tag_rect.contains(cursor_pos):
+                colour = colour.lighter(125)
+
             painter.setPen(Qt.QPen(Qt.Qt.NoPen))
             painter.setBrush(Qt.QBrush(colour))
 
             painter.drawRoundedRect(
-                Qt.QRectF(top_left, top_left + Qt.QPoint(
-                    width + 2*self.TAG_PADDING,
-                    tag_metrics.ascent() + tag_metrics.descent() +
-                    2*self.TAG_PADDING
-                )),
+                tag_rect,
                 2.0, 2.0,
             )
 
@@ -252,6 +309,312 @@ class RosterItemDelegate(Qt.QItemDelegate):
                 "no tags"
             )
 
+    def updateEditorGeometry(self, editor, option, index):
+        print("updating editor geometry", editor)
+        avatar_size = min(option.rect.height() - self.PADDING * 2,
+                          self.MAX_AVATAR_SIZE)
+
+        top_left = option.rect.topLeft() + Qt.QPoint(
+            self.LEFT_PADDING+self.SPACING*2+avatar_size,
+            self.PADDING
+        )
+
+        editor_rect = Qt.QRect(
+            top_left,
+            Qt.QPoint(
+                option.rect.right()-self.PADDING,
+                top_left.y() + editor.geometry().height()
+            )
+        )
+        print(editor_rect)
+
+        editor.setGeometry(editor_rect)
+
+    def editorEvent(self, event, model, option, index):
+        if event.type() == Qt.QEvent.MouseButtonPress:
+            item = index.data(roster.RosterModel.ITEM_ROLE)
+            tag_hit = self._hits_tag(event.pos(), option, item)
+            if tag_hit is not None:
+                self.on_tag_clicked(tag_hit, event.modifiers())
+                return True
+        elif event.type() == Qt.QEvent.MouseMove:
+            option.widget.update(index)
+        return super().editorEvent(event, model, option, index)
+
+
+class RosterWidget(Qt.QWidget):
+    def __init__(self, main, identity, parent=None):
+        super().__init__(parent=parent)
+        self.main = main
+        self.roster_manager = roster.Roster()
+        self.identity = identity
+        self.ui = Ui_RosterWidget()
+        self.ui.setupUi(self)
+
+        self.ui.filter_widget.hide()
+        self.ui.clear_filters.clicked.connect(
+            self._clear_filters
+        )
+
+        self._filtered_for_tags = set()
+
+        self._tokens = []
+        self._tokens.append((
+            self.main.client.on_client_prepare,
+            self.main.client.on_client_prepare.connect(
+                self._prepare_client
+            )
+        ))
+        self._tokens.append((
+            self.main.client.on_client_stopped,
+            self.main.client.on_client_stopped.connect(
+                self._stop_client
+            )
+        ))
+
+        self.sorted_roster = Qt.QSortFilterProxyModel()
+        self.sorted_roster.setSourceModel(self.roster_manager.model)
+        self.sorted_roster.setSortRole(Qt.Qt.DisplayRole)
+        self.sorted_roster.setSortLocaleAware(True)
+        self.sorted_roster.setSortCaseSensitivity(False)
+        self.sorted_roster.setDynamicSortFilter(True)
+        self.sorted_roster.sort(0, Qt.Qt.AscendingOrder)
+
+        delegate = RosterItemDelegate(self.ui.roster_view)
+        delegate.on_tag_clicked.connect(self._tag_clicked)
+        self.ui.roster_view.setItemDelegate(delegate)
+        self.ui.roster_view.setModel(self.sorted_roster)
+        self.ui.roster_view.setMouseTracking(True)
+
+        self.ui.roster_view.activated.connect(
+            self._roster_item_activated,
+        )
+        self.ui.roster_view.customContextMenuRequested.connect(
+            self._roster_context_menu_requested,
+        )
+        self.ui.roster_view.selectionModel().selectionChanged.connect(
+            self._selection_changed
+        )
+
+        self.ui.action_manage_tags.triggered.connect(
+            self._manage_tags
+        )
+
+        self.ui.action_rename.triggered.connect(
+            self._rename
+        )
+
+        self._menu = Qt.QMenu()
+        self._menu.addAction(self.ui.action_add_contact)
+        self._menu.addAction(self.ui.action_invite_contact)
+        self._menu.addSeparator()
+        self._menu.addAction(self.ui.action_rename)
+        self._menu.addAction(self.ui.action_manage_tags)
+        self._menu.addSeparator()
+        self._menu.addAction(self.ui.action_subscribe)
+        self._menu.addAction(self.ui.action_subscribe_peer)
+        self._menu.addAction(self.ui.action_unsubscribe_peer)
+        self._menu.addSeparator()
+        self._filter_menu = self._menu.addMenu("Filter")
+        self._menu.addSeparator()
+        self._menu.addAction(self.ui.action_remove_contact)
+
+        self.addActions(self._menu.actions())
+
+        self._selection_changed(None, None)
+
+        for action in self.actions():
+            action.setShortcutContext(
+                Qt.Qt.WidgetWithChildrenShortcut
+            )
+
+    def tear_down(self):
+        for signal, token in self._tokens:
+            signal.disconnect(token)
+
+    def _clear_filters(self, *_):
+        self._filtered_for_tags.clear()
+        self._update_filters()
+
+    def _prepare_client(self,
+                        account: mlxc.identity.Account,
+                        client):
+        if account.identity is not self.identity:
+            return
+        self.roster_manager.connect_client(account, client)
+
+    def _stop_client(self,
+                     account: mlxc.identity.Account,
+                     client):
+        if account.identity is not self.identity:
+            return
+        self.roster_manager.disconnect_client(account, client)
+
+    def _rename(self):
+        index = self.ui.roster_view.currentIndex()
+        self.ui.roster_view.edit(index)
+
+    def _tag_clicked(self, tag, modifiers):
+        if modifiers & Qt.Qt.ControlModifier:
+            try:
+                self._filtered_for_tags.remove(tag)
+            except KeyError:
+                self._filtered_for_tags.add(tag)
+        else:
+            if self._filtered_for_tags == {tag}:
+                self._filtered_for_tags.discard(tag)
+            else:
+                self._filtered_for_tags = {tag}
+
+        self._update_filters()
+
+    def _update_filters(self):
+        parts = [
+            Qt.QRegExp.escape(tag+"\n")
+            for tag in sorted(self._filtered_for_tags)
+        ]
+        regex = "(.*)".join(parts)
+
+        self.sorted_roster.setFilterKeyColumn(0)
+        self.sorted_roster.setFilterCaseSensitivity(True)
+        self.sorted_roster.setFilterRole(roster.RosterModel.TAGS_ROLE)
+        self.sorted_roster.setFilterRegExp(
+            Qt.QRegExp(regex)
+        )
+
+        filter_text_parts = []
+        if self._filtered_for_tags:
+            filter_text_parts.append(
+                ", ".join(
+                    "<span style='background-color: rgba({}, 1);'>"
+                    "{}</span>".format(
+                        ", ".join(
+                            str(int(channel*255))
+                            for channel in mlxc.utils.text_to_colour(
+                                    mlxc.utils.normalise_text_for_hash(tag)
+                            )
+                        ),
+                        tag
+                    )
+                    for tag in sorted(
+                            self._filtered_for_tags
+                    )
+                )
+            )
+
+        if filter_text_parts:
+            self.ui.filter_widget.show()
+            self.ui.filter_label.setText(
+                "Filtering for {}".format(", ".join(filter_text_parts))
+            )
+        else:
+            self.ui.filter_widget.hide()
+
+    def _selection_changed(self, selected, deselected):
+        selection_model = self.ui.roster_view.selectionModel()
+        all_selected = selection_model.selectedIndexes()
+        selected_count = len(all_selected)
+
+        self.ui.action_rename.setEnabled(
+            selected_count == 1 and selection_model.currentIndex().isValid()
+        )
+        self.ui.action_manage_tags.setEnabled(
+            selected_count > 0
+        )
+        self.ui.action_subscribe.setEnabled(
+            selected_count > 0
+        )
+        self.ui.action_subscribe_peer.setEnabled(
+            selected_count > 0
+        )
+        self.ui.action_unsubscribe_peer.setEnabled(
+            selected_count > 0
+        )
+        self.ui.action_remove_contact.setEnabled(
+            selected_count > 0
+        )
+
+    @utils.asyncify
+    @asyncio.coroutine
+    def _roster_item_activated(self, index):
+        item = self.roster_manager.model.item_wrapper_from_index(
+            self.ui.roster_view.model().mapToSource(index)
+        )
+        client = self.main.client.client_by_account(item.account)
+        p2p_convs = client.summon(aioxmpp.im.p2p.Service)
+        print("starting conversation with", item.jid)
+        conv = yield from p2p_convs.get_conversation(item.jid)
+        page = self.__convmap[conv]
+        self.ui.conversation_pages.setCurrentWidget(page)
+
+    def _get_all_tags(self):
+        all_groups = set()
+        for account in self.identity.accounts:
+            try:
+                client = self.main.client.client_by_account(account)
+            except KeyError:
+                continue
+            all_groups |= set(
+                client.summon(aioxmpp.RosterClient).groups.keys()
+            )
+        return all_groups
+
+    @utils.asyncify
+    @asyncio.coroutine
+    def _manage_tags(self, _):
+        items = [
+            self.roster_manager.model.item_wrapper_from_index(
+                self.ui.roster_view.model().mapToSource(index)
+            )
+            for index in self.ui.roster_view.selectedIndexes()
+        ]
+        widget = roster_tags.RosterTagsPopup()
+        pos = Qt.QCursor.pos()
+        result = yield from widget.run(pos, self._get_all_tags(), items)
+        if result is not None:
+            to_add, to_remove = result
+            print(to_add, to_remove)
+            tasks = []
+            for item in items:
+                client = self.main.client.client_by_account(item.account)
+                roster = client.summon(aioxmpp.RosterClient)
+                task = asyncio.ensure_future(
+                    roster.set_entry(
+                        item.jid,
+                        add_to_groups=to_add,
+                        remove_from_groups=to_remove,
+                    )
+                )
+                tasks.append(task)
+            yield from asyncio.gather(*tasks)
+
+    def _roster_context_menu_requested(self, pos):
+        all_tags = list(self._get_all_tags())
+        all_tags.sort(key=str.casefold)
+        self._filter_menu.clear()
+
+        action = self._filter_menu.addAction("Clear all filters")
+        action.triggered.connect(self._clear_filters)
+
+        self._filter_menu.addSection("Tags")
+
+        def tag_action_triggered(tag, checked):
+            if checked:
+                self._filtered_for_tags.add(tag)
+            else:
+                self._filtered_for_tags.discard(tag)
+            self._update_filters()
+
+        for tag in all_tags:
+            action = self._filter_menu.addAction(tag)
+            action.setCheckable(True)
+            action.setChecked(tag in self._filtered_for_tags)
+            action.triggered.connect(
+                functools.partial(tag_action_triggered, tag)
+            )
+
+        self._menu.popup(self.ui.roster_view.mapToGlobal(pos))
+
 
 class MainWindow(Qt.QMainWindow):
     def __init__(self, main, parent=None):
@@ -263,18 +626,6 @@ class MainWindow(Qt.QMainWindow):
             main.client,
             main.identities,
         )
-
-        sorted_roster = Qt.QSortFilterProxyModel(self.ui.roster_view)
-        sorted_roster.setSourceModel(self.main.roster.model)
-        sorted_roster.setSortRole(Qt.Qt.DisplayRole)
-        sorted_roster.setSortLocaleAware(True)
-        sorted_roster.setSortCaseSensitivity(False)
-        sorted_roster.setDynamicSortFilter(True)
-        sorted_roster.sort(0, Qt.Qt.AscendingOrder)
-        self.ui.roster_view.setModel(sorted_roster)
-        delegate = RosterItemDelegate(self.ui.roster_view)
-        self.ui.roster_view.setItemDelegate(delegate)
-        self.ui.roster_view.activated.connect(self._roster_item_activated)
 
         self.ui.action_manage_accounts.triggered.connect(
             self.account_manager.open
@@ -314,6 +665,8 @@ class MainWindow(Qt.QMainWindow):
             self._join_muc,
         )
 
+        self.__identitymap = {}
+
     def _conversation_added(self, wrapper):
         conv = wrapper.conversation
         page = conversation.ConversationView(conv)
@@ -333,12 +686,27 @@ class MainWindow(Qt.QMainWindow):
         else:
             self.ui.conversations_view.setRootIndex(Qt.QModelIndex())
 
+    def _setup_identity(self, identity):
+        widget = RosterWidget(self.main, identity)
+
+        self.ui.roster_tabs.addTab(
+            widget,
+            identity.name
+        )
+
+        return widget
+
+    def _teardown_identity(self, info):
+        info.tear_down()
+
     def _identity_added(self, identity):
+        self.__identitymap[identity] = self._setup_identity(identity)
         self.convmanager.handle_identity_added(identity)
         self._set_conversations_view_root()
         self.ui.conversations_view.expandAll()
 
     def _identity_removed(self, identity):
+        self._teardown_identity(self.__identitymap.pop(identity))
         self.convmanager.handle_identity_removed(identity)
         self._set_conversations_view_root()
         self.ui.conversations_view.expandAll()
@@ -349,19 +717,6 @@ class MainWindow(Qt.QMainWindow):
             conv = node.object_.conversation
             page = self.__convmap[conv]
             self.ui.conversation_pages.setCurrentWidget(page)
-
-    @utils.asyncify
-    @asyncio.coroutine
-    def _roster_item_activated(self, index):
-        item = self.main.roster.model.item_wrapper_from_index(
-            self.ui.roster_view.model().mapToSource(index)
-        )
-        client = self.main.client.client_by_account(item.account)
-        p2p_convs = client.summon(aioxmpp.im.p2p.Service)
-        print("starting conversation with", item.jid)
-        conv = yield from p2p_convs.get_conversation(item.jid)
-        page = self.__convmap[conv]
-        self.ui.conversation_pages.setCurrentWidget(page)
 
     def _join_muc(self, *args):
         first_account = self.main.identities.identities[0].accounts[0]
@@ -384,10 +739,6 @@ class QtMain(mlxc.main.Main):
 
     def __init__(self, loop):
         super().__init__(loop)
-        self.roster = roster.Roster()
-        self.client.on_client_prepare.connect(self.roster.connect_client)
-        self.client.on_client_stopped.connect(self.roster.disconnect_client)
-
         self.window = MainWindow(self)
 
     @asyncio.coroutine
