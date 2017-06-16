@@ -543,9 +543,7 @@ class RosterWidget(Qt.QWidget):
         client = self.main.client.client_by_account(item.account)
         p2p_convs = client.summon(aioxmpp.im.p2p.Service)
         print("starting conversation with", item.jid)
-        conv = yield from p2p_convs.get_conversation(item.jid)
-        page = self.__convmap[conv]
-        self.ui.conversation_pages.setCurrentWidget(page)
+        yield from p2p_convs.get_conversation(item.jid)
 
     def _get_all_tags(self):
         all_groups = set()
