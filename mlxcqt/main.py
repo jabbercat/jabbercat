@@ -605,9 +605,16 @@ class RosterWidget(Qt.QWidget):
             self._update_filters()
 
         for tag in all_tags:
+            color = utils.text_to_qtcolor(
+                mlxc.utils.normalise_text_for_hash(tag)
+            )
             action = self._filter_menu.addAction(tag)
+            icon = Qt.QPixmap(16, 16)
+            icon.fill(color)
+            icon = Qt.QIcon(icon)
             action.setCheckable(True)
             action.setChecked(tag in self._filtered_for_tags)
+            action.setIcon(icon)
             action.triggered.connect(
                 functools.partial(tag_action_triggered, tag)
             )
