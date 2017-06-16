@@ -331,7 +331,8 @@ class RosterItemDelegate(Qt.QItemDelegate):
         editor.setGeometry(editor_rect)
 
     def editorEvent(self, event, model, option, index):
-        if event.type() == Qt.QEvent.MouseButtonPress:
+        if (event.type() == Qt.QEvent.MouseButtonPress and
+                event.button() == Qt.Qt.LeftButton):
             item = index.data(roster.RosterModel.ITEM_ROLE)
             tag_hit = self._hits_tag(event.pos(), option, item)
             if tag_hit is not None:
