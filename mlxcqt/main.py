@@ -13,7 +13,7 @@ import mlxc.utils
 
 from . import (
     Qt, client, roster, utils, account_manager,
-    conversation, models, roster_tags,
+    conversation, models, roster_tags, taskmanager,
 )
 
 from .ui.main import Ui_Main
@@ -631,6 +631,10 @@ class MainWindow(Qt.QMainWindow):
         self.account_manager = account_manager.DlgAccountManager(
             main.client,
             main.identities,
+        )
+
+        self.ui.statusbar.addPermanentWidget(
+            taskmanager.TaskStatusWidget(self.ui.statusbar)
         )
 
         self.ui.action_manage_accounts.triggered.connect(
