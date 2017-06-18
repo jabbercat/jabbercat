@@ -3,6 +3,7 @@ import functools
 
 from datetime import datetime
 
+import aioxmpp.im.conversation
 import aioxmpp.im.p2p
 import aioxmpp.im.service
 import aioxmpp.structs
@@ -68,7 +69,15 @@ class ConversationView(Qt.QWidget):
         msg = aioxmpp.Message(type_="chat")
         msg.body[None] = body
         self.ui.message_input.clear()
-        yield from self.__conversation.send_message(msg)
+        if (aioxmpp.im.conversation.ConversationFeature.SEND_MESSAGE_TRACKED
+                in self.__conversation.features):
+            print("using tracker")
+            _, tracker = self.__conversation.send_message_tracked(msg)
+            tracker.set_timeout(60)
+            print("used tracker")
+        else:
+            print("tracking not supported")
+            yield from self.__conversation.send_message(msg)
 
     def _message_frame_format(self):
         fmt = Qt.QTextFrameFormat()
