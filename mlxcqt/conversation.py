@@ -83,15 +83,16 @@ class ConversationView(Qt.QWidget):
         fmt = Qt.QTextFrameFormat()
         return fmt
 
-    def add_message(self, message, member, source):
+    def add_message(self, message, member, source, tracker=None, **kwargs):
         if not message.body:
             return
 
-        from_ = member.direct_jid or member.conversation_jid
         if member is self.__conversation.me:
             from_ = "me"
+        elif member is not None:
+            from_ = (member.direct_jid or member.conversation_jid).bare()
         else:
-            from_ = str(from_.bare())
+            from_ = str(message.from_.bare())
 
         # info = MessageInfo()
         # info.from_ = from_
