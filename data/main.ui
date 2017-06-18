@@ -84,6 +84,9 @@
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <action name="action_manage_accounts">
+   <property name="icon">
+    <iconset theme="document-properties"/>
+   </property>
    <property name="text">
     <string>&amp;Configure accounts …</string>
    </property>
@@ -100,13 +103,16 @@
    </property>
   </action>
   <action name="actionAdd_contact">
+   <property name="icon">
+    <iconset theme="contact-new"/>
+   </property>
    <property name="text">
-    <string>Add contact…</string>
+    <string>&amp;Add contact…</string>
    </property>
   </action>
   <action name="actionInvite_contact">
    <property name="text">
-    <string>Invite contact…</string>
+    <string>&amp;Invite contact…</string>
    </property>
   </action>
  </widget>
