@@ -10,6 +10,7 @@ import aioxmpp.im.p2p
 import mlxc.conversation
 import mlxc.main
 import mlxc.utils
+import mlxc.tasks
 
 from . import (
     Qt, client, roster, utils, account_manager,
@@ -731,12 +732,22 @@ class MainWindow(Qt.QMainWindow):
     def _join_muc(self, *args):
         first_account = self.main.identities.identities[0].accounts[0]
         print(first_account)
-        client = self.main.client.client_by_account(first_account)
-        print(client)
         jid, *_ = Qt.QInputDialog.getText(self, "Input MUC JID", "MUC JID")
-        jid = aioxmpp.JID.fromstr(jid).bare()
+        jid = aioxmpp.JID.fromstr(jid)
+        mucjid = jid.bare()
+        nick = jid.resource
+        mlxc.tasks.manager.start(self.join_muc(first_account, mucjid, nick))
+
+    @asyncio.coroutine
+    def join_muc(self, account, mucjid, nick):
+        nick = nick or "test"
+        mlxc.tasks.manager.update_text(
+            "Joining group chat {} as {}".format(mucjid, nick)
+        )
+        client = self.main.client.client_by_account(account)
         muc = client.summon(aioxmpp.MUCClient)
-        muc.join(jid, "MLXC Test")
+        room, fut = muc.join(mucjid, nick)
+        yield from fut
 
     def closeEvent(self, ev):
         result = super().closeEvent(ev)
