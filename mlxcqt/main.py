@@ -1,8 +1,6 @@
 import asyncio
 import functools
-import html
 import random
-import types
 
 import aioxmpp
 import aioxmpp.im.p2p
