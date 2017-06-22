@@ -2,9 +2,9 @@ import asyncio
 
 import aioxmpp
 
-from . import Qt, models, utils
+from .. import Qt, models, utils
 
-from .ui import dlg_join_muc
+from ..ui import dlg_join_muc
 
 
 class JoinMuc(Qt.QDialog):

@@ -5,9 +5,10 @@ import PyQt5.Qt as Qt
 import mlxc.instrumentable_list
 import mlxc.identity
 
-from .ui import dlg_account_manager
+from .. import utils, models
+from ..ui import dlg_account_manager
 
-from . import add_account, utils, models
+from . import add_account
 
 
 class DlgAccountManager(Qt.QDialog):

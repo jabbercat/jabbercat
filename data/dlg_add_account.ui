@@ -117,13 +117,13 @@
   <customwidget>
    <class>PageCredentials</class>
    <extends>QWizardPage</extends>
-   <header>mlxcqt.add_account</header>
+   <header>mlxcqt.dialogs.add_account</header>
    <container>1</container>
   </customwidget>
   <customwidget>
    <class>PageConnecting</class>
    <extends>QWizardPage</extends>
-   <header>mlxcqt.add_account</header>
+   <header>mlxcqt.dialogs.add_account</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

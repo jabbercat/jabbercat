@@ -9,12 +9,12 @@ import aioxmpp
 import mlxc.client
 import mlxc.config
 
-from .ui import (
+from ..ui import (
     dlg_add_account_page_credentials,
     dlg_add_account_page_connecting,
 )
 
-from . import utils, models
+from .. import utils, models
 
 
 class AddAccountWizardPage(Qt.QWizardPage):
@@ -278,7 +278,7 @@ class PageConnecting(AddAccountWizardPage):
 
 class DlgAddAccount(Qt.QWizard):
     def __init__(self, client, identities, parent=None):
-        from .ui import dlg_add_account
+        from ..ui import dlg_add_account
         super().__init__(parent)
         self._client = client
         self._identities = identities

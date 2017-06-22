@@ -1,11 +1,9 @@
 import asyncio
 
-import aioxmpp
-
 import mlxc.client
 import mlxc.identity
 
-from . import password_prompt
+from .dialogs import password_prompt
 
 
 class Client(mlxc.client.Client):

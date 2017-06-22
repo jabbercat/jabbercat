@@ -1,7 +1,7 @@
 import asyncio
 
-from . import Qt, utils
-from .ui.dlg_password_prompt import Ui_dlg_password_prompt
+from .. import Qt, utils
+from ..ui.dlg_password_prompt import Ui_dlg_password_prompt
 
 
 class DlgPasswordPrompt(Qt.QDialog, Ui_dlg_password_prompt):
