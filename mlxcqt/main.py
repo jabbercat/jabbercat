@@ -15,6 +15,7 @@ import mlxc.tasks
 from . import (
     Qt, client, roster, utils, account_manager,
     conversation, models, roster_tags, taskmanager,
+    join_muc,
 )
 
 from .ui.main import Ui_Main
@@ -729,14 +730,18 @@ class MainWindow(Qt.QMainWindow):
             page = self.__convmap[conv]
             self.ui.conversation_pages.setCurrentWidget(page)
 
+    @utils.asyncify
+    @asyncio.coroutine
     def _join_muc(self, *args):
-        first_account = self.main.identities.identities[0].accounts[0]
+        first_account = self.main.identities.identities[1].accounts[0]
         print(first_account)
-        jid, *_ = Qt.QInputDialog.getText(self, "Input MUC JID", "MUC JID")
-        jid = aioxmpp.JID.fromstr(jid)
-        mucjid = jid.bare()
-        nick = jid.resource
-        mlxc.tasks.manager.start(self.join_muc(first_account, mucjid, nick))
+        dlg = join_muc.JoinMuc(self.main.identities)
+        join_info = yield from dlg.run()
+        if join_info is not None:
+            account, mucjid, nick = join_info
+            mlxc.tasks.manager.start(
+                self.join_muc(first_account, mucjid, nick)
+            )
 
     @asyncio.coroutine
     def join_muc(self, account, mucjid, nick):

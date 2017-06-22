@@ -10,6 +10,8 @@ class AccountModel(Qt.QAbstractItemModel):
     COLUMN_ENABLED = 1
     COLUMN_COUNT = 2
 
+    ROLE_OBJECT = Qt.Qt.UserRole + 1
+
     def __init__(self, tree, identities=None):
         super().__init__()
         self.tree = tree
@@ -114,6 +116,10 @@ class AccountModel(Qt.QAbstractItemModel):
         node = index.internalPointer()
         column = index.column()
         object_ = node.object_
+
+        if role == self.ROLE_OBJECT:
+            return object_
+
         if isinstance(object_, mlxc.identity.Identity):
             result = self._data_identity(object_, column, role)
         elif isinstance(object_, mlxc.identity.Account):
