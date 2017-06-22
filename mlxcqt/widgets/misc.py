@@ -1,4 +1,4 @@
-from . import Qt, models
+from .. import Qt, models
 
 
 class PlaceholderTreeView(Qt.QTreeView):
