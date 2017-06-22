@@ -22,7 +22,7 @@
     </widget>
    </item>
    <item row="0" column="1">
-    <widget class="TreeComboBox" name="account">
+    <widget class="AccountSelectorBox" name="account">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
        <horstretch>0</horstretch>
@@ -68,9 +68,9 @@
  </widget>
  <customwidgets>
   <customwidget>
-   <class>TreeComboBox</class>
+   <class>AccountSelectorBox</class>
    <extends>QComboBox</extends>
-   <header>mlxcqt.tree_combo_box</header>
+   <header>mlxcqt.widgets</header>
   </customwidget>
  </customwidgets>
  <resources/>

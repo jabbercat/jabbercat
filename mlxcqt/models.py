@@ -326,3 +326,24 @@ class RosterTagsSelectionModel(Qt.QAbstractListModel):
         if self._original.get(group, Qt.Qt.Unchecked) == Qt.Qt.PartiallyChecked:
             flags |= Qt.Qt.ItemIsTristate | Qt.Qt.ItemIsUserTristate
         return flags
+
+
+class DisableSelectionOfIdentities(Qt.QIdentityProxyModel):
+    def flags(self, index):
+        flags = super().flags(index)
+        if not index.parent().isValid():
+            flags &= ~(Qt.Qt.ItemIsSelectable)
+        return flags
+
+
+class FilterDisabledItems(Qt.QSortFilterProxyModel):
+    def filterAcceptsRow(self, source_row, source_parent):
+        index = self.sourceModel().index(
+            source_row,
+            AccountModel.COLUMN_ENABLED,
+            source_parent
+        )
+        is_enabled = self.sourceModel().data(index, Qt.Qt.CheckStateRole)
+        if is_enabled != Qt.Qt.Checked:
+            return False
+        return True
