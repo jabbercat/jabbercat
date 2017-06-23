@@ -237,6 +237,23 @@ class RosterTagsSelectionModel(Qt.QAbstractListModel):
         self._original = {}
         self.__adaptor = model_adaptor.ModelListAdaptor(model_list, self)
 
+    @property
+    def to_add(self):
+        return frozenset(self._to_add)
+
+    @property
+    def to_remove(self):
+        return frozenset(self._to_remove)
+
+    @property
+    def selected(self):
+        return frozenset(set(self._original.keys()) -
+                         self._to_remove) | self._to_add
+
+    def select_groups(self, groups):
+        for group in groups:
+            self.select_group(group)
+
     def select_group(self, group):
         try:
             index = self._model_list.index(group)

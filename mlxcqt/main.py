@@ -19,6 +19,7 @@ from .dialogs import (
     account_manager,
     join_muc,
     roster_tags,
+    add_contact,
 )
 
 from .ui.main import Ui_Main
@@ -680,6 +681,10 @@ class MainWindow(Qt.QMainWindow):
             self._join_muc,
         )
 
+        self.ui.action_add_contact.triggered.connect(
+            self._add_contact,
+        )
+
         self.__identitymap = {}
 
     def _conversation_added(self, wrapper):
@@ -736,8 +741,6 @@ class MainWindow(Qt.QMainWindow):
     @utils.asyncify
     @asyncio.coroutine
     def _join_muc(self, *args):
-        first_account = self.main.identities.identities[1].accounts[0]
-        print(first_account)
         dlg = join_muc.JoinMuc(self.main.identities)
         join_info = yield from dlg.run()
         if join_info is not None:
@@ -745,6 +748,39 @@ class MainWindow(Qt.QMainWindow):
             mlxc.tasks.manager.start(
                 self.join_muc(first_account, mucjid, nick)
             )
+
+    @utils.asyncify
+    @asyncio.coroutine
+    def _add_contact(self, *args):
+        dlg = add_contact.DlgAddContact(self.main)
+        result = yield from dlg.run()
+        if result is None:
+            return
+        account, peer_jid, display_name, tags = result
+        mlxc.tasks.manager.start(self.add_contact(
+            account,
+            peer_jid,
+            display_name,
+            tags,
+        ))
+
+    @asyncio.coroutine
+    def add_contact(self, account, peer_jid, display_name, tags):
+        try:
+            client = self.main.client.client_by_account(account)
+        except KeyError:
+            raise RuntimeError(
+                "account needed for the operation is connected"
+            )
+
+        roster = client.summon(aioxmpp.RosterClient)
+        roster.subscribe(peer_jid)
+        roster.approve(peer_jid)
+        yield from roster.set_entry(
+            peer_jid,
+            name=display_name or None,
+            add_to_groups=tags,
+        )
 
     @asyncio.coroutine
     def join_muc(self, account, mucjid, nick):

@@ -1,3 +1,5 @@
+import mlxc.identity
+
 from .. import Qt, models
 
 
@@ -94,6 +96,9 @@ class AccountSelectorBox(TreeComboBox):
             if self._account_index and not self._account_index.isValid():
                 self._account_index = None
                 self.currentAccountChanged.emit()
+            return
+        if not isinstance(new_index.data(models.AccountModel.ROLE_OBJECT),
+                          mlxc.identity.Account):
             return
         new_index = Qt.QPersistentModelIndex(new_index)
         if new_index != self._account_index:

@@ -76,8 +76,8 @@
     <property name="title">
      <string>&amp;Contacts</string>
     </property>
-    <addaction name="actionAdd_contact"/>
-    <addaction name="actionInvite_contact"/>
+    <addaction name="action_add_contact"/>
+    <addaction name="action_invite_contact"/>
    </widget>
    <addaction name="menuMLXC"/>
    <addaction name="menuContacts"/>
@@ -85,7 +85,8 @@
   <widget class="QStatusBar" name="statusbar"/>
   <action name="action_manage_accounts">
    <property name="icon">
-    <iconset theme="document-properties"/>
+    <iconset theme="document-properties">
+     <normaloff>.</normaloff>.</iconset>
    </property>
    <property name="text">
     <string>&amp;Configure accounts …</string>
@@ -102,15 +103,16 @@
     <string>&amp;Join Multi-User Chat…</string>
    </property>
   </action>
-  <action name="actionAdd_contact">
+  <action name="action_add_contact">
    <property name="icon">
-    <iconset theme="contact-new"/>
+    <iconset theme="contact-new">
+     <normaloff>.</normaloff>.</iconset>
    </property>
    <property name="text">
     <string>&amp;Add contact…</string>
    </property>
   </action>
-  <action name="actionInvite_contact">
+  <action name="action_invite_contact">
    <property name="text">
     <string>&amp;Invite contact…</string>
    </property>
