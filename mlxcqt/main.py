@@ -11,13 +11,14 @@ import mlxc.utils
 import mlxc.tasks
 
 from . import (
-    Qt, client, roster, utils, roster_tags,
+    Qt, client, roster, utils,
     conversation, models, taskmanager,
 )
 
 from .dialogs import (
     account_manager,
     join_muc,
+    roster_tags,
 )
 
 from .ui.main import Ui_Main
