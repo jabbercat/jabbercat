@@ -746,7 +746,7 @@ class MainWindow(Qt.QMainWindow):
         if join_info is not None:
             account, mucjid, nick = join_info
             mlxc.tasks.manager.start(
-                self.join_muc(first_account, mucjid, nick)
+                self.join_muc(account, mucjid, nick)
             )
 
     @utils.asyncify
