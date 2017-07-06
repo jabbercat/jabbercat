@@ -1,3 +1,5 @@
+import bisect
+
 import PyQt5.Qt as Qt
 
 import mlxc.instrumentable_list
@@ -349,7 +351,7 @@ class DisableSelectionOfIdentities(Qt.QIdentityProxyModel):
     def flags(self, index):
         flags = super().flags(index)
         if not index.parent().isValid():
-            flags &= ~(Qt.Qt.ItemIsSelectable)
+            flags = (flags & ~(Qt.Qt.ItemIsSelectable | Qt.Qt.ItemIsEnabled))
         return flags
 
 
@@ -364,3 +366,170 @@ class FilterDisabledItems(Qt.QSortFilterProxyModel):
         if is_enabled != Qt.Qt.Checked:
             return False
         return True
+
+
+class FlattenModelToSeparators(Qt.QAbstractProxyModel):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._breaks = []
+        self._connections = []
+
+    def setSourceModel(self, new_model):
+        self.beginResetModel()
+        self._breaks.clear()
+        for conn in self._connections:
+            conn.disconnect()
+        super().setSourceModel(new_model)
+
+        model = self.sourceModel()
+        self._breaks.clear()
+        i_absolute = 0
+        for i in range(model.rowCount()):
+            idx = model.index(i, 0, Qt.QModelIndex())
+            nchildren = model.rowCount(idx)
+            self._breaks.append(
+                i_absolute
+            )
+            i_absolute += nchildren+1
+
+        self._connections.append(
+            model.rowsInserted.connect(self._source_rowsInserted)
+        )
+
+        self.endResetModel()
+
+    def _source_rowsInserted(self, parent, start, end):
+        print(parent, start, end)
+        # check if the parent maps to our root
+        if self.mapFromSource(parent).parent().isValid():
+            # drop
+            return
+
+        if parent.isValid():
+            # adding inlined children
+            # map start index
+            mapped_parent = self.mapFromSource(parent)
+            offset = mapped_parent.row() + 1
+            start_mapped = start + offset
+            end_mapped = end + offset
+            new_children = (end - start) + 1
+            self.beginInsertRows(Qt.QModelIndex(), start_mapped, end_mapped)
+            for i, old_break in enumerate(
+                    self._breaks[parent.row()+1:],
+                    parent.row()+1):  # update breaks *after* the parent
+                self._breaks[i] += new_children
+            self.endInsertRows()
+        else:
+            # adding new root
+            # find break for start index
+            if start >= len(self._breaks):
+                offset = self._len() - start
+            else:
+                offset = self._breaks[offset+1] - start
+
+            print(start, end, offset)
+
+            start_mapped = start + offset
+            end_mapped = end + offset
+            new_children = (end - start) + 1
+
+            self.beginInsertRows(Qt.QModelIndex(), start_mapped, end_mapped)
+            print(self._breaks, start, start_mapped)
+            for i, old_break in enumerate(
+                    self._breaks[start+1:],
+                    start+1):  # update breaks *after* the newly inserted ones
+                self._breaks[i] += new_children
+
+            # insert new breaks
+            print(self._breaks, start, start_mapped)
+            self._breaks[start+1:start+1] = range(start_mapped, end_mapped+1)
+            print(self._breaks, start, start_mapped, self._len())
+            self.endInsertRows()
+
+            source = self.sourceModel()
+            for new_i in range(start, end+1):
+                new_idx = source.index(new_i, 0, Qt.QModelIndex())
+                nchildren = source.rowCount(new_idx)
+                if nchildren == 0:
+                    continue
+
+                self._source_rowsInserted(new_idx, 0, nchildren-1)
+
+    def _len(self):
+        if not self._breaks:
+            return 0
+        return self._breaks[-1] + self.sourceModel().rowCount(
+            self.sourceModel().index(len(self._breaks)-1, 0, Qt.QModelIndex())
+        ) + 1
+
+    def rowCount(self, parent):
+        if parent.isValid():
+            return 0
+
+        return self._len()
+
+    def columnCount(self, parent):
+        if not self.sourceModel():
+            return 0
+        return self.sourceModel().columnCount(self.mapToSource(parent))
+
+    def index(self, row, column, parent):
+        if parent.isValid():
+            return Qt.QModelIndex()
+        if not (0 <= row < self.rowCount(parent)):
+            return Qt.QModelIndex()
+        if not (0 <= column < self.columnCount(parent)):
+            return Qt.QModelIndex()
+        return super().createIndex(row, column, parent)
+
+    def parent(self, index):
+        return Qt.QModelIndex()
+
+    def _map_firstlevel_to_source(self, proxyIndex):
+        row = proxyIndex.row()
+        # find the row in the breaks list
+        mapping = bisect.bisect(self._breaks, row)-1
+        print(row, self._breaks, mapping)
+        if self._breaks[mapping] == row:
+            # first level in source
+            return self.sourceModel().index(
+                mapping,
+                proxyIndex.column(),
+            )
+        else:
+            # second level in source
+            # find parent
+            parent_idx = self.sourceModel().index(
+                mapping,
+                0,
+            )
+            child_row = (row - self._breaks[mapping]) - 1
+            print(child_row)
+            return self.sourceModel().index(
+                child_row,
+                0,
+                parent_idx,
+            )
+
+    def mapFromSource(self, sourceIndex):
+        parent = sourceIndex.parent()
+        if not parent.isValid():  # root
+            return self.index(
+                self._breaks[sourceIndex.row()],
+                sourceIndex.column(),
+                Qt.QModelIndex(),
+            )
+
+        grandparent = parent.parent()
+        if grandparent.isValid():
+            # we don’t support grandchildren
+            return Qt.QModelIndex()
+
+        return self.index(
+            self._breaks[parent.row()] + sourceIndex.row() + 1,
+            sourceIndex.column(),
+            Qt.QModelIndex(),
+        )
+
+    def mapToSource(self, proxyIndex):
+        return self._map_firstlevel_to_source(proxyIndex)

@@ -78,17 +78,16 @@ class TreeComboBox(Qt.QComboBox):
         return False
 
 
-class AccountSelectorBox(TreeComboBox):
+class AccountSelectorBox(Qt.QComboBox):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.setInsertPolicy(Qt.QComboBox.NoInsert)
-        self.view().header().hide()
-
         self._account_index = None
-
         self.currentIndexChanged.connect(
             self._selected_account_changed
         )
+        self._wrapper_model = models.FlattenModelToSeparators()
+        super().setModel(self._wrapper_model)
 
     def _selected_account_changed(self, *args, **kwargs):
         new_index = self.currentModelIndex()
@@ -105,31 +104,15 @@ class AccountSelectorBox(TreeComboBox):
             self._account_index = new_index
             self.currentAccountChanged.emit()
 
-    def setModel(self, model):
-        super().setModel(model)
-        self.view().setColumnHidden(
-            models.AccountModel.COLUMN_ENABLED,
-            True,
+    def currentModelIndex(self):
+        return self.model().index(
+            self.currentIndex(),
+            0,
+            self.rootModelIndex(),
         )
-        self.view().expandAll()
 
-        # find first selectable
-        model = self.model()
-        for i in range(model.rowCount(Qt.QModelIndex())):
-            identity_index = model.index(i, 0, Qt.QModelIndex())
-            if model.rowCount(identity_index) > 0:
-                account_index = model.index(
-                    0, 0,
-                    identity_index
-                )
-                break
-        else:
-            account_index = Qt.QModelIndex()
-
-        self._account_index = None
-
-        if account_index.isValid():
-            self.selectIndex(account_index)
+    def setModel(self, model):
+        self._wrapper_model.setSourceModel(model)
 
     def currentAccount(self):
         if not self._account_index or not self._account_index.isValid():
@@ -138,5 +121,6 @@ class AccountSelectorBox(TreeComboBox):
             Qt.QModelIndex(self._account_index),
             models.AccountModel.ROLE_OBJECT,
         )
+
 
     currentAccountChanged = Qt.pyqtSignal()
