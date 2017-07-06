@@ -21,7 +21,7 @@
     <string>Provide the Jabber address and the password of your account.</string>
    </property>
   </widget>
-  <widget class="PageCredentials" name="page_connecting">
+  <widget class="PageConnecting" name="page_connecting">
    <property name="title">
     <string>Connecting…</string>
    </property>
@@ -116,6 +116,12 @@
  <customwidgets>
   <customwidget>
    <class>PageCredentials</class>
+   <extends>QWizardPage</extends>
+   <header>mlxcqt.widgets.add_account_pages</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>PageConnecting</class>
    <extends>QWizardPage</extends>
    <header>mlxcqt.widgets.add_account_pages</header>
    <container>1</container>
