@@ -396,10 +396,19 @@ class FlattenModelToSeparators(Qt.QAbstractProxyModel):
             model.rowsInserted.connect(self._source_rowsInserted)
         )
 
+        self._connections.append(
+            model.rowsRemoved.connect(self._source_rowsRemoved)
+        )
+
+        self._connections.append(
+            model.rowsAboutToBeRemoved.connect(
+                self._source_rowsAboutToBeRemoved
+            )
+        )
+
         self.endResetModel()
 
     def _source_rowsInserted(self, parent, start, end):
-        print(parent, start, end)
         # check if the parent maps to our root
         if self.mapFromSource(parent).parent().isValid():
             # drop
@@ -425,25 +434,20 @@ class FlattenModelToSeparators(Qt.QAbstractProxyModel):
             if start >= len(self._breaks):
                 offset = self._len() - start
             else:
-                offset = self._breaks[offset+1] - start
-
-            print(start, end, offset)
+                offset = self._breaks[start+1] - start
 
             start_mapped = start + offset
             end_mapped = end + offset
             new_children = (end - start) + 1
 
             self.beginInsertRows(Qt.QModelIndex(), start_mapped, end_mapped)
-            print(self._breaks, start, start_mapped)
             for i, old_break in enumerate(
                     self._breaks[start+1:],
                     start+1):  # update breaks *after* the newly inserted ones
                 self._breaks[i] += new_children
 
             # insert new breaks
-            print(self._breaks, start, start_mapped)
             self._breaks[start+1:start+1] = range(start_mapped, end_mapped+1)
-            print(self._breaks, start, start_mapped, self._len())
             self.endInsertRows()
 
             source = self.sourceModel()
@@ -454,6 +458,55 @@ class FlattenModelToSeparators(Qt.QAbstractProxyModel):
                     continue
 
                 self._source_rowsInserted(new_idx, 0, nchildren-1)
+
+    def _source_rowsAboutToBeRemoved(self, parent, start, end):
+        if self.mapFromSource(parent).parent().isValid():
+            return
+
+        if parent.isValid():
+            mapped_parent = self.mapFromSource(parent)
+            offset = mapped_parent.row() + 1
+            start_mapped = start + offset
+            end_mapped = end + offset
+            new_children = (end - start) + 1
+            self.beginRemoveRows(Qt.QModelIndex(), start_mapped, end_mapped)
+            for i, old_break in enumerate(
+                    self._breaks[start+1:],
+                    start+1):  # update breaks *after* the newly inserted ones
+                self._breaks[i] -= new_children
+        else:
+            # remove root item
+            # find break for start index
+            if start >= len(self._breaks):
+                offset = self._len() - start
+            else:
+                offset = self._breaks[start] - start
+
+            start_mapped = start + offset
+            end_mapped = end + offset
+
+            end_mapped_inlined = end_mapped
+            source = self.sourceModel()
+            for source_row in range(start, end+1):
+                source_idx = source.index(source_row, 0, parent)
+                end_mapped_inlined += source.rowCount(source_idx)
+            to_remove = (end_mapped_inlined - start_mapped) + 1
+
+            self.beginRemoveRows(Qt.QModelIndex(), start_mapped,
+                                 end_mapped_inlined)
+
+            del self._breaks[start:end+1]
+
+            for i, old_break in enumerate(
+                    self._breaks[start:],
+                    start):  # update breaks *after* the newly inserted ones
+                self._breaks[i] -= to_remove
+
+    def _source_rowsRemoved(self, parent, start, end):
+        if self.mapFromSource(parent).parent().isValid():
+            return
+
+        self.endRemoveRows()
 
     def _len(self):
         if not self._breaks:
@@ -489,7 +542,6 @@ class FlattenModelToSeparators(Qt.QAbstractProxyModel):
         row = proxyIndex.row()
         # find the row in the breaks list
         mapping = bisect.bisect(self._breaks, row)-1
-        print(row, self._breaks, mapping)
         if self._breaks[mapping] == row:
             # first level in source
             return self.sourceModel().index(
@@ -504,7 +556,6 @@ class FlattenModelToSeparators(Qt.QAbstractProxyModel):
                 0,
             )
             child_row = (row - self._breaks[mapping]) - 1
-            print(child_row)
             return self.sourceModel().index(
                 child_row,
                 0,

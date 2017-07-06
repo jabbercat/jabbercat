@@ -72,7 +72,8 @@ class TestFlattenModelToSeparators(unittest.TestCase):
         self.data = self._init_data(self.ITEMS)
         self.listener = unittest.mock.Mock()
         self.source_listener = unittest.mock.Mock()
-        for cb in ["rowsAboutToBeInserted", "rowsInserted"]:
+        for cb in ["rowsAboutToBeInserted", "rowsInserted",
+                   "rowsAboutToBeRemoved", "rowsRemoved"]:
             handler = getattr(self.listener, cb)
             handler.return_value = None
             getattr(self.fm, cb).connect(handler)
@@ -307,6 +308,48 @@ class TestFlattenModelToSeparators(unittest.TestCase):
                 unittest.mock.call.rowsAboutToBeInserted(
                     Qt.QModelIndex(), 14, 14),
                 unittest.mock.call.rowsInserted(Qt.QModelIndex(), 14, 14),
+            ]
+        )
+
+        self._check_mapping_from_source_dynamic()
+        self._check_mapping_to_source_dynamic()
+
+    def test_remove_inlined_child(self):
+        self.fm.setSourceModel(self.data)
+
+        self.data.item(0).takeRow(0)
+
+        self.listener.rowsRemoved.assert_called_once_with(
+            Qt.QModelIndex(),
+            1, 1,
+        )
+        self._check_mapping_from_source_dynamic()
+        self._check_mapping_to_source_dynamic()
+
+    def test_remove_childless_root(self):
+        self.fm.setSourceModel(self.data)
+
+        self.data.takeRow(1)
+
+        self.listener.rowsRemoved.assert_called_once_with(
+            Qt.QModelIndex(), 4, 4,
+        )
+        self._check_mapping_from_source_dynamic()
+        self._check_mapping_to_source_dynamic()
+
+    def test_remove_root_with_child(self):
+        self.maxDiff = None
+
+        self.fm.setSourceModel(self.data)
+
+        self.data.takeRow(0)
+
+        self.assertSequenceEqual(
+            self.listener.mock_calls,
+            [
+                unittest.mock.call.rowsAboutToBeRemoved(
+                    Qt.QModelIndex(), 0, 3),
+                unittest.mock.call.rowsRemoved(Qt.QModelIndex(), 0, 3),
             ]
         )
 
