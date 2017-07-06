@@ -126,12 +126,20 @@ class RosterModel(Qt.QAbstractListModel):
                 ))
             ))
 
-            return "<h2>{}</h2><p>via <span style='background-color: #{}; color: #{}; padding: 2px'>{}</span></p><table><tr>{rows}</tr></table>".format(
+            presence_note = {
+                "none": "Online state is not shared.",
+                "to": "The contact can see your online state.",
+                "from": "You can see the contacts online state (but not vice versa).",
+                "both": "You can see each others online state.",
+            }[item.subscription]
+
+            return "<h2>{}</h2><p>via <span style='background-color: #{}; color: #{}; padding: 2px'>{}</span></p><table><tr>{rows}</tr></table><p>{presence_note}</p>".format(
                 html.escape(item.name or str(item.jid)),
                 "".join(map("{:02x}".format, map(int, item.account.colour))),
                 "000",
                 html.escape(str(item.account.jid)),
-                rows="</tr><tr>".join(rows)
+                rows="</tr><tr>".join(rows),
+                presence_note=presence_note,
             )
         elif role == Qt.Qt.EditRole:
             return item.name or ""
