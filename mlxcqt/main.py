@@ -541,16 +541,12 @@ class RosterWidget(Qt.QWidget):
             selected_count > 0
         )
 
-    @utils.asyncify
-    @asyncio.coroutine
     def _roster_item_activated(self, index):
         item = self.roster_manager.model.item_wrapper_from_index(
             self.ui.roster_view.model().mapToSource(index)
         )
-        client = self.main.client.client_by_account(item.account)
-        p2p_convs = client.summon(aioxmpp.im.p2p.Service)
-        print("starting conversation with", item.jid)
-        yield from p2p_convs.get_conversation(item.jid)
+        account = item.account
+        self.main.conversations.open_onetoone_conversation(account, item.jid)
 
     def _get_all_tags(self):
         all_groups = set()
@@ -647,7 +643,6 @@ class MainWindow(Qt.QMainWindow):
             self.account_manager.open
         )
 
-        self.convmanager = mlxc.conversation.ConversationManager()
         self.main.identities.on_identity_added.connect(
             self._identity_added
         )
@@ -655,16 +650,9 @@ class MainWindow(Qt.QMainWindow):
             self._identity_removed
         )
 
-        self.main.client.on_client_prepare.connect(
-            self.convmanager.handle_client_prepare,
-        )
-        self.main.client.on_client_stopped.connect(
-            self.convmanager.handle_client_stopped,
-        )
-
         self.__convmap = {}
         self.__conversation_model = models.ConversationsModel(
-            self.convmanager.tree
+            self.main.conversations.tree
         )
         self.ui.conversations_view.setModel(
             self.__conversation_model
@@ -673,7 +661,7 @@ class MainWindow(Qt.QMainWindow):
             self._conversation_item_activated
         )
 
-        self.convmanager.on_conversation_added.connect(
+        self.main.conversations.on_conversation_added.connect(
             self._conversation_added
         )
 
@@ -688,17 +676,17 @@ class MainWindow(Qt.QMainWindow):
         self.__identitymap = {}
 
     def _conversation_added(self, wrapper):
-        conv = wrapper.conversation
-        page = conversation.ConversationView(conv)
-        self.__convmap[wrapper.conversation] = page
+        page = conversation.ConversationView(wrapper)
+        self.__convmap[wrapper] = page
         self.ui.conversation_pages.addWidget(page)
         self.ui.conversation_pages.setCurrentWidget(page)
+        self.ui.conversations_view.expandAll()
 
     def _set_conversations_view_root(self):
         if len(self.main.identities.identities) == 1:
             self.ui.conversations_view.setRootIndex(
                 self.__conversation_model.node_to_index(
-                    self.convmanager.get_identity_wrapper(
+                    self.main.conversations.get_identity_wrapper(
                         self.main.identities.identities[0]
                     )
                 )
@@ -721,21 +709,19 @@ class MainWindow(Qt.QMainWindow):
 
     def _identity_added(self, identity):
         self.__identitymap[identity] = self._setup_identity(identity)
-        self.convmanager.handle_identity_added(identity)
         self._set_conversations_view_root()
         self.ui.conversations_view.expandAll()
 
     def _identity_removed(self, identity):
         self._teardown_identity(self.__identitymap.pop(identity))
-        self.convmanager.handle_identity_removed(identity)
         self._set_conversations_view_root()
         self.ui.conversations_view.expandAll()
 
     def _conversation_item_activated(self, index):
         node = index.internalPointer()
         if isinstance(node.object_, mlxc.conversation.ConversationNode):
-            conv = node.object_.conversation
-            page = self.__convmap[conv]
+            page = self.__convmap[node.object_]
+            self.main.conversations.start_soon(node.object_)
             self.ui.conversation_pages.setCurrentWidget(page)
 
     @utils.asyncify
@@ -745,8 +731,10 @@ class MainWindow(Qt.QMainWindow):
         join_info = yield from dlg.run()
         if join_info is not None:
             account, mucjid, nick = join_info
-            mlxc.tasks.manager.start(
-                self.join_muc(account, mucjid, nick)
+            self.main.conversations.open_muc_conversation(
+                account,
+                mucjid,
+                nick,
             )
 
     @utils.asyncify
@@ -804,6 +792,10 @@ class QtMain(mlxc.main.Main):
 
     def __init__(self, loop):
         super().__init__(loop)
+        self.conversations = mlxc.conversation.ConversationManager(
+            self.identities,
+            self.client
+        )
         self.window = MainWindow(self)
 
     @asyncio.coroutine

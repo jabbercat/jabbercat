@@ -26,27 +26,48 @@ class MessageInfo(Qt.QTextBlockUserData):
 
 
 class ConversationView(Qt.QWidget):
-    def __init__(self, conversation):
+    def __init__(self, conversation_node):
         super().__init__()
         self.ui = p2p_conversation.Ui_P2PView()
         self.ui.setupUi(self)
 
-        self.ui.title_label.setText(
-            "Conversation with {}".format(conversation.jid)
-        )
+        self.ui.title_label.setText(conversation_node.label)
 
         self.ui.message_input.installEventFilter(self)
 
         # self.ui.history.setMaximumBlockCount(100)
 
-        self.__conversation = conversation
-        self.__tokens = []
+        self.__node = conversation_node
+        self.__node_tokens = []
         _connect_and_store_token(
-            self.__tokens,
-            conversation.on_message,
+            self.__node_tokens,
+            self.__node.on_ready,
+            self._ready,
+        )
+        _connect_and_store_token(
+            self.__node_tokens,
+            self.__node.on_stale,
+            self._stale,
+        )
+        self.__conv_tokens = []
+        self.__msgidmap = {}
+
+        if self.__node.conversation is not None:
+            self._ready()
+
+    def _ready(self):
+        self.__conversation = self.__node.conversation
+        _connect_and_store_token(
+            self.__conv_tokens,
+            self.__conversation.on_message,
             functools.partial(self.add_message),
         )
-        self.__msgidmap = {}
+
+    def _stale(self):
+        for signal, token in self.__conv_tokens:
+            signal.disconnect(token)
+        self.__conv_tokens.clear()
+        self.__conversation = None
 
     def eventFilter(self, obj, ev):
         if obj is not self.ui.message_input:
