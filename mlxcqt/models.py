@@ -227,17 +227,37 @@ class ConversationsModel(Qt.QAbstractItemModel):
         return self.node_to_index(index.internalPointer().parent)
 
 
-class RosterTagsSelectionModel(Qt.QAbstractListModel):
+class RosterTagsModel(Qt.QAbstractListModel):
     COLUMN_NAME = 0
     COLUMN_COUNT = 1
 
     def __init__(self, model_list, parent=None):
         super().__init__(parent=parent)
         self._model_list = model_list
+        self.__adaptor = model_adaptor.ModelListAdaptor(model_list, self)
+
+    def rowCount(self, parent):
+        if parent.isValid():
+            return 0
+        return len(self._model_list)
+
+    def data(self, index, role):
+        if not index.isValid():
+            return super().data(index, role)
+
+        row = index.row()
+        if role == Qt.Qt.DisplayRole:
+            return self._model_list[row]
+
+        return super().data(index, role)
+
+
+class RosterTagsSelectionModel(RosterTagsModel):
+    def __init__(self, model_list, parent=None):
+        super().__init__(model_list, parent=parent)
         self._to_add = set()
         self._to_remove = set()
         self._original = {}
-        self.__adaptor = model_adaptor.ModelListAdaptor(model_list, self)
 
     @property
     def to_add(self):
@@ -292,29 +312,24 @@ class RosterTagsSelectionModel(Qt.QAbstractListModel):
 
         self.dataChanged.emit(
             self.index(0, 0),
-            self.index(len(self._model_list)-1, 0),
+            self.index(len(self._model_list) - 1, 0),
             [Qt.Qt.CheckStateRole]
         )
 
-    def rowCount(self, parent):
-        if parent.isValid():
-            return 0
-        return len(self._model_list)
-
     def data(self, index, role):
         if not index.isValid():
-            return
+            return super().data(index, role)
 
         row = index.row()
-        if role == Qt.Qt.DisplayRole:
-            return self._model_list[row]
-        elif role == Qt.Qt.CheckStateRole:
+        if role == Qt.Qt.CheckStateRole:
             group = self._model_list[row]
             if group in self._to_add:
                 return Qt.Qt.Checked
             elif group in self._to_remove:
                 return Qt.Qt.Unchecked
             return self._original.get(group, Qt.Qt.Unchecked)
+
+        return super().data(index, role)
 
     def setData(self, index, value, role):
         if not index.isValid():

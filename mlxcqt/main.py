@@ -357,13 +357,7 @@ class RosterWidget(Qt.QWidget):
         self.identity = identity
         self.ui = Ui_RosterWidget()
         self.ui.setupUi(self)
-
-        self.ui.filter_widget.hide()
-        self.ui.clear_filters.clicked.connect(
-            self._clear_filters
-        )
-
-        self._filtered_for_tags = set()
+        self.ui.filter_widget.on_tags_changed.connect(self._update_filters)
 
         self._tokens = []
         self._tokens.append((
@@ -439,10 +433,6 @@ class RosterWidget(Qt.QWidget):
         for signal, token in self._tokens:
             signal.disconnect(token)
 
-    def _clear_filters(self, *_):
-        self._filtered_for_tags.clear()
-        self._update_filters()
-
     def _prepare_client(self,
                         account: mlxc.identity.Account,
                         client):
@@ -461,24 +451,39 @@ class RosterWidget(Qt.QWidget):
         index = self.ui.roster_view.currentIndex()
         self.ui.roster_view.edit(index)
 
+    def _toggle_tag_filter(self, tag):
+        if self.ui.filter_widget.has_tag(tag):
+            self.ui.filter_widget.remove_tag(tag)
+        else:
+            self.ui.filter_widget.add_tag(tag)
+
+    def _clear_tag_filters(self):
+        self.ui.filter_widget.clear_tags()
+
+    def _add_tag_filter(self, tag):
+        self.ui.filter_widget.add_tag(tag)
+
+    def _remove_tag_filter(self, tag):
+        self.ui.filter_widget.remove_tag(tag)
+
     def _tag_clicked(self, tag, modifiers):
         if modifiers & Qt.Qt.ControlModifier:
-            try:
-                self._filtered_for_tags.remove(tag)
-            except KeyError:
-                self._filtered_for_tags.add(tag)
+            self._toggle_tag_filter(tag)
         else:
-            if self._filtered_for_tags == {tag}:
-                self._filtered_for_tags.discard(tag)
-            else:
-                self._filtered_for_tags = {tag}
+            re_add = {tag} != set(self.ui.filter_widget.tags)
+            self._clear_tag_filters()
+            if re_add:
+                self._add_tag_filter(tag)
 
         self._update_filters()
 
+    def _clear_filters(self):
+        self._clear_tag_filters()
+
     def _update_filters(self):
         parts = [
-            Qt.QRegExp.escape(tag+"\n")
-            for tag in sorted(self._filtered_for_tags)
+            Qt.QRegExp.escape(tag + "\n")
+            for tag in sorted(self.ui.filter_widget.tags)
         ]
         regex = "(.*)".join(parts)
 
@@ -488,34 +493,6 @@ class RosterWidget(Qt.QWidget):
         self.sorted_roster.setFilterRegExp(
             Qt.QRegExp(regex)
         )
-
-        filter_text_parts = []
-        if self._filtered_for_tags:
-            filter_text_parts.append(
-                ", ".join(
-                    "<span style='background-color: rgba({}, 1);'>"
-                    "{}</span>".format(
-                        ", ".join(
-                            str(int(channel*255))
-                            for channel in mlxc.utils.text_to_colour(
-                                    mlxc.utils.normalise_text_for_hash(tag)
-                            )
-                        ),
-                        tag
-                    )
-                    for tag in sorted(
-                            self._filtered_for_tags
-                    )
-                )
-            )
-
-        if filter_text_parts:
-            self.ui.filter_widget.show()
-            self.ui.filter_label.setText(
-                "Filtering for {}".format(", ".join(filter_text_parts))
-            )
-        else:
-            self.ui.filter_widget.hide()
 
     def _selection_changed(self, selected, deselected):
         selection_model = self.ui.roster_view.selectionModel()
@@ -574,7 +551,6 @@ class RosterWidget(Qt.QWidget):
         result = yield from widget.run(pos, self._get_all_tags(), items)
         if result is not None:
             to_add, to_remove = result
-            print(to_add, to_remove)
             tasks = []
             for item in items:
                 client = self.main.client.client_by_account(item.account)
@@ -601,9 +577,9 @@ class RosterWidget(Qt.QWidget):
 
         def tag_action_triggered(tag, checked):
             if checked:
-                self._filtered_for_tags.add(tag)
+                self._add_tag_filter(tag)
             else:
-                self._filtered_for_tags.discard(tag)
+                self._remove_tag_filter(tag)
             self._update_filters()
 
         for tag in all_tags:
@@ -615,7 +591,7 @@ class RosterWidget(Qt.QWidget):
             icon.fill(color)
             icon = Qt.QIcon(icon)
             action.setCheckable(True)
-            action.setChecked(tag in self._filtered_for_tags)
+            action.setChecked(self.ui.filter_widget.has_tag(tag))
             action.setIcon(icon)
             action.triggered.connect(
                 functools.partial(tag_action_triggered, tag)
