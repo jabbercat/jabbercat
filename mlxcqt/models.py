@@ -1,153 +1,114 @@
 import bisect
+import enum
 
-import PyQt5.Qt as Qt
-
+import mlxc.identity
 import mlxc.instrumentable_list
 
+from . import Qt
 from . import model_adaptor
 
 
-class AccountModel(Qt.QAbstractItemModel):
-    COLUMN_NAME = 0
+ROLE_OBJECT = Qt.Qt.UserRole + 1
+
+
+class AccountsModel(Qt.QAbstractTableModel):
+    COLUMN_ADDRESS = 0
     COLUMN_ENABLED = 1
     COLUMN_COUNT = 2
 
-    ROLE_OBJECT = Qt.Qt.UserRole + 1
-
-    def __init__(self, tree, identities=None):
+    def __init__(self, accounts: mlxc.identity.Accounts):
         super().__init__()
-        self.tree = tree
-        self.identities = identities
-        self.tree.begin_insert_rows.connect(self._begin_insert_rows)
-        self.tree.end_insert_rows.connect(self._end_insert_rows)
+        self.__accounts = accounts
 
-        self.tree.begin_remove_rows.connect(self._begin_remove_rows)
-        self.tree.end_remove_rows.connect(self._end_remove_rows)
+        self.__accounts.begin_remove_rows.connect(self._begin_remove_rows)
+        self.__accounts.end_remove_rows.connect(self._end_remove_rows)
 
-    def _begin_insert_rows(self, node, index1, index2):
-        parent_mi = self.node_to_index(node)
-        self.beginInsertRows(parent_mi, index1, index2)
+        self.__accounts.begin_insert_rows.connect(self._begin_insert_rows)
+        self.__accounts.end_insert_rows.connect(self._end_insert_rows)
 
-    def _end_insert_rows(self):
-        self.endInsertRows()
+        self.__accounts.data_changed.connect(self._data_changed)
 
-    def _begin_remove_rows(self, node, index1, index2):
-        parent_mi = self.node_to_index(node)
-        self.beginRemoveRows(parent_mi, index1, index2)
+    def _begin_remove_rows(self, _, index1, index2):
+        self.beginRemoveRows(Qt.QModelIndex(), index1, index2)
 
     def _end_remove_rows(self):
         self.endRemoveRows()
 
-    def node_to_index(self, node, column=0):
-        if node.parent is None:
-            return Qt.QModelIndex()
-        if not isinstance(node, mlxc.instrumentable_list.ModelTreeNode):
-            node = node._node
-        return self.createIndex(
-            node.parent_index,
-            column,
-            node,
+    def _begin_insert_rows(self, _, index1, index2):
+        self.beginInsertRows(Qt.QModelIndex(), index1, index2)
+
+    def _end_insert_rows(self):
+        self.endInsertRows()
+
+    def _data_changed(self, _, index1, index2, column1, column2, roles):
+        return self.dataChanged.emit(
+            self.index(index1, column1 or 0),
+            self.index(index2, column2 or self.COLUMN_COUNT - 1),
+            roles or [],
         )
 
-    def rowCount(self, parent):
-        if not parent.isValid():
-            return len(self.tree.root)
-        node = parent.internalPointer()
-        return len(node)
-
-    def columnCount(self, parent):
+    def columnCount(self, index=Qt.QModelIndex()):
         return self.COLUMN_COUNT
 
-    def index(self, row, column, parent):
-        parent = (self.tree.root
-                  if not parent.isValid()
-                  else parent.internalPointer())
-        if not (0 <= row < len(parent)):
-            return Qt.QModelIndex()
-        return self.node_to_index(parent[row], column)
-
-    def parent(self, index):
-        if not index.isValid():
-            return Qt.QModelIndex()
-        return self.node_to_index(index.internalPointer().parent)
-
-    def _data_account(self, obj, column, role):
-        if role == Qt.Qt.DisplayRole or role == Qt.Qt.EditRole:
-            return {
-                self.COLUMN_NAME: str(obj.jid),
-            }.get(column)
-        elif role == Qt.Qt.CheckStateRole:
-            if column == self.COLUMN_ENABLED:
-                if obj.enabled:
-                    return Qt.Qt.Checked
-                else:
-                    return Qt.Qt.Unchecked
-
-    def _data_identity(self, obj, column, role):
-        if role == Qt.Qt.DisplayRole or role == Qt.Qt.EditRole:
-            return {
-                self.COLUMN_NAME: obj.name,
-            }.get(column)
-        elif role == Qt.Qt.CheckStateRole:
-            if column == 1:
-                if obj.enabled:
-                    return Qt.Qt.Checked
-                else:
-                    return Qt.Qt.Unchecked
-
-    def headerData(self, section, orientation, role):
-        if orientation != Qt.Qt.Horizontal:
-            return
-        if role != Qt.Qt.DisplayRole:
-            return
-        return {
-            self.COLUMN_NAME: "Name",
-            self.COLUMN_ENABLED: "Enabled",
-        }.get(section)
+    def rowCount(self, index):
+        if index.isValid():
+            return 0
+        return len(self.__accounts)
 
     def flags(self, index):
-        flags = super().flags(index)
-        if index.column() == 1:
-            flags |= Qt.Qt.ItemIsUserCheckable
-        return flags
+        result = super().flags(index)
+        if index.column() == self.COLUMN_ENABLED:
+            result |= Qt.Qt.ItemIsUserCheckable
+        return result
 
-    def data(self, index, role):
+    def data(self, index, role=Qt.Qt.DisplayRole):
         if not index.isValid():
             return
 
-        node = index.internalPointer()
+        account = self.__accounts[index.row()]
         column = index.column()
-        object_ = node.object_
 
-        if role == self.ROLE_OBJECT:
-            return object_
+        if role == Qt.Qt.DisplayRole:
+            if column == self.COLUMN_ADDRESS:
+                return str(account.jid)
+        elif role == Qt.Qt.CheckStateRole:
+            if column == self.COLUMN_ENABLED:
+                if account.enabled:
+                    return Qt.Qt.Checked
+                else:
+                    return Qt.Qt.Unchecked
+        elif role == ROLE_OBJECT:
+            return account
 
-        if isinstance(object_, mlxc.identity.Identity):
-            result = self._data_identity(object_, column, role)
-        elif isinstance(object_, mlxc.identity.Account):
-            result = self._data_account(object_, column, role)
-        else:
-            result = None
-        return result
-
-    def setData(self, index, value, role):
-        if self.identities is None:
-            return False
-        if role != Qt.Qt.CheckStateRole:
-            return False
-        if index.column() != self.COLUMN_ENABLED:
+    def setData(self, index, value, role=Qt.Qt.EditRole):
+        if not index.isValid():
             return False
 
-        checked = value == Qt.Qt.Checked
-        object_ = index.internalPointer().object_
-        if isinstance(object_, mlxc.identity.Identity):
-            self.identities.set_identity_enabled(object_, checked)
-            return True
-        elif isinstance(object_, mlxc.identity.Account):
-            self.identities.set_account_enabled(object_, checked)
-            return True
+        account = self.__accounts[index.row()]
+        column = index.column()
+
+        if column == self.COLUMN_ENABLED:
+            if role == Qt.Qt.CheckStateRole:
+                new_enabled = value == Qt.Qt.Checked
+                self.__accounts.set_account_enabled(
+                    account,
+                    new_enabled,
+                )
+                return True
 
         return False
+
+    def headerData(self, section, orientation, role=Qt.Qt.DisplayRole):
+        if orientation != Qt.Qt.Horizontal:
+            return None
+
+        if role != Qt.Qt.DisplayRole:
+            return None
+
+        if section == self.COLUMN_ADDRESS:
+            return Qt.translate("Address")
+        elif section == self.COLUMN_ENABLED:
+            return Qt.translate("Enabled")
 
 
 class ConversationsModel(Qt.QAbstractItemModel):
