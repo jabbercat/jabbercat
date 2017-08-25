@@ -106,9 +106,9 @@ class AccountsModel(Qt.QAbstractTableModel):
             return None
 
         if section == self.COLUMN_ADDRESS:
-            return Qt.translate("Address")
+            return self.tr("Address")
         elif section == self.COLUMN_ENABLED:
-            return Qt.translate("Enabled")
+            return self.tr("Enabled")
 
 
 class ConversationsModel(Qt.QAbstractItemModel):

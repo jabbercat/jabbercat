@@ -2,43 +2,45 @@ import asyncio
 
 import aioxmpp
 
+import mlxc.client
+import mlxc.identity
+
 from .. import Qt, utils, models
 from ..ui import dlg_add_contact
 
 
 class DlgAddContact(Qt.QDialog):
-    def __init__(self, main, *args, **kwargs):
+    def __init__(self,
+                 client: mlxc.client.Client,
+                 accounts: mlxc.identity.Accounts,
+                 *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.main = main
+
+        self._accounts = accounts
+        self._client = client
 
         self.ui = dlg_add_contact.Ui_DlgAddContact()
         self.ui.setupUi(self)
 
-        self.ui.account.currentAccountChanged.connect(
-            self._current_account_changed
+        self.ui.account.currentIndexChanged.connect(
+            self._current_index_changed
         )
 
-        self.base_model = models.AccountModel(main.identities._tree,
-                                              main.identities)
-        self._disabled_model = models.DisableSelectionOfIdentities()
-        self._disabled_model.setSourceModel(self.base_model)
-        self._filtered_model = models.FilterDisabledItems()
-        self._filtered_model.setSourceModel(self._disabled_model)
-        self.ui.account.setModel(self._filtered_model)
+        validator = utils.JIDValidator(self.ui.peer_jid)
+        self.ui.peer_jid.setValidator(validator)
 
-    def _current_account_changed(self):
-        account = self.ui.account.currentAccount()
-        if account is None:
-            return
-        all_tags = self._get_all_tags(account)
+        self.base_model = models.AccountsModel(accounts)
+        self.ui.account.setModel(self.base_model)
+
+    def _current_index_changed(self, index):
+        all_tags = self._get_all_tags()
         self.ui.tags.setup(all_tags, [], clear=False)
 
-    def _get_all_tags(self, account_context):
-        identity = account_context.identity
+    def _get_all_tags(self):
         all_groups = set()
-        for account in identity.accounts:
+        for account in self._accounts:
             try:
-                client = self.main.client.client_by_account(account)
+                client = self._client.client_by_account(account)
             except KeyError:
                 continue
             all_groups |= set(
@@ -50,7 +52,8 @@ class DlgAddContact(Qt.QDialog):
         if result != Qt.QDialog.Accepted:
             return super().done(result)
 
-        if not self.ui.account.currentAccount():
+        index = self.ui.account.currentIndex()
+        if index < 0:
             return
 
         if not self.ui.peer_jid.hasAcceptableInput():
@@ -64,7 +67,8 @@ class DlgAddContact(Qt.QDialog):
         if result != Qt.QDialog.Accepted:
             return
 
-        account = self.ui.account.currentAccount()
+        account_index = self.ui.account.currentIndex()
+        account = self._accounts[account_index]
         peer_jid = aioxmpp.JID.fromstr(self.ui.peer_jid.text())
         display_name = self.ui.display_name.text()
         tags = self.ui.tags.selected_tags

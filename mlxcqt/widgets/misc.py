@@ -3,7 +3,7 @@ import mlxc.identity
 from .. import Qt, models
 
 
-class PlaceholderTreeView(Qt.QTreeView):
+class _PlaceholderMixin:
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.__placeholder_text = ""
@@ -28,6 +28,18 @@ class PlaceholderTreeView(Qt.QTreeView):
 
         p = Qt.QPainter(self.viewport())
         p.drawText(self.rect(), Qt.Qt.AlignCenter, self.placeholder_text)
+
+
+class PlaceholderTreeView(_PlaceholderMixin, Qt.QTreeView):
+    pass
+
+
+class PlaceholderListView(_PlaceholderMixin, Qt.QListView):
+    pass
+
+
+class PlaceholderTableView(_PlaceholderMixin, Qt.QTableView):
+    pass
 
 
 # from <https://stackoverflow.com/a/27172161/1248008>
@@ -71,10 +83,13 @@ class TreeComboBox(Qt.QComboBox):
             self.rootModelIndex(),
         )
 
-    def eventFilter(self, object, event):
-        if event.type() == Qt.QEvent.MouseButtonPress and object is self.view().viewport():
+    def eventFilter(self, object: Qt.QObject, event: Qt.QEvent):
+        if (event.type() == Qt.QEvent.MouseButtonPress and
+                object is self.view().viewport()):
             index = self.view().indexAt(event.pos())
-            self.__skip_next_hide = not self.view().visualRect(index).contains(event.pos())
+            self.__skip_next_hide = (
+                not self.view().visualRect(index).contains(event.pos())
+            )
         return False
 
 
@@ -96,7 +111,7 @@ class AccountSelectorBox(Qt.QComboBox):
                 self._account_index = None
                 self.currentAccountChanged.emit()
             return
-        if not isinstance(new_index.data(models.AccountModel.ROLE_OBJECT),
+        if not isinstance(new_index.data(models.ROLE_OBJECT),
                           mlxc.identity.Account):
             return
         new_index = Qt.QPersistentModelIndex(new_index)
@@ -119,8 +134,7 @@ class AccountSelectorBox(Qt.QComboBox):
             return None
         return self.model().data(
             Qt.QModelIndex(self._account_index),
-            models.AccountModel.ROLE_OBJECT,
+            models.ROLE_OBJECT,
         )
-
 
     currentAccountChanged = Qt.pyqtSignal()

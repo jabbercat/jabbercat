@@ -344,7 +344,7 @@ class TestAccountsModel(unittest.TestCase):
     def test_headerData_horiz_address_column(self):
         with contextlib.ExitStack() as stack:
             tr = stack.enter_context(
-                unittest.mock.patch("mlxcqt.Qt.translate")
+                unittest.mock.patch.object(self.m, "tr")
             )
 
             result = self.m.headerData(
@@ -360,7 +360,7 @@ class TestAccountsModel(unittest.TestCase):
     def test_headerData_horiz_enabled_column(self):
         with contextlib.ExitStack() as stack:
             tr = stack.enter_context(
-                unittest.mock.patch("mlxcqt.Qt.translate")
+                unittest.mock.patch.object(self.m, "tr")
             )
 
             result = self.m.headerData(

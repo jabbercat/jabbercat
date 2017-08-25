@@ -58,54 +58,15 @@ class PageCredentials(AddAccountWizardPage):
             self.ui.server_port,
         )
 
-        self.registerField(
-            "identity",
-            self.ui.identity,
-        )
-
     def _expert_options_switch_changed(self, new_state):
         if new_state == Qt.Qt.Checked:
             self.ui.expert_options.show()
         else:
             self.ui.expert_options.hide()
 
-    def _remove_identity_widgets_from_layout(self, layout):
-        index = layout.indexOf(
-            self.ui.identity_group
-        )
-        if index > 0:
-            layout.takeAt(index)
-
-        index = layout.indexOf(
-            self.ui.identity_label
-        )
-        if index > 0:
-            layout.takeAt(index)
-
     def reset_ui_state(self):
         self.ui.expert_options_switch.setCheckState(
             Qt.Qt.Unchecked
-        )
-        if len(self._wizard._identities.identities) > 1:
-            self._remove_identity_widgets_from_layout(
-                self.ui.expert_options.layout()
-            )
-            self.ui.main_layout.addRow(
-                self.ui.identity_label,
-                self.ui.identity_group,
-            )
-        else:
-            self._remove_identity_widgets_from_layout(
-                self.ui.main_layout
-            )
-            self.ui.expert_options.layout().addRow(
-                self.ui.identity_label,
-                self.ui.identity_group,
-            )
-
-        self.ui.identity.setModel(self._wizard.identities_model)
-        self.ui.identity.setModelColumn(
-            self._wizard.identities_model.COLUMN_NAME
         )
 
 

@@ -24,7 +24,7 @@
       </widget>
      </item>
      <item row="0" column="1">
-      <widget class="AccountSelectorBox" name="account">
+      <widget class="QComboBox" name="account">
        <property name="sizePolicy">
         <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
          <horstretch>0</horstretch>
@@ -103,11 +103,6 @@
   </layout>
  </widget>
  <customwidgets>
-  <customwidget>
-   <class>AccountSelectorBox</class>
-   <extends>QComboBox</extends>
-   <header>mlxcqt.widgets</header>
-  </customwidget>
   <customwidget>
    <class>RosterTagsBox</class>
    <extends>QWidget</extends>

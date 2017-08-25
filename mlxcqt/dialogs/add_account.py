@@ -6,6 +6,7 @@ import aioxmpp
 
 import mlxc.client
 import mlxc.config
+import mlxc.identity
 
 from .. import utils, models
 
@@ -13,15 +14,14 @@ from ..ui import dlg_add_account
 
 
 class DlgAddAccount(Qt.QWizard):
-    def __init__(self, client, identities, parent=None):
+    def __init__(self,
+                 client: mlxc.client.Client,
+                 accounts: mlxc.identity.Accounts, parent=None):
         super().__init__(parent)
         self._client = client
-        self._identities = identities
+        self._accounts = accounts
         self.ui = dlg_add_account.Ui_DlgAddAccount()
         self.ui.setupUi(self)
-        self.identities_model = models.AccountModel(
-            self._identities._tree
-        )
 
         self.ui.page_credentials._wizard = self
         self.ui.page_connecting._wizard = self
@@ -32,44 +32,17 @@ class DlgAddAccount(Qt.QWizard):
         self.ui.page_connecting.reset_ui_state()
 
     @asyncio.coroutine
-    def run(self, default_identity=None):
+    def run(self):
         self._reset_ui_state()
-
-        self.ui.page_credentials.ui.identity.clearEditText()
-        if default_identity is not None:
-            self.ui.page_credentials.ui.identity.setCurrentIndex(
-                self.identities_model.node_to_index(
-                    default_identity._node
-                ).row()
-            )
-        else:
-            if len(self._identities.identities) > 0:
-                self.ui.page_credentials.ui.identity.setCurrentIndex(0)
-            else:
-                self.ui.page_credentials.ui.identity.setCurrentText("Default")
 
         result = yield from utils.exec_async(self)
         if not result:
             return
 
-        selected_identity = self.ui.page_credentials.ui.identity.currentIndex()
-        identity_name = self.ui.page_credentials.ui.identity.currentText()
-        if selected_identity >= 0:
-            identity = self._identities.identities[selected_identity]
-            if identity.name != identity_name:
-                selected_identity = -1
-
-        if selected_identity < 0:
-            # create new
-            identity = self._identities.new_identity(
-                identity_name,
-            )
-
         jid = aioxmpp.JID.fromstr(self.field("jid"))
-        self._identities.new_account(
-            identity,
+        self._accounts.new_account(
             jid,
-            (0, 0, 0),
+            tuple(round(x * 255) for x in mlxc.utils.text_to_colour(str(jid)))
         )
 
         try:

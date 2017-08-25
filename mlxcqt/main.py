@@ -208,14 +208,14 @@ class RosterItemDelegate(Qt.QItemDelegate):
         tag_metrics = Qt.QFontMetrics(tag_font)
 
         top_left = option.rect.topLeft() + Qt.QPoint(
-            self.LEFT_PADDING+self.SPACING*2+avatar_size,
+            self.LEFT_PADDING + self.SPACING * 2 + avatar_size,
             self.PADDING
         )
 
         name_rect = Qt.QRect(
             top_left,
             top_left + Qt.QPoint(
-                option.rect.width() - self.PADDING*2,
+                option.rect.width() - self.PADDING * 2,
                 name_metrics.ascent() + name_metrics.descent(),
             )
         )
@@ -636,7 +636,7 @@ class MainWindow(Qt.QMainWindow):
         self.main = main
         self.account_manager = account_manager.DlgAccountManager(
             main.client,
-            main.identities,
+            main.accounts,
         )
 
         self.ui.statusbar.addPermanentWidget(
@@ -648,12 +648,6 @@ class MainWindow(Qt.QMainWindow):
         )
 
         self.convmanager = mlxc.conversation.ConversationManager()
-        self.main.identities.on_identity_added.connect(
-            self._identity_added
-        )
-        self.main.identities.on_identity_removed.connect(
-            self._identity_removed
-        )
 
         self.main.client.on_client_prepare.connect(
             self.convmanager.handle_client_prepare,
@@ -694,43 +688,6 @@ class MainWindow(Qt.QMainWindow):
         self.ui.conversation_pages.addWidget(page)
         self.ui.conversation_pages.setCurrentWidget(page)
 
-    def _set_conversations_view_root(self):
-        if len(self.main.identities.identities) == 1:
-            self.ui.conversations_view.setRootIndex(
-                self.__conversation_model.node_to_index(
-                    self.convmanager.get_identity_wrapper(
-                        self.main.identities.identities[0]
-                    )
-                )
-            )
-        else:
-            self.ui.conversations_view.setRootIndex(Qt.QModelIndex())
-
-    def _setup_identity(self, identity):
-        widget = RosterWidget(self.main, identity)
-
-        self.ui.roster_tabs.addTab(
-            widget,
-            identity.name
-        )
-
-        return widget
-
-    def _teardown_identity(self, info):
-        info.tear_down()
-
-    def _identity_added(self, identity):
-        self.__identitymap[identity] = self._setup_identity(identity)
-        self.convmanager.handle_identity_added(identity)
-        self._set_conversations_view_root()
-        self.ui.conversations_view.expandAll()
-
-    def _identity_removed(self, identity):
-        self._teardown_identity(self.__identitymap.pop(identity))
-        self.convmanager.handle_identity_removed(identity)
-        self._set_conversations_view_root()
-        self.ui.conversations_view.expandAll()
-
     def _conversation_item_activated(self, index):
         node = index.internalPointer()
         if isinstance(node.object_, mlxc.conversation.ConversationNode):
@@ -741,7 +698,7 @@ class MainWindow(Qt.QMainWindow):
     @utils.asyncify
     @asyncio.coroutine
     def _join_muc(self, *args):
-        dlg = join_muc.JoinMuc(self.main.identities)
+        dlg = join_muc.JoinMuc(self.main.accounts)
         join_info = yield from dlg.run()
         if join_info is not None:
             account, mucjid, nick = join_info
@@ -752,7 +709,8 @@ class MainWindow(Qt.QMainWindow):
     @utils.asyncify
     @asyncio.coroutine
     def _add_contact(self, *args):
-        dlg = add_contact.DlgAddContact(self.main)
+        dlg = add_contact.DlgAddContact(self.main.client,
+                                        self.main.accounts)
         result = yield from dlg.run()
         if result is None:
             return
