@@ -350,25 +350,30 @@ class RosterItemDelegate(Qt.QItemDelegate):
 
 
 class RosterWidget(Qt.QWidget):
-    def __init__(self, main, identity, parent=None):
+    def __init__(self,
+                 client: mlxc.client.Client,
+                 accounts: mlxc.identity.Accounts,
+                 conversations: mlxc.conversation.ConversationManager,
+                 parent=None):
         super().__init__(parent=parent)
-        self.main = main
         self.roster_manager = roster.Roster()
-        self.identity = identity
+        self.accounts = accounts
+        self.client = client
+        self.conversations = conversations
         self.ui = Ui_RosterWidget()
         self.ui.setupUi(self)
         self.ui.filter_widget.on_tags_changed.connect(self._update_filters)
 
         self._tokens = []
         self._tokens.append((
-            self.main.client.on_client_prepare,
-            self.main.client.on_client_prepare.connect(
+            self.client.on_client_prepare,
+            self.client.on_client_prepare.connect(
                 self._prepare_client
             )
         ))
         self._tokens.append((
-            self.main.client.on_client_stopped,
-            self.main.client.on_client_stopped.connect(
+            self.client.on_client_stopped,
+            self.client.on_client_stopped.connect(
                 self._stop_client
             )
         ))
@@ -436,15 +441,11 @@ class RosterWidget(Qt.QWidget):
     def _prepare_client(self,
                         account: mlxc.identity.Account,
                         client):
-        if account.identity is not self.identity:
-            return
         self.roster_manager.connect_client(account, client)
 
     def _stop_client(self,
                      account: mlxc.identity.Account,
                      client):
-        if account.identity is not self.identity:
-            return
         self.roster_manager.disconnect_client(account, client)
 
     def _rename(self):
@@ -523,13 +524,13 @@ class RosterWidget(Qt.QWidget):
             self.ui.roster_view.model().mapToSource(index)
         )
         account = item.account
-        self.main.conversations.open_onetoone_conversation(account, item.jid)
+        self.conversations.open_onetoone_conversation(account, item.jid)
 
     def _get_all_tags(self):
         all_groups = set()
-        for account in self.identity.accounts:
+        for account in self.accounts:
             try:
-                client = self.main.client.client_by_account(account)
+                client = self.client.client_by_account(account)
             except KeyError:
                 continue
             all_groups |= set(
@@ -610,6 +611,9 @@ class MainWindow(Qt.QMainWindow):
             main.client,
             main.accounts,
         )
+        self.roster = RosterWidget(main.client, main.accounts,
+                                   main.conversations)
+        self.ui.splitter.insertWidget(0, self.roster)
 
         self.ui.statusbar.addPermanentWidget(
             taskmanager.TaskStatusWidget(self.ui.statusbar)
@@ -621,7 +625,7 @@ class MainWindow(Qt.QMainWindow):
 
         self.__convmap = {}
         self.__conversation_model = models.ConversationsModel(
-            self.main.conversations.tree
+            self.main.conversations
         )
         self.ui.conversations_view.setModel(
             self.__conversation_model
@@ -649,14 +653,12 @@ class MainWindow(Qt.QMainWindow):
         self.__convmap[wrapper] = page
         self.ui.conversation_pages.addWidget(page)
         self.ui.conversation_pages.setCurrentWidget(page)
-        self.ui.conversations_view.expandAll()
 
     def _conversation_item_activated(self, index):
-        node = index.internalPointer()
-        if isinstance(node.object_, mlxc.conversation.ConversationNode):
-            page = self.__convmap[node.object_]
-            self.main.conversations.start_soon(node.object_)
-            self.ui.conversation_pages.setCurrentWidget(page)
+        conversation = self.main.conversations[index.row()]
+        page = self.__convmap[conversation]
+        self.main.conversations.start_soon(conversation)
+        self.ui.conversation_pages.setCurrentWidget(page)
 
     @utils.asyncify
     @asyncio.coroutine

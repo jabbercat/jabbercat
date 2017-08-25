@@ -1,6 +1,7 @@
 import bisect
 import enum
 
+import mlxc.conversation
 import mlxc.identity
 import mlxc.instrumentable_list
 
@@ -19,26 +20,11 @@ class AccountsModel(Qt.QAbstractTableModel):
     def __init__(self, accounts: mlxc.identity.Accounts):
         super().__init__()
         self.__accounts = accounts
-
-        self.__accounts.begin_remove_rows.connect(self._begin_remove_rows)
-        self.__accounts.end_remove_rows.connect(self._end_remove_rows)
-
-        self.__accounts.begin_insert_rows.connect(self._begin_insert_rows)
-        self.__accounts.end_insert_rows.connect(self._end_insert_rows)
+        self.__adaptor = model_adaptor.ModelListAdaptor(
+            self.__accounts, self
+        )
 
         self.__accounts.data_changed.connect(self._data_changed)
-
-    def _begin_remove_rows(self, _, index1, index2):
-        self.beginRemoveRows(Qt.QModelIndex(), index1, index2)
-
-    def _end_remove_rows(self):
-        self.endRemoveRows()
-
-    def _begin_insert_rows(self, _, index1, index2):
-        self.beginInsertRows(Qt.QModelIndex(), index1, index2)
-
-    def _end_insert_rows(self):
-        self.endInsertRows()
 
     def _data_changed(self, _, index1, index2, column1, column2, roles):
         return self.dataChanged.emit(
@@ -61,7 +47,9 @@ class AccountsModel(Qt.QAbstractTableModel):
             result |= Qt.Qt.ItemIsUserCheckable
         return result
 
-    def data(self, index, role=Qt.Qt.DisplayRole):
+    def data(self,
+             index: Qt.QModelIndex,
+             role: Qt.Qt.ItemDataRole=Qt.Qt.DisplayRole):
         if not index.isValid():
             return
 
@@ -80,7 +68,10 @@ class AccountsModel(Qt.QAbstractTableModel):
         elif role == ROLE_OBJECT:
             return account
 
-    def setData(self, index, value, role=Qt.Qt.EditRole):
+    def setData(self,
+                index: Qt.QModelIndex,
+                value,
+                role: Qt.Qt.ItemDataRole=Qt.Qt.EditRole):
         if not index.isValid():
             return False
 
@@ -98,7 +89,10 @@ class AccountsModel(Qt.QAbstractTableModel):
 
         return False
 
-    def headerData(self, section, orientation, role=Qt.Qt.DisplayRole):
+    def headerData(self,
+                   section: int,
+                   orientation: Qt.Qt.Orientation,
+                   role: Qt.Qt.ItemDataRole=Qt.Qt.DisplayRole):
         if orientation != Qt.Qt.Horizontal:
             return None
 
@@ -111,81 +105,34 @@ class AccountsModel(Qt.QAbstractTableModel):
             return self.tr("Enabled")
 
 
-class ConversationsModel(Qt.QAbstractItemModel):
-    def __init__(self, tree):
+class ConversationsModel(Qt.QAbstractTableModel):
+    COLUMN_LABEL = 0
+    COLUMN_COUNT = 1
+
+    def __init__(self,
+                 conversations: mlxc.conversation.ConversationManager):
         super().__init__()
-        self.tree = tree
-        self.tree.begin_insert_rows.connect(self._begin_insert_rows)
-        self.tree.end_insert_rows.connect(self._end_insert_rows)
-
-        self.tree.begin_remove_rows.connect(self._begin_remove_rows)
-        self.tree.end_remove_rows.connect(self._end_remove_rows)
-
-    def _begin_insert_rows(self, node, index1, index2):
-        parent_mi = self.node_to_index(node)
-        self.beginInsertRows(parent_mi, index1, index2)
-
-    def _end_insert_rows(self):
-        self.endInsertRows()
-
-    def _begin_remove_rows(self, node, index1, index2):
-        parent_mi = self.node_to_index(node)
-        self.beginRemoveRows(parent_mi, index1, index2)
-
-    def _end_remove_rows(self):
-        self.endRemoveRows()
-
-    def node_to_index(self, node, column=0):
-        if node.parent is None:
-            return Qt.QModelIndex()
-        if not isinstance(node, mlxc.instrumentable_list.ModelTreeNode):
-            node = node._node
-        return self.createIndex(
-            node.parent_index,
-            column,
-            node,
+        self.__conversations = conversations
+        self.__adaptor = model_adaptor.ModelListAdaptor(
+            self.__conversations, self
         )
 
-    def rowCount(self, parent):
-        if not parent.isValid():
-            return len(self.tree.root)
-        node = parent.internalPointer()
-        return len(node)
+    def columnCount(self, index):
+        return self.COLUMN_COUNT
 
-    def columnCount(self, parent):
-        return 1
-
-    def _ident_data(self, node, column, role):
-        if role == Qt.Qt.DisplayRole:
-            return str(node.identity.name)
-
-    def _conv_data(self, node, column, role):
-        if role == Qt.Qt.DisplayRole:
-            return str(node.label)
-
-    def data(self, index, role):
+    def rowCount(self, index):
         if index.isValid():
-            node = index.internalPointer()
-        else:
-            node = self.tree.root
+            return 0
+        return len(self.__conversations)
 
-        node = node.object_
-
-        if isinstance(node, mlxc.conversation.ConversationIdentity):
-            return self._ident_data(node, index.column(), role)
-        elif isinstance(node, mlxc.conversation.ConversationNode):
-            return self._conv_data(node, index.column(), role)
-
-    def index(self, row, column, parent):
-        parent = (self.tree.root
-                  if not parent.isValid()
-                  else parent.internalPointer())
-        return self.node_to_index(parent[row], column)
-
-    def parent(self, index):
+    def data(self,
+             index: Qt.QModelIndex,
+             role: Qt.Qt.ItemDataRole=Qt.Qt.DisplayRole):
         if not index.isValid():
-            return Qt.QModelIndex()
-        return self.node_to_index(index.internalPointer().parent)
+            return None
+
+        if role == Qt.Qt.DisplayRole:
+            return self.__conversations[index.row()].label
 
 
 class RosterTagsModel(Qt.QAbstractListModel):

@@ -14,35 +14,19 @@
    <string>My Little XMPP Client</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <layout class="QHBoxLayout" name="horizontalLayout">
+   <layout class="QVBoxLayout" name="verticalLayout">
     <item>
-     <widget class="QSplitter" name="splitter_2">
+     <widget class="QSplitter" name="splitter">
       <property name="orientation">
        <enum>Qt::Horizontal</enum>
       </property>
-      <widget class="QSplitter" name="splitter">
-       <property name="orientation">
-        <enum>Qt::Vertical</enum>
+      <widget class="QListView" name="conversations_view">
+       <property name="alternatingRowColors">
+        <bool>true</bool>
        </property>
-       <widget class="QTabWidget" name="roster_tabs">
-        <property name="currentIndex">
-         <number>-1</number>
-        </property>
-        <property name="tabBarAutoHide">
-         <bool>true</bool>
-        </property>
-       </widget>
-       <widget class="QTreeView" name="conversations_view">
-        <property name="rootIsDecorated">
-         <bool>false</bool>
-        </property>
-        <property name="itemsExpandable">
-         <bool>false</bool>
-        </property>
-        <attribute name="headerVisible">
-         <bool>false</bool>
-        </attribute>
-       </widget>
+       <property name="selectionBehavior">
+        <enum>QAbstractItemView::SelectRows</enum>
+       </property>
       </widget>
       <widget class="QStackedWidget" name="conversation_pages">
        <property name="sizePolicy">

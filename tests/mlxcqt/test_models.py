@@ -7,6 +7,7 @@ import PyQt5.Qt as Qt
 import aioxmpp
 
 import mlxc.identity as identity
+import mlxc.instrumentable_list
 
 import mlxcqt.models as models
 
@@ -26,6 +27,18 @@ class TestAccountsModel(unittest.TestCase):
     def tearDown(self):
         del self.m
         del self.accounts
+
+    def test_uses_model_list_adaptor(self):
+        accounts = unittest.mock.Mock()
+
+        with contextlib.ExitStack() as stack:
+            ModelListAdaptor = stack.enter_context(
+                unittest.mock.patch("mlxcqt.model_adaptor.ModelListAdaptor")
+            )
+
+            result = models.AccountsModel(accounts)
+
+        ModelListAdaptor.assert_called_once_with(accounts, result)
 
     def test_row_count_on_root_follows_accounts(self):
         self.assertEqual(
@@ -84,45 +97,6 @@ class TestAccountsModel(unittest.TestCase):
             self.m.rowCount(self.m.index(1, 0, Qt.QModelIndex())),
             0,
         )
-
-    def test_forward_removal_signals(self):
-        def beginHandler(*args):
-            self.assertEqual(self.m.rowCount(Qt.QModelIndex()), 2)
-
-        def endHandler(*args):
-            self.assertEqual(self.m.rowCount(Qt.QModelIndex()), 1)
-
-        mock = unittest.mock.Mock()
-        mock.begin.side_effect = beginHandler
-        mock.end.side_effect = endHandler
-
-        self.m.rowsAboutToBeRemoved.connect(mock.begin)
-        self.m.rowsRemoved.connect(mock.end)
-
-        self.accounts.remove_account(self.accounts[1])
-
-        mock.begin.assert_called_once_with(Qt.QModelIndex(), 1, 1)
-        mock.end.assert_called_once_with(Qt.QModelIndex(), 1, 1)
-
-    def test_forward_insertion_signals(self):
-        def beginHandler(*args):
-            self.assertEqual(self.m.rowCount(Qt.QModelIndex()), 2)
-
-        def endHandler(*args):
-            self.assertEqual(self.m.rowCount(Qt.QModelIndex()), 3)
-
-        mock = unittest.mock.Mock()
-        mock.begin.side_effect = beginHandler
-        mock.end.side_effect = endHandler
-
-        self.m.rowsAboutToBeInserted.connect(mock.begin)
-        self.m.rowsInserted.connect(mock.end)
-
-        self.accounts.new_account(aioxmpp.JID.fromstr("foo@bar.example"),
-                                  None)
-
-        mock.begin.assert_called_once_with(Qt.QModelIndex(), 2, 2)
-        mock.end.assert_called_once_with(Qt.QModelIndex(), 2, 2)
 
     def test_forward_data_changed_signal(self):
         mock = unittest.mock.Mock()
@@ -372,6 +346,107 @@ class TestAccountsModel(unittest.TestCase):
         tr.assert_called_once_with("Enabled")
 
         self.assertEqual(result, tr())
+
+
+class TestConversationsModel(unittest.TestCase):
+    def setUp(self):
+        def make_mock():
+            return unittest.mock.Mock(["label"])
+
+        self.cs = mlxc.instrumentable_list.ModelList()
+        self.cs.append(make_mock())
+        self.cs.append(make_mock())
+        self.cs.append(make_mock())
+
+        self.m = models.ConversationsModel(self.cs)
+
+    def test_uses_model_list_adaptor(self):
+        convs = unittest.mock.Mock()
+
+        with contextlib.ExitStack() as stack:
+            ModelListAdaptor = stack.enter_context(
+                unittest.mock.patch("mlxcqt.model_adaptor.ModelListAdaptor")
+            )
+
+            result = models.ConversationsModel(convs)
+
+        ModelListAdaptor.assert_called_once_with(convs, result)
+
+    def test_row_count_on_root_follows_convs(self):
+        self.assertEqual(
+            self.m.rowCount(Qt.QModelIndex()),
+            len(self.cs),
+        )
+
+        self.cs.append(unittest.mock.sentinel.item)
+
+        self.assertEqual(
+            self.m.rowCount(Qt.QModelIndex()),
+            len(self.cs),
+        )
+
+    def test_column_count(self):
+        self.assertEqual(
+            self.m.columnCount(Qt.QModelIndex()),
+            self.m.COLUMN_COUNT,
+        )
+        self.assertEqual(
+            self.m.COLUMN_COUNT,
+            1,
+        )
+
+    def test_index_checks_row(self):
+        self.assertFalse(self.m.index(-1, 0).isValid())
+        self.assertTrue(self.m.index(0, 0).isValid())
+        self.assertTrue(self.m.index(1, 0).isValid())
+        self.assertTrue(self.m.index(2, 0).isValid())
+        self.assertFalse(self.m.index(3, 0).isValid())
+
+    def test_index_checks_column(self):
+        self.assertFalse(self.m.index(0, -1).isValid())
+        self.assertTrue(self.m.index(0, 0).isValid())
+        self.assertFalse(self.m.index(0, 1).isValid())
+
+    def test_row_count_on_items(self):
+        index = self.m.index(0, 0)
+        self.assertEqual(self.m.rowCount(index), 0)
+
+    def test_index_checks_parent(self):
+        parent = self.m.index(0, 0)
+        self.assertTrue(parent.isValid())
+        self.assertFalse(self.m.index(0, 0, parent).isValid())
+
+    def test_data_label_column_display_role(self):
+        for i, conv in enumerate(self.cs):
+            self.assertEqual(
+                self.m.data(
+                    self.m.index(i, self.m.COLUMN_LABEL),
+                    Qt.Qt.DisplayRole,
+                ),
+                conv.label,
+            )
+
+            self.assertEqual(
+                self.m.data(self.m.index(i, self.m.COLUMN_LABEL)),
+                conv.label,
+            )
+
+    def test_data_label_column_other_role(self):
+        for i, _ in enumerate(self.cs):
+            self.assertIsNone(
+                self.m.data(
+                    self.m.index(i, self.m.COLUMN_LABEL),
+                    unittest.mock.sentinel.other_role,
+                ),
+            )
+
+    def test_data_invalid_index(self):
+        self.assertIsNone(
+            self.m.data(
+                Qt.QModelIndex(),
+                Qt.Qt.DisplayRole
+            ),
+        )
 
 
 class TestFlattenModelToSeparators(unittest.TestCase):
