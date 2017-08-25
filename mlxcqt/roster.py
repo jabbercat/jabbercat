@@ -169,7 +169,9 @@ class Roster:
                          "on_entry_removed",
                          "on_entry_added_to_group",
                          "on_entry_removed_from_group",
-                         "on_entry_name_changed"]
+                         "on_entry_name_changed",
+                         "on_group_added",
+                         "on_group_removed"]
     PRESENCE_EVENT_LIST = ["on_available",
                            "on_changed",
                            "on_unavailable"]
@@ -186,6 +188,8 @@ class Roster:
             self._on_set_name,
             self.model.on_set_name.SPAWN_WITH_LOOP(None)
         )
+        self.groups = mlxc.instrumentable_list.ModelList()
+        self._group_set = set()
         self._clients = {}
 
     @asyncio.coroutine
@@ -221,6 +225,8 @@ class Roster:
                 )
             )
 
+        self.groups[:] = roster.groups
+
         self._clients[client] = (account, roster, roster_tokens,
                                  presence, presence_tokens)
 
@@ -252,6 +258,12 @@ class Roster:
         logging.debug("on_entry_removed_from_group(%r, %r, %r)",
                       client, item, group_name)
         self.model.raw_item_changed(item)
+
+    def on_group_added(self, client, group):
+        self.groups.append(group)
+
+    def on_group_removed(self, client, group):
+        self.groups.remove(group)
 
     def _get_item_by_jid(self, bare_jid):
         for item in self.items:

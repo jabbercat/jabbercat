@@ -357,13 +357,7 @@ class RosterWidget(Qt.QWidget):
         self.identity = identity
         self.ui = Ui_RosterWidget()
         self.ui.setupUi(self)
-
-        self.ui.filter_widget.hide()
-        self.ui.clear_filters.clicked.connect(
-            self._clear_filters
-        )
-
-        self._filtered_for_tags = set()
+        self.ui.filter_widget.on_tags_changed.connect(self._update_filters)
 
         self._tokens = []
         self._tokens.append((
@@ -439,10 +433,6 @@ class RosterWidget(Qt.QWidget):
         for signal, token in self._tokens:
             signal.disconnect(token)
 
-    def _clear_filters(self, *_):
-        self._filtered_for_tags.clear()
-        self._update_filters()
-
     def _prepare_client(self,
                         account: mlxc.identity.Account,
                         client):
@@ -461,24 +451,39 @@ class RosterWidget(Qt.QWidget):
         index = self.ui.roster_view.currentIndex()
         self.ui.roster_view.edit(index)
 
+    def _toggle_tag_filter(self, tag):
+        if self.ui.filter_widget.has_tag(tag):
+            self.ui.filter_widget.remove_tag(tag)
+        else:
+            self.ui.filter_widget.add_tag(tag)
+
+    def _clear_tag_filters(self):
+        self.ui.filter_widget.clear_tags()
+
+    def _add_tag_filter(self, tag):
+        self.ui.filter_widget.add_tag(tag)
+
+    def _remove_tag_filter(self, tag):
+        self.ui.filter_widget.remove_tag(tag)
+
     def _tag_clicked(self, tag, modifiers):
         if modifiers & Qt.Qt.ControlModifier:
-            try:
-                self._filtered_for_tags.remove(tag)
-            except KeyError:
-                self._filtered_for_tags.add(tag)
+            self._toggle_tag_filter(tag)
         else:
-            if self._filtered_for_tags == {tag}:
-                self._filtered_for_tags.discard(tag)
-            else:
-                self._filtered_for_tags = {tag}
+            re_add = {tag} != set(self.ui.filter_widget.tags)
+            self._clear_tag_filters()
+            if re_add:
+                self._add_tag_filter(tag)
 
         self._update_filters()
 
+    def _clear_filters(self):
+        self._clear_tag_filters()
+
     def _update_filters(self):
         parts = [
-            Qt.QRegExp.escape(tag+"\n")
-            for tag in sorted(self._filtered_for_tags)
+            Qt.QRegExp.escape(tag + "\n")
+            for tag in sorted(self.ui.filter_widget.tags)
         ]
         regex = "(.*)".join(parts)
 
@@ -488,34 +493,6 @@ class RosterWidget(Qt.QWidget):
         self.sorted_roster.setFilterRegExp(
             Qt.QRegExp(regex)
         )
-
-        filter_text_parts = []
-        if self._filtered_for_tags:
-            filter_text_parts.append(
-                ", ".join(
-                    "<span style='background-color: rgba({}, 1);'>"
-                    "{}</span>".format(
-                        ", ".join(
-                            str(int(channel*255))
-                            for channel in mlxc.utils.text_to_colour(
-                                    mlxc.utils.normalise_text_for_hash(tag)
-                            )
-                        ),
-                        tag
-                    )
-                    for tag in sorted(
-                            self._filtered_for_tags
-                    )
-                )
-            )
-
-        if filter_text_parts:
-            self.ui.filter_widget.show()
-            self.ui.filter_label.setText(
-                "Filtering for {}".format(", ".join(filter_text_parts))
-            )
-        else:
-            self.ui.filter_widget.hide()
 
     def _selection_changed(self, selected, deselected):
         selection_model = self.ui.roster_view.selectionModel()
@@ -541,16 +518,12 @@ class RosterWidget(Qt.QWidget):
             selected_count > 0
         )
 
-    @utils.asyncify
-    @asyncio.coroutine
     def _roster_item_activated(self, index):
         item = self.roster_manager.model.item_wrapper_from_index(
             self.ui.roster_view.model().mapToSource(index)
         )
-        client = self.main.client.client_by_account(item.account)
-        p2p_convs = client.summon(aioxmpp.im.p2p.Service)
-        print("starting conversation with", item.jid)
-        yield from p2p_convs.get_conversation(item.jid)
+        account = item.account
+        self.main.conversations.open_onetoone_conversation(account, item.jid)
 
     def _get_all_tags(self):
         all_groups = set()
@@ -578,7 +551,6 @@ class RosterWidget(Qt.QWidget):
         result = yield from widget.run(pos, self._get_all_tags(), items)
         if result is not None:
             to_add, to_remove = result
-            print(to_add, to_remove)
             tasks = []
             for item in items:
                 client = self.main.client.client_by_account(item.account)
@@ -605,9 +577,9 @@ class RosterWidget(Qt.QWidget):
 
         def tag_action_triggered(tag, checked):
             if checked:
-                self._filtered_for_tags.add(tag)
+                self._add_tag_filter(tag)
             else:
-                self._filtered_for_tags.discard(tag)
+                self._remove_tag_filter(tag)
             self._update_filters()
 
         for tag in all_tags:
@@ -619,7 +591,7 @@ class RosterWidget(Qt.QWidget):
             icon.fill(color)
             icon = Qt.QIcon(icon)
             action.setCheckable(True)
-            action.setChecked(tag in self._filtered_for_tags)
+            action.setChecked(self.ui.filter_widget.has_tag(tag))
             action.setIcon(icon)
             action.triggered.connect(
                 functools.partial(tag_action_triggered, tag)
@@ -647,18 +619,9 @@ class MainWindow(Qt.QMainWindow):
             self.account_manager.open
         )
 
-        self.convmanager = mlxc.conversation.ConversationManager()
-
-        self.main.client.on_client_prepare.connect(
-            self.convmanager.handle_client_prepare,
-        )
-        self.main.client.on_client_stopped.connect(
-            self.convmanager.handle_client_stopped,
-        )
-
         self.__convmap = {}
         self.__conversation_model = models.ConversationsModel(
-            self.convmanager.tree
+            self.main.conversations.tree
         )
         self.ui.conversations_view.setModel(
             self.__conversation_model
@@ -667,7 +630,7 @@ class MainWindow(Qt.QMainWindow):
             self._conversation_item_activated
         )
 
-        self.convmanager.on_conversation_added.connect(
+        self.main.conversations.on_conversation_added.connect(
             self._conversation_added
         )
 
@@ -682,17 +645,17 @@ class MainWindow(Qt.QMainWindow):
         self.__identitymap = {}
 
     def _conversation_added(self, wrapper):
-        conv = wrapper.conversation
-        page = conversation.ConversationView(conv)
-        self.__convmap[wrapper.conversation] = page
+        page = conversation.ConversationView(wrapper)
+        self.__convmap[wrapper] = page
         self.ui.conversation_pages.addWidget(page)
         self.ui.conversation_pages.setCurrentWidget(page)
+        self.ui.conversations_view.expandAll()
 
     def _conversation_item_activated(self, index):
         node = index.internalPointer()
         if isinstance(node.object_, mlxc.conversation.ConversationNode):
-            conv = node.object_.conversation
-            page = self.__convmap[conv]
+            page = self.__convmap[node.object_]
+            self.main.conversations.start_soon(node.object_)
             self.ui.conversation_pages.setCurrentWidget(page)
 
     @utils.asyncify
@@ -702,8 +665,10 @@ class MainWindow(Qt.QMainWindow):
         join_info = yield from dlg.run()
         if join_info is not None:
             account, mucjid, nick = join_info
-            mlxc.tasks.manager.start(
-                self.join_muc(account, mucjid, nick)
+            self.main.conversations.open_muc_conversation(
+                account,
+                mucjid,
+                nick,
             )
 
     @utils.asyncify
@@ -762,6 +727,10 @@ class QtMain(mlxc.main.Main):
 
     def __init__(self, loop):
         super().__init__(loop)
+        self.conversations = mlxc.conversation.ConversationManager(
+            self.accounts,
+            self.client,
+        )
         self.window = MainWindow(self)
 
     @asyncio.coroutine

@@ -27,45 +27,7 @@
     <number>0</number>
    </property>
    <item>
-    <widget class="QWidget" name="filter_widget" native="true">
-     <layout class="QHBoxLayout" name="horizontalLayout">
-      <property name="leftMargin">
-       <number>0</number>
-      </property>
-      <property name="topMargin">
-       <number>0</number>
-      </property>
-      <property name="rightMargin">
-       <number>0</number>
-      </property>
-      <property name="bottomMargin">
-       <number>0</number>
-      </property>
-      <item>
-       <widget class="QLabel" name="filter_label">
-        <property name="text">
-         <string>TextLabel</string>
-        </property>
-        <property name="wordWrap">
-         <bool>true</bool>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QToolButton" name="clear_filters">
-        <property name="toolTip">
-         <string>Clear the filters</string>
-        </property>
-        <property name="text">
-         <string>...</string>
-        </property>
-        <property name="shortcut">
-         <string>Esc</string>
-        </property>
-       </widget>
-      </item>
-     </layout>
-    </widget>
+    <widget class="TagsInput" name="filter_widget" native="true"/>
    </item>
    <item>
     <widget class="QListView" name="roster_view">
@@ -155,6 +117,14 @@
    </property>
   </action>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>TagsInput</class>
+   <extends>QWidget</extends>
+   <header>mlxcqt.widgets.tagsinput</header>
+   <container>1</container>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections/>
 </ui>

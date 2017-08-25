@@ -161,7 +161,7 @@ class ConversationsModel(Qt.QAbstractItemModel):
 
     def _conv_data(self, node, column, role):
         if role == Qt.Qt.DisplayRole:
-            return str(node.conversation.jid)
+            return str(node.label)
 
     def data(self, index, role):
         if index.isValid():
@@ -188,17 +188,37 @@ class ConversationsModel(Qt.QAbstractItemModel):
         return self.node_to_index(index.internalPointer().parent)
 
 
-class RosterTagsSelectionModel(Qt.QAbstractListModel):
+class RosterTagsModel(Qt.QAbstractListModel):
     COLUMN_NAME = 0
     COLUMN_COUNT = 1
 
     def __init__(self, model_list, parent=None):
         super().__init__(parent=parent)
         self._model_list = model_list
+        self.__adaptor = model_adaptor.ModelListAdaptor(model_list, self)
+
+    def rowCount(self, parent):
+        if parent.isValid():
+            return 0
+        return len(self._model_list)
+
+    def data(self, index, role):
+        if not index.isValid():
+            return super().data(index, role)
+
+        row = index.row()
+        if role == Qt.Qt.DisplayRole:
+            return self._model_list[row]
+
+        return super().data(index, role)
+
+
+class RosterTagsSelectionModel(RosterTagsModel):
+    def __init__(self, model_list, parent=None):
+        super().__init__(model_list, parent=parent)
         self._to_add = set()
         self._to_remove = set()
         self._original = {}
-        self.__adaptor = model_adaptor.ModelListAdaptor(model_list, self)
 
     @property
     def to_add(self):
@@ -253,29 +273,24 @@ class RosterTagsSelectionModel(Qt.QAbstractListModel):
 
         self.dataChanged.emit(
             self.index(0, 0),
-            self.index(len(self._model_list)-1, 0),
+            self.index(len(self._model_list) - 1, 0),
             [Qt.Qt.CheckStateRole]
         )
 
-    def rowCount(self, parent):
-        if parent.isValid():
-            return 0
-        return len(self._model_list)
-
     def data(self, index, role):
         if not index.isValid():
-            return
+            return super().data(index, role)
 
         row = index.row()
-        if role == Qt.Qt.DisplayRole:
-            return self._model_list[row]
-        elif role == Qt.Qt.CheckStateRole:
+        if role == Qt.Qt.CheckStateRole:
             group = self._model_list[row]
             if group in self._to_add:
                 return Qt.Qt.Checked
             elif group in self._to_remove:
                 return Qt.Qt.Unchecked
             return self._original.get(group, Qt.Qt.Unchecked)
+
+        return super().data(index, role)
 
     def setData(self, index, value, role):
         if not index.isValid():
@@ -351,7 +366,7 @@ class FlattenModelToSeparators(Qt.QAbstractProxyModel):
             self._breaks.append(
                 i_absolute
             )
-            i_absolute += nchildren+1
+            i_absolute += nchildren + 1
 
         self._connections.append(
             model.rowsInserted.connect(self._source_rowsInserted)
@@ -385,8 +400,8 @@ class FlattenModelToSeparators(Qt.QAbstractProxyModel):
             new_children = (end - start) + 1
             self.beginInsertRows(Qt.QModelIndex(), start_mapped, end_mapped)
             for i, old_break in enumerate(
-                    self._breaks[parent.row()+1:],
-                    parent.row()+1):  # update breaks *after* the parent
+                    self._breaks[parent.row() + 1:],
+                    parent.row() + 1):  # update breaks *after* the parent
                 self._breaks[i] += new_children
             self.endInsertRows()
         else:
@@ -395,7 +410,7 @@ class FlattenModelToSeparators(Qt.QAbstractProxyModel):
             if start >= len(self._breaks):
                 offset = self._len() - start
             else:
-                offset = self._breaks[start+1] - start
+                offset = self._breaks[start + 1] - start
 
             start_mapped = start + offset
             end_mapped = end + offset
@@ -403,22 +418,25 @@ class FlattenModelToSeparators(Qt.QAbstractProxyModel):
 
             self.beginInsertRows(Qt.QModelIndex(), start_mapped, end_mapped)
             for i, old_break in enumerate(
-                    self._breaks[start+1:],
-                    start+1):  # update breaks *after* the newly inserted ones
+                    self._breaks[start + 1:],
+                    start + 1):  # update breaks *after* the newly inserted ones
                 self._breaks[i] += new_children
 
             # insert new breaks
-            self._breaks[start+1:start+1] = range(start_mapped, end_mapped+1)
+            self._breaks[start + 1:start + 1] = range(
+                start_mapped,
+                end_mapped + 1
+            )
             self.endInsertRows()
 
             source = self.sourceModel()
-            for new_i in range(start, end+1):
+            for new_i in range(start, end + 1):
                 new_idx = source.index(new_i, 0, Qt.QModelIndex())
                 nchildren = source.rowCount(new_idx)
                 if nchildren == 0:
                     continue
 
-                self._source_rowsInserted(new_idx, 0, nchildren-1)
+                self._source_rowsInserted(new_idx, 0, nchildren - 1)
 
     def _source_rowsAboutToBeRemoved(self, parent, start, end):
         if self.mapFromSource(parent).parent().isValid():
@@ -432,8 +450,8 @@ class FlattenModelToSeparators(Qt.QAbstractProxyModel):
             new_children = (end - start) + 1
             self.beginRemoveRows(Qt.QModelIndex(), start_mapped, end_mapped)
             for i, old_break in enumerate(
-                    self._breaks[start+1:],
-                    start+1):  # update breaks *after* the newly inserted ones
+                    self._breaks[start + 1:],
+                    start + 1):  # update breaks *after* the newly inserted ones
                 self._breaks[i] -= new_children
         else:
             # remove root item
@@ -448,7 +466,7 @@ class FlattenModelToSeparators(Qt.QAbstractProxyModel):
 
             end_mapped_inlined = end_mapped
             source = self.sourceModel()
-            for source_row in range(start, end+1):
+            for source_row in range(start, end + 1):
                 source_idx = source.index(source_row, 0, parent)
                 end_mapped_inlined += source.rowCount(source_idx)
             to_remove = (end_mapped_inlined - start_mapped) + 1
@@ -456,7 +474,7 @@ class FlattenModelToSeparators(Qt.QAbstractProxyModel):
             self.beginRemoveRows(Qt.QModelIndex(), start_mapped,
                                  end_mapped_inlined)
 
-            del self._breaks[start:end+1]
+            del self._breaks[start:end + 1]
 
             for i, old_break in enumerate(
                     self._breaks[start:],
@@ -473,7 +491,11 @@ class FlattenModelToSeparators(Qt.QAbstractProxyModel):
         if not self._breaks:
             return 0
         return self._breaks[-1] + self.sourceModel().rowCount(
-            self.sourceModel().index(len(self._breaks)-1, 0, Qt.QModelIndex())
+            self.sourceModel().index(
+                len(self._breaks) - 1,
+                0,
+                Qt.QModelIndex()
+            )
         ) + 1
 
     def rowCount(self, parent):
@@ -502,7 +524,7 @@ class FlattenModelToSeparators(Qt.QAbstractProxyModel):
     def _map_firstlevel_to_source(self, proxyIndex):
         row = proxyIndex.row()
         # find the row in the breaks list
-        mapping = bisect.bisect(self._breaks, row)-1
+        mapping = bisect.bisect(self._breaks, row) - 1
         if self._breaks[mapping] == row:
             # first level in source
             return self.sourceModel().index(
