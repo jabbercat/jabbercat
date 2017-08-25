@@ -8,38 +8,45 @@ from mlxcqt import Qt
 
 class TestModelListAdaptor(unittest.TestCase):
     def setUp(self):
-        self.base = unittest.mock.MagicMock()
+        self.base = unittest.mock.Mock([])
         self.base.model = unittest.mock.Mock()
+        self.base.mlist = unittest.mock.Mock([
+            "begin_insert_rows",
+            "begin_move_rows",
+            "begin_remove_rows",
+            "end_insert_rows",
+            "end_move_rows",
+            "end_remove_rows",
+            "data_changed",
+        ])
         self.adaptor = model_adaptor.ModelListAdaptor(
             self.base.mlist,
             self.base.model)
+        self.base.mock_calls.clear()
 
     def test_attaches_on_init(self):
-        self.assertEqual(
-            self.base.mlist.begin_insert_rows,
-            self.adaptor.begin_insert_rows
-        )
-        self.assertEqual(
-            self.base.mlist.end_insert_rows,
-            self.adaptor.end_insert_rows
+        self.base.mlist.begin_insert_rows.connect.assert_called_once_with(
+            self.adaptor.begin_insert_rows,
         )
 
-        self.assertEqual(
-            self.base.mlist.begin_remove_rows,
-            self.adaptor.begin_remove_rows
-        )
-        self.assertEqual(
-            self.base.mlist.end_remove_rows,
-            self.adaptor.end_remove_rows
+        self.base.mlist.begin_move_rows.connect.assert_called_once_with(
+            self.adaptor.begin_move_rows,
         )
 
-        self.assertEqual(
-            self.base.mlist.begin_move_rows,
-            self.adaptor.begin_move_rows
+        self.base.mlist.begin_remove_rows.connect.assert_called_once_with(
+            self.adaptor.begin_remove_rows,
         )
-        self.assertEqual(
-            self.base.mlist.end_move_rows,
-            self.adaptor.end_move_rows
+
+        self.base.mlist.end_insert_rows.connect.assert_called_once_with(
+            self.adaptor.end_insert_rows,
+        )
+
+        self.base.mlist.end_move_rows.connect.assert_called_once_with(
+            self.adaptor.end_move_rows,
+        )
+
+        self.base.mlist.end_remove_rows.connect.assert_called_once_with(
+            self.adaptor.end_remove_rows,
         )
 
     def test_begin_insert_rows(self):
