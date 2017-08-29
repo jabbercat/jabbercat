@@ -4,12 +4,14 @@ import enum
 import mlxc.conversation
 import mlxc.identity
 import mlxc.instrumentable_list
+import mlxc.roster
 
 from . import Qt
 from . import model_adaptor
 
 
 ROLE_OBJECT = Qt.Qt.UserRole + 1
+ROLE_TAGS = Qt.Qt.UserRole + 2
 
 
 class AccountsModel(Qt.QAbstractTableModel):
@@ -151,13 +153,11 @@ class RosterTagsModel(Qt.QAbstractListModel):
 
     def data(self, index, role):
         if not index.isValid():
-            return super().data(index, role)
+            return
 
         row = index.row()
         if role == Qt.Qt.DisplayRole:
             return self._model_list[row]
-
-        return super().data(index, role)
 
 
 class RosterTagsSelectionModel(RosterTagsModel):
@@ -282,7 +282,7 @@ class FilterDisabledItems(Qt.QSortFilterProxyModel):
     def filterAcceptsRow(self, source_row, source_parent):
         index = self.sourceModel().index(
             source_row,
-            AccountModel.COLUMN_ENABLED,
+            AccountsModel.COLUMN_ENABLED,
             source_parent
         )
         is_enabled = self.sourceModel().data(index, Qt.Qt.CheckStateRole)
@@ -514,3 +514,34 @@ class FlattenModelToSeparators(Qt.QAbstractProxyModel):
 
     def mapToSource(self, proxyIndex):
         return self._map_firstlevel_to_source(proxyIndex)
+
+
+class RosterModel(Qt.QAbstractListModel):
+    def __init__(self,
+                 items: mlxc.instrumentable_list.AbstractModelListView[
+                     mlxc.roster.AbstractRosterItem]):
+        super().__init__()
+        self._items = items
+        self.__adaptor = model_adaptor.ModelListAdaptor(
+            self._items, self
+        )
+
+    def rowCount(self, parent):
+        if parent.isValid():
+            return 0
+        return len(self._items)
+
+    def data(self, index, role):
+        if not index.isValid():
+            return
+
+        item = self._items[index.row()]
+
+        if role == Qt.Qt.DisplayRole:
+            return item.label
+        elif role == ROLE_OBJECT:
+            return item
+        elif role == ROLE_TAGS:
+            return "".join(
+                tag + "\n" for tag in sorted(item.tags)
+            )

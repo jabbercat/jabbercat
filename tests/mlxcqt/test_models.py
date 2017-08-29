@@ -8,6 +8,7 @@ import aioxmpp
 
 import mlxc.identity as identity
 import mlxc.instrumentable_list
+import mlxc.roster
 
 import mlxcqt.models as models
 
@@ -798,3 +799,121 @@ class TestFlattenModelToSeparators(unittest.TestCase):
 
         self._check_mapping_from_source_dynamic()
         self._check_mapping_to_source_dynamic()
+
+
+class TestRosterModel(unittest.TestCase):
+    def setUp(self):
+        self.roster = mlxc.instrumentable_list.ModelList()
+        self.roster.extend(
+            unittest.mock.Mock(spec=mlxc.roster.AbstractRosterItem)
+            for i in range(3)
+        )
+        self.m = models.RosterModel(self.roster)
+
+    def test_uses_model_list_adaptor(self):
+        items = unittest.mock.Mock([])
+
+        with contextlib.ExitStack() as stack:
+            ModelListAdaptor = stack.enter_context(
+                unittest.mock.patch("mlxcqt.model_adaptor.ModelListAdaptor")
+            )
+
+            result = models.RosterModel(items)
+
+        ModelListAdaptor.assert_called_once_with(items, result)
+
+    def test_row_count_on_root_follows_items(self):
+        self.assertEqual(
+            self.m.rowCount(Qt.QModelIndex()),
+            len(self.roster),
+        )
+
+        self.roster.append("foo")
+
+        self.assertEqual(
+            self.m.rowCount(Qt.QModelIndex()),
+            len(self.roster),
+        )
+
+    def test_index_checks_row(self):
+        self.assertFalse(
+            self.m.index(-1, 0, Qt.QModelIndex()).isValid(),
+        )
+
+        self.assertTrue(
+            self.m.index(0, 0, Qt.QModelIndex()).isValid(),
+        )
+
+        self.assertTrue(
+            self.m.index(1, 0, Qt.QModelIndex()).isValid(),
+        )
+
+        self.assertTrue(
+            self.m.index(2, 0, Qt.QModelIndex()).isValid(),
+        )
+
+        self.assertFalse(
+            self.m.index(3, 0, Qt.QModelIndex()).isValid(),
+        )
+
+    def test_index_checks_parent(self):
+        self.assertFalse(
+            self.m.index(0, 0, self.m.index(0, 0)).isValid(),
+        )
+
+    def test_index_checks_column(self):
+        self.assertFalse(
+            self.m.index(0, -1, Qt.QModelIndex()).isValid(),
+        )
+
+        self.assertTrue(
+            self.m.index(0, 0, Qt.QModelIndex()).isValid(),
+        )
+
+        self.assertFalse(
+            self.m.index(0, 1, Qt.QModelIndex()).isValid(),
+        )
+
+    def test_row_count_on_items(self):
+        self.assertEqual(
+            self.m.rowCount(self.m.index(0, 0, Qt.QModelIndex())),
+            0,
+        )
+
+    def test_flags(self):
+        self.assertEqual(
+            self.m.flags(self.m.index(0, 0)),
+            Qt.Qt.ItemIsEnabled | Qt.Qt.ItemIsSelectable |
+            Qt.Qt.ItemNeverHasChildren
+        )
+
+    def test_data_returns_label_for_display_role(self):
+        for i, item in enumerate(self.roster):
+            self.assertEqual(
+                self.m.data(self.m.index(i, 0), Qt.Qt.DisplayRole),
+                item.label,
+            )
+
+    def test_data_returns_object_for_object_role(self):
+        for i, item in enumerate(self.roster):
+            self.assertIs(
+                self.m.data(self.m.index(i, 0), models.ROLE_OBJECT),
+                item,
+            )
+
+    def test_data_returns_sorted_newline_joined_tags_for_tags_role(self):
+        self.roster[1].tags = ["foo", "fnord", "bar"]
+
+        self.assertEqual(
+            self.m.data(self.m.index(1, 0), models.ROLE_TAGS),
+            "bar\nfnord\nfoo\n",
+        )
+
+    def test_data_returns_None_for_invalid_index(self):
+        self.assertIsNone(self.m.data(Qt.QModelIndex(),
+                                      unittest.mock.ANY))
+
+    def test_data_returns_None_for_other_roles(self):
+        self.assertIsNone(
+            self.m.data(self.m.index(0, 0), unittest.mock.sentinel.other_role)
+        )

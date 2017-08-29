@@ -23,14 +23,18 @@ class DlgAddContact(Qt.QDialog):
         self.ui.setupUi(self)
 
         self.ui.account.currentIndexChanged.connect(
-            self._current_index_changed
+           self._current_index_changed
         )
 
         validator = utils.JIDValidator(self.ui.peer_jid)
         self.ui.peer_jid.setValidator(validator)
 
         self.base_model = models.AccountsModel(accounts)
-        self.ui.account.setModel(self.base_model)
+        filtered = models.FilterDisabledItems(self.ui.account)
+        filtered.setSourceModel(self.base_model)
+        self.ui.account.setModel(filtered)
+
+        print("configured")
 
     def _current_index_changed(self, index):
         all_tags = self._get_all_tags()
@@ -63,12 +67,16 @@ class DlgAddContact(Qt.QDialog):
 
     @asyncio.coroutine
     def run(self):
+        print("run")
         result = yield from utils.exec_async(self)
         if result != Qt.QDialog.Accepted:
             return
 
         account_index = self.ui.account.currentIndex()
-        account = self._accounts[account_index]
+        account = self.ui.account.model().data(
+            self.ui.account.model().index(account_index, 0),
+            models.ROLE_OBJECT,
+        )
         peer_jid = aioxmpp.JID.fromstr(self.ui.peer_jid.text())
         display_name = self.ui.display_name.text()
         tags = self.ui.tags.selected_tags

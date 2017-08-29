@@ -3,10 +3,12 @@ import functools
 import random
 
 import aioxmpp
+import aioxmpp.cache
 import aioxmpp.im.p2p
 
 import mlxc.conversation
 import mlxc.main
+import mlxc.roster
 import mlxc.utils
 import mlxc.tasks
 
@@ -26,7 +28,7 @@ from .ui.main import Ui_Main
 from .ui.roster import Ui_RosterWidget
 
 
-_PEPPER = random.SystemRandom().getrandbits(64).to_bytes(64//8, "little")
+_PEPPER = random.SystemRandom().getrandbits(64).to_bytes(64 // 8, "little")
 
 
 class RosterItemDelegate(Qt.QItemDelegate):
@@ -36,6 +38,7 @@ class RosterItemDelegate(Qt.QItemDelegate):
     TAG_MARGIN = 2
     TAG_PADDING = 2
     TAG_FONT_SIZE = 0.9
+    MIN_TAG_WIDTH = 16
     NAME_FONT_SIZE = 1.1
 
     MAX_AVATAR_SIZE = 48
@@ -44,15 +47,105 @@ class RosterItemDelegate(Qt.QItemDelegate):
 
     def __init__(self, parent=None):
         super().__init__(parent=parent)
+        self._cache = aioxmpp.cache.LRUDict()
+        self._cache.maxsize = 128
 
     def _get_fonts(self, base_font):
         name_font = Qt.QFont(base_font)
         name_font.setWeight(Qt.QFont.Bold)
-        name_font.setPointSizeF(name_font.pointSizeF()*self.NAME_FONT_SIZE)
+        name_font.setPointSizeF(name_font.pointSizeF() * self.NAME_FONT_SIZE)
 
         tag_font = Qt.QFont(base_font)
-        tag_font.setPointSizeF(tag_font.pointSizeF()*self.TAG_FONT_SIZE)
+        tag_font.setPointSizeF(tag_font.pointSizeF() * self.TAG_FONT_SIZE)
         return name_font, tag_font
+
+    def flush_caches(self):
+        self._cache.clear()
+
+    def layout_tags(self, font_metrics: Qt.QFontMetrics, tags, width):
+        tags = tuple(sorted(
+            ((tag_full,
+              mlxc.utils.normalise_text_for_hash(tag_full))
+             for tag_full in tags),
+            key=lambda x: x[1]
+        ))
+
+        cache_key = tags, width
+
+        try:
+            return self._cache[cache_key]
+        except KeyError:
+            pass
+
+        text_widths = [
+            max(font_metrics.width(tag), self.MIN_TAG_WIDTH)
+            for tag, _ in tags
+        ]
+
+        text_colours = [
+            utils.text_to_qtcolor(normalized_tag)
+            for _, normalized_tag in tags
+        ]
+
+        tag_widths = [
+            max(text_width, self.MIN_TAG_WIDTH) +
+            self.TAG_PADDING * 2
+            for text_width in text_widths
+        ]
+
+        margin_width = max(
+            (len(tags) - 1) * self.TAG_MARGIN,
+            0,
+        )
+
+        total_width = sum(tag_widths) + margin_width
+        min_tag_width_full = self.MIN_TAG_WIDTH + self.TAG_PADDING * 2
+
+        if total_width > width:
+            min_width = len(tags) * min_tag_width_full + margin_width
+            if width <= min_width:
+                scale = 0
+            else:
+                variable_width = total_width - min_width
+                if variable_width == 0:
+                    scale = 1
+                else:
+                    scale = (width - min_width) / variable_width
+        else:
+            scale = 1
+
+        if scale < 1:
+            tag_widths = [
+                round(
+                    (tag_width - min_tag_width_full) * scale
+                ) + min_tag_width_full
+                for tag_width in tag_widths
+            ]
+
+            texts = [
+                font_metrics.elidedText(
+                    text,
+                    Qt.Qt.ElideMiddle,
+                    tag_width - self.TAG_PADDING * 2,
+                )
+                for (text, _), tag_width in zip(tags, tag_widths)
+            ]
+        else:
+            texts = [text for text, _ in tags]
+
+        item = {
+            "tags": tags,
+            "texts": texts,
+            "width": total_width,
+            "text_widths": text_widths,
+            "text_colours": text_colours,
+            "tag_widths": tag_widths,
+            "scale": scale,
+        }
+
+        self._cache[cache_key] = item
+
+        return item
 
     def sizeHint(self, option, index):
         name_font, tag_font = self._get_fonts(option.font)
@@ -62,16 +155,46 @@ class RosterItemDelegate(Qt.QItemDelegate):
         tag_metrics = Qt.QFontMetrics(tag_font)
         tag_text_height = tag_metrics.ascent() + tag_metrics.descent()
 
-        total_height = (self.PADDING*2 +
+        total_height = (self.PADDING * 2 +
                         name_height +
                         self.SPACING +
                         tag_text_height +
                         self.SPACING +
                         tag_text_height +
-                        self.TAG_PADDING*2 +
-                        self.TAG_MARGIN*2)
+                        self.TAG_PADDING * 2 +
+                        self.TAG_MARGIN * 2)
 
-        return Qt.QSize(0, total_height)
+        item = index.data(models.ROLE_OBJECT)
+        ntags = len(item.tags)
+
+        min_width = (self.LEFT_PADDING +
+                     self.MAX_AVATAR_SIZE +
+                     self.SPACING +
+                     ntags * (
+                         self.MIN_TAG_WIDTH +
+                         self.TAG_PADDING * 2 +
+                         self.TAG_MARGIN + 2) +
+                     self.PADDING)
+
+        return Qt.QSize(min_width, total_height)
+
+    def _tag_rects(self, font_metrics, top_left, layout):
+        tag_text_height = font_metrics.ascent() + font_metrics.descent()
+
+        for tag_width in layout["tag_widths"]:
+            tag_rect = Qt.QRectF(
+                top_left,
+                top_left + Qt.QPoint(
+                    tag_width,
+                    tag_text_height + 2 * self.TAG_PADDING,
+                )
+            )
+            yield tag_rect
+
+            top_left += Qt.QPoint(
+                tag_width + self.TAG_MARGIN,
+                0
+            )
 
     def _hits_tag(self, local_pos, option, item):
         name_font, tag_font = self._get_fonts(option.font)
@@ -82,7 +205,7 @@ class RosterItemDelegate(Qt.QItemDelegate):
                           self.MAX_AVATAR_SIZE)
 
         top_left = option.rect.topLeft() + Qt.QPoint(
-            self.LEFT_PADDING+self.SPACING*2+avatar_size,
+            self.LEFT_PADDING + self.SPACING * 2 + avatar_size,
             self.PADDING
         )
 
@@ -95,33 +218,26 @@ class RosterItemDelegate(Qt.QItemDelegate):
             self.TAG_MARGIN,
             tag_metrics.ascent() + tag_metrics.descent() + self.SPACING
         )
-        groups = sorted(
-            ((group_full,
-              mlxc.utils.normalise_text_for_hash(group_full))
-             for group_full in item.groups),
-            key=lambda x: x[1]
-        )
-        for group, group_norm in groups:
-            width = tag_metrics.width(group)
 
-            tag_rect = Qt.QRectF(top_left, top_left + Qt.QPoint(
-                width + 2*self.TAG_PADDING,
-                tag_metrics.ascent() + tag_metrics.descent() +
-                2*self.TAG_PADDING
-            ))
+        layout = self.layout_tags(
+            tag_metrics,
+            item.tags,
+            option.rect.width() - (
+                top_left.x() - option.rect.x()
+            ) - self.PADDING
+        )
+
+        for (tag, _), tag_rect in zip(
+                layout["tags"],
+                self._tag_rects(tag_metrics, top_left, layout)):
 
             if tag_rect.contains(local_pos):
-                return group
-
-            top_left += Qt.QPoint(
-                self.TAG_MARGIN + 2*self.TAG_PADDING + width,
-                0
-            )
+                return tag
 
         return None
 
     def paint(self, painter, option, index):
-        item = index.data(roster.RosterModel.ITEM_ROLE)
+        item = index.data(models.ROLE_OBJECT)
         name_font, tag_font = self._get_fonts(option.font)
 
         painter.setRenderHint(Qt.QPainter.Antialiasing, False)
@@ -132,7 +248,7 @@ class RosterItemDelegate(Qt.QItemDelegate):
 
         cursor_pos = option.widget.mapFromGlobal(Qt.QCursor.pos())
 
-        name = index.data()
+        name = item.label
 
         colour = utils.text_to_qtcolor(
             name,
@@ -153,8 +269,8 @@ class RosterItemDelegate(Qt.QItemDelegate):
 
         avatar_origin = option.rect.topLeft()
         avatar_origin = avatar_origin + Qt.QPoint(
-            self.PADDING+self.SPACING,
-            option.rect.height()/2 - avatar_size/2
+            self.PADDING + self.SPACING,
+            option.rect.height() / 2 - avatar_size / 2
         )
 
         pic = utils.make_avatar_picture(name, avatar_size)
@@ -214,9 +330,9 @@ class RosterItemDelegate(Qt.QItemDelegate):
 
         name_rect = Qt.QRect(
             top_left,
-            top_left + Qt.QPoint(
-                option.rect.width() - self.PADDING * 2,
-                name_metrics.ascent() + name_metrics.descent(),
+            Qt.QPoint(
+                option.rect.right() - self.PADDING,
+                top_left.y() + name_metrics.ascent() + name_metrics.descent(),
             )
         )
 
@@ -243,12 +359,12 @@ class RosterItemDelegate(Qt.QItemDelegate):
         jid_rect = Qt.QRect(
             top_left,
             top_left + Qt.QPoint(
-                option.rect.width() - self.PADDING*2,
+                option.rect.width() - self.PADDING * 2,
                 tag_metrics.ascent() + tag_metrics.descent(),
             )
         )
 
-        jid = str(item.jid)
+        jid = str(item.address)
 
         # hash_ = hashlib.sha1()
         # hash_.update(jid.encode("utf-8") + _PEPPER)
@@ -266,25 +382,20 @@ class RosterItemDelegate(Qt.QItemDelegate):
             tag_metrics.ascent() + tag_metrics.descent() + self.SPACING
         )
 
-        groups = sorted(
-            ((group_full,
-              mlxc.utils.normalise_text_for_hash(group_full))
-             for group_full in item.groups),
-            key=lambda x: x[1]
+        tags_layout = self.layout_tags(
+            tag_metrics,
+            item.tags,
+            option.rect.width() - (
+                top_left.x() - option.rect.x()
+            ) - self.PADDING,
         )
-        for group, group_norm in groups:
-            width = tag_metrics.width(group)
 
-            colour = utils.text_to_qtcolor(
-                group_norm,
-            )
+        tag_text_ascent = tag_metrics.ascent()
 
-            tag_rect = Qt.QRectF(top_left, top_left + Qt.QPoint(
-                width + 2*self.TAG_PADDING,
-                tag_metrics.ascent() + tag_metrics.descent() +
-                2*self.TAG_PADDING
-            ))
-
+        for text, tag_rect, colour in zip(
+                tags_layout["texts"],
+                self._tag_rects(tag_metrics, top_left, tags_layout),
+                tags_layout["text_colours"]):
             if tag_rect.contains(cursor_pos):
                 colour = colour.lighter(125)
 
@@ -299,16 +410,11 @@ class RosterItemDelegate(Qt.QItemDelegate):
             painter.setPen(option.palette.text().color())
             painter.drawText(
                 top_left.x() + self.TAG_PADDING,
-                top_left.y() + tag_metrics.ascent() + self.TAG_PADDING,
-                group,
+                top_left.y() + tag_text_ascent + self.TAG_PADDING,
+                text,
             )
 
-            top_left += Qt.QPoint(
-                self.TAG_MARGIN + 2*self.TAG_PADDING + width,
-                0
-            )
-
-        if not item.groups:
+        if not item.tags:
             painter.drawText(
                 top_left.x() + self.TAG_PADDING,
                 top_left.y() + tag_metrics.ascent() + self.TAG_PADDING,
@@ -321,14 +427,14 @@ class RosterItemDelegate(Qt.QItemDelegate):
                           self.MAX_AVATAR_SIZE)
 
         top_left = option.rect.topLeft() + Qt.QPoint(
-            self.LEFT_PADDING+self.SPACING*2+avatar_size,
+            self.LEFT_PADDING + self.SPACING * 2 + avatar_size,
             self.PADDING
         )
 
         editor_rect = Qt.QRect(
             top_left,
             Qt.QPoint(
-                option.rect.right()-self.PADDING,
+                option.rect.right() - self.PADDING,
                 top_left.y() + editor.geometry().height()
             )
         )
@@ -353,42 +459,32 @@ class RosterWidget(Qt.QWidget):
     def __init__(self,
                  client: mlxc.client.Client,
                  accounts: mlxc.identity.Accounts,
+                 roster_manager: mlxc.roster.RosterManager,
                  conversations: mlxc.conversation.ConversationManager,
                  parent=None):
         super().__init__(parent=parent)
-        self.roster_manager = roster.Roster()
         self.accounts = accounts
         self.client = client
         self.conversations = conversations
+        self.roster_manager = roster_manager
         self.ui = Ui_RosterWidget()
         self.ui.setupUi(self)
         self.ui.filter_widget.on_tags_changed.connect(self._update_filters)
 
-        self._tokens = []
-        self._tokens.append((
-            self.client.on_client_prepare,
-            self.client.on_client_prepare.connect(
-                self._prepare_client
-            )
-        ))
-        self._tokens.append((
-            self.client.on_client_stopped,
-            self.client.on_client_stopped.connect(
-                self._stop_client
-            )
-        ))
+
+        self.roster_model = models.RosterModel(roster_manager.items)
 
         self.sorted_roster = Qt.QSortFilterProxyModel()
-        self.sorted_roster.setSourceModel(self.roster_manager.model)
+        self.sorted_roster.setSourceModel(self.roster_model)
         self.sorted_roster.setSortRole(Qt.Qt.DisplayRole)
         self.sorted_roster.setSortLocaleAware(True)
         self.sorted_roster.setSortCaseSensitivity(False)
         self.sorted_roster.setDynamicSortFilter(True)
         self.sorted_roster.sort(0, Qt.Qt.AscendingOrder)
 
-        delegate = RosterItemDelegate(self.ui.roster_view)
-        delegate.on_tag_clicked.connect(self._tag_clicked)
-        self.ui.roster_view.setItemDelegate(delegate)
+        self.roster_view_delegate = RosterItemDelegate()
+        self.roster_view_delegate.on_tag_clicked.connect(self._tag_clicked)
+        self.ui.roster_view.setItemDelegate(self.roster_view_delegate)
         self.ui.roster_view.setModel(self.sorted_roster)
         self.ui.roster_view.setMouseTracking(True)
 
@@ -434,19 +530,10 @@ class RosterWidget(Qt.QWidget):
                 Qt.Qt.WidgetWithChildrenShortcut
             )
 
-    def tear_down(self):
-        for signal, token in self._tokens:
-            signal.disconnect(token)
-
-    def _prepare_client(self,
-                        account: mlxc.identity.Account,
-                        client):
-        self.roster_manager.connect_client(account, client)
-
-    def _stop_client(self,
-                     account: mlxc.identity.Account,
-                     client):
-        self.roster_manager.disconnect_client(account, client)
+    def event(self, e: Qt.QEvent):
+        if e.type() == Qt.QEvent.FontChange:
+            self.roster_view_delegate.flush_caches()
+        return super().event(e)
 
     def _rename(self):
         index = self.ui.roster_view.currentIndex()
@@ -520,11 +607,12 @@ class RosterWidget(Qt.QWidget):
         )
 
     def _roster_item_activated(self, index):
-        item = self.roster_manager.model.item_wrapper_from_index(
-            self.ui.roster_view.model().mapToSource(index)
+        item = self.roster_model.data(
+            self.ui.roster_view.model().mapToSource(index),
+            models.ROLE_OBJECT,
         )
         account = item.account
-        self.conversations.open_onetoone_conversation(account, item.jid)
+        self.conversations.open_onetoone_conversation(account, item.address)
 
     def _get_all_tags(self):
         all_groups = set()
@@ -542,8 +630,9 @@ class RosterWidget(Qt.QWidget):
     @asyncio.coroutine
     def _manage_tags(self, _):
         items = [
-            self.roster_manager.model.item_wrapper_from_index(
-                self.ui.roster_view.model().mapToSource(index)
+            self.roster_model.data(
+                self.ui.roster_view.model().mapToSource(index),
+                models.ROLE_OBJECT,
             )
             for index in self.ui.roster_view.selectedIndexes()
         ]
@@ -558,7 +647,7 @@ class RosterWidget(Qt.QWidget):
                 roster = client.summon(aioxmpp.RosterClient)
                 task = asyncio.ensure_future(
                     roster.set_entry(
-                        item.jid,
+                        item.address,
                         add_to_groups=to_add,
                         remove_from_groups=to_remove,
                     )
@@ -612,6 +701,7 @@ class MainWindow(Qt.QMainWindow):
             main.accounts,
         )
         self.roster = RosterWidget(main.client, main.accounts,
+                                   main.roster,
                                    main.conversations)
         self.ui.splitter.insertWidget(0, self.roster)
 
@@ -729,6 +819,11 @@ class QtMain(mlxc.main.Main):
 
     def __init__(self, loop):
         super().__init__(loop)
+        self.roster = mlxc.roster.RosterManager(
+            self.accounts,
+            self.client,
+            self.writeman,
+        )
         self.conversations = mlxc.conversation.ConversationManager(
             self.accounts,
             self.client,
