@@ -612,7 +612,14 @@ class RosterWidget(Qt.QWidget):
             models.ROLE_OBJECT,
         )
         account = item.account
-        self.conversations.open_onetoone_conversation(account, item.address)
+        try:
+            client = self.client.client_by_account(account)
+        except KeyError:
+            # FIXME: show a user-visible error here
+            return
+
+        conv = item.create_conversation(client)
+        self.conversations.adopt_conversation(account, conv)
 
     def _get_all_tags(self):
         all_groups = set()
