@@ -15,7 +15,7 @@ import mlxc.tasks
 import mlxcqt.avatar
 
 from . import (
-    Qt, client, roster, utils,
+    Qt, client, utils,
     conversation, models, taskmanager,
 )
 
@@ -451,7 +451,7 @@ class RosterItemDelegate(Qt.QItemDelegate):
     def editorEvent(self, event, model, option, index):
         if (event.type() == Qt.QEvent.MouseButtonPress and
                 event.button() == Qt.Qt.LeftButton):
-            item = index.data(roster.RosterModel.ITEM_ROLE)
+            item = index.data(models.ROLE_OBJECT)
             tag_hit = self._hits_tag(event.pos(), option, item)
             if tag_hit is not None:
                 self.on_tag_clicked(tag_hit, event.modifiers())
@@ -583,7 +583,7 @@ class RosterWidget(Qt.QWidget):
 
         self.sorted_roster.setFilterKeyColumn(0)
         self.sorted_roster.setFilterCaseSensitivity(True)
-        self.sorted_roster.setFilterRole(roster.RosterModel.TAGS_ROLE)
+        self.sorted_roster.setFilterRole(models.ROLE_TAGS)
         self.sorted_roster.setFilterRegExp(
             Qt.QRegExp(regex)
         )
