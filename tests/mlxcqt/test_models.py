@@ -12,6 +12,10 @@ import mlxc.roster
 
 import mlxcqt.models as models
 
+from aioxmpp.testutils import (
+    make_listener,
+)
+
 
 TEST_JID1 = aioxmpp.JID.fromstr("romeo@montague.lit")
 TEST_JID2 = aioxmpp.JID.fromstr("juliet@capulet.lit")
@@ -809,6 +813,7 @@ class TestRosterModel(unittest.TestCase):
             for i in range(3)
         )
         self.m = models.RosterModel(self.roster)
+        self.listener = make_listener(self.m)
 
     def test_uses_model_list_adaptor(self):
         items = unittest.mock.Mock([])
@@ -884,13 +889,20 @@ class TestRosterModel(unittest.TestCase):
         self.assertEqual(
             self.m.flags(self.m.index(0, 0)),
             Qt.Qt.ItemIsEnabled | Qt.Qt.ItemIsSelectable |
-            Qt.Qt.ItemNeverHasChildren
+            Qt.Qt.ItemNeverHasChildren | Qt.Qt.ItemIsEditable
         )
 
     def test_data_returns_label_for_display_role(self):
         for i, item in enumerate(self.roster):
             self.assertEqual(
                 self.m.data(self.m.index(i, 0), Qt.Qt.DisplayRole),
+                item.label,
+            )
+
+    def test_data_returns_label_for_edit_role(self):
+        for i, item in enumerate(self.roster):
+            self.assertEqual(
+                self.m.data(self.m.index(i, 0), Qt.Qt.EditRole),
                 item.label,
             )
 
@@ -917,3 +929,41 @@ class TestRosterModel(unittest.TestCase):
         self.assertIsNone(
             self.m.data(self.m.index(0, 0), unittest.mock.sentinel.other_role)
         )
+
+    def test_setData_emits_on_label_edited(self):
+        result = self.m.setData(
+            self.m.index(1, 0),
+            unittest.mock.sentinel.value,
+            Qt.Qt.EditRole,
+        )
+
+        self.assertIs(result, False)
+
+        self.listener.on_label_edited.assert_called_once_with(
+            self.roster[1],
+            unittest.mock.sentinel.value,
+        )
+
+    def test_setData_does_not_emit_for_invalid_index(self):
+        self.assertIs(
+            self.m.setData(
+                Qt.QModelIndex(),
+                unittest.mock.sentinel.value,
+                Qt.Qt.EditRole,
+            ),
+            False
+        )
+
+        self.listener.on_label_edited.assert_not_called()
+
+    def test_setData_does_not_emit_for_unknown_role(self):
+        self.assertIs(
+            self.m.setData(
+                self.m.index(1, 0),
+                unittest.mock.sentinel.value,
+                unittest.mock.sentinel.role,
+            ),
+            False,
+        )
+
+        self.listener.on_label_edited.assert_not_called()

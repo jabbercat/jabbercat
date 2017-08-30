@@ -1,6 +1,8 @@
 import bisect
 import enum
 
+import aioxmpp.callbacks
+
 import mlxc.conversation
 import mlxc.identity
 import mlxc.instrumentable_list
@@ -517,6 +519,8 @@ class FlattenModelToSeparators(Qt.QAbstractProxyModel):
 
 
 class RosterModel(Qt.QAbstractListModel):
+    on_label_edited = aioxmpp.callbacks.Signal()
+
     def __init__(self,
                  items: mlxc.instrumentable_list.AbstractModelListView[
                      mlxc.roster.AbstractRosterItem]):
@@ -525,6 +529,11 @@ class RosterModel(Qt.QAbstractListModel):
         self.__adaptor = model_adaptor.ModelListAdaptor(
             self._items, self
         )
+
+    def flags(self, index):
+        flags = super().flags(index)
+        flags |= Qt.Qt.ItemIsEditable
+        return flags
 
     def rowCount(self, parent):
         if parent.isValid():
@@ -537,7 +546,7 @@ class RosterModel(Qt.QAbstractListModel):
 
         item = self._items[index.row()]
 
-        if role == Qt.Qt.DisplayRole:
+        if role == Qt.Qt.DisplayRole or role == Qt.Qt.EditRole:
             return item.label
         elif role == ROLE_OBJECT:
             return item
@@ -545,3 +554,13 @@ class RosterModel(Qt.QAbstractListModel):
             return "".join(
                 tag + "\n" for tag in sorted(item.tags)
             )
+
+    def setData(self, index, value, role):
+        if not index.isValid():
+            return False
+
+        if role != Qt.Qt.EditRole:
+            return False
+
+        self.on_label_edited(self._items[index.row()], value)
+        return False

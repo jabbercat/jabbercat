@@ -479,6 +479,9 @@ class RosterWidget(Qt.QWidget):
         self.ui.filter_widget.on_tags_changed.connect(self._update_filters)
 
         self.roster_model = models.RosterModel(roster_manager.items)
+        self.roster_model.on_label_edited.connect(
+            self._label_edited,
+        )
 
         self.sorted_roster = Qt.QSortFilterProxyModel()
         self.sorted_roster.setSourceModel(self.roster_model)
@@ -540,6 +543,25 @@ class RosterWidget(Qt.QWidget):
         if e.type() == Qt.QEvent.FontChange:
             self.roster_view_delegate.flush_caches()
         return super().event(e)
+
+    @asyncio.coroutine
+    def _set_label(self, item, new_label):
+        mlxc.tasks.manager.update_text(
+            self.tr("Renaming contact {!r} to {!r}").format(
+                item.label,
+                new_label or "",
+            )
+        )
+        yield from item.owner.set_label(
+            item,
+            new_label,
+        )
+
+    def _label_edited(self, item, new_label):
+        new_label = new_label or None
+        mlxc.tasks.manager.start(
+            self._set_label(item, new_label)
+        )
 
     def _rename(self):
         index = self.ui.roster_view.currentIndex()
