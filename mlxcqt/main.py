@@ -478,7 +478,7 @@ class RosterWidget(Qt.QWidget):
         self.ui.setupUi(self)
         self.ui.filter_widget.on_tags_changed.connect(self._update_filters)
 
-        self.roster_model = models.RosterModel(roster_manager.items)
+        self.roster_model = models.RosterModel(roster_manager)
         self.roster_model.on_label_edited.connect(
             self._label_edited,
         )
