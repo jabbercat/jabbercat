@@ -12,6 +12,8 @@ import mlxc.roster
 import mlxc.utils
 import mlxc.tasks
 
+import mlxcqt.avatar
+
 from . import (
     Qt, client, roster, utils,
     conversation, models, taskmanager,
@@ -45,8 +47,9 @@ class RosterItemDelegate(Qt.QItemDelegate):
 
     on_tag_clicked = aioxmpp.callbacks.Signal()
 
-    def __init__(self, parent=None):
+    def __init__(self, avatar_manager, parent=None):
         super().__init__(parent=parent)
+        self.avatar_manager = avatar_manager
         self._cache = aioxmpp.cache.LRUDict()
         self._cache.maxsize = 128
 
@@ -273,7 +276,10 @@ class RosterItemDelegate(Qt.QItemDelegate):
             option.rect.height() / 2 - avatar_size / 2
         )
 
-        pic = utils.make_avatar_picture(name, avatar_size)
+        pic = self.avatar_manager.get_avatar(
+            item.account,
+            item.address,
+        )
         painter.drawPicture(avatar_origin, pic)
 
         # pen_colour = Qt.QColor(colour)
@@ -461,6 +467,7 @@ class RosterWidget(Qt.QWidget):
                  accounts: mlxc.identity.Accounts,
                  roster_manager: mlxc.roster.RosterManager,
                  conversations: mlxc.conversation.ConversationManager,
+                 avatar_manager: mlxcqt.avatar.AvatarManager,
                  parent=None):
         super().__init__(parent=parent)
         self.accounts = accounts
@@ -470,7 +477,6 @@ class RosterWidget(Qt.QWidget):
         self.ui = Ui_RosterWidget()
         self.ui.setupUi(self)
         self.ui.filter_widget.on_tags_changed.connect(self._update_filters)
-
 
         self.roster_model = models.RosterModel(roster_manager.items)
 
@@ -482,7 +488,7 @@ class RosterWidget(Qt.QWidget):
         self.sorted_roster.setDynamicSortFilter(True)
         self.sorted_roster.sort(0, Qt.Qt.AscendingOrder)
 
-        self.roster_view_delegate = RosterItemDelegate()
+        self.roster_view_delegate = RosterItemDelegate(avatar_manager)
         self.roster_view_delegate.on_tag_clicked.connect(self._tag_clicked)
         self.ui.roster_view.setItemDelegate(self.roster_view_delegate)
         self.ui.roster_view.setModel(self.sorted_roster)
@@ -709,7 +715,8 @@ class MainWindow(Qt.QMainWindow):
         )
         self.roster = RosterWidget(main.client, main.accounts,
                                    main.roster,
-                                   main.conversations)
+                                   main.conversations,
+                                   main.avatar)
         self.ui.splitter.insertWidget(0, self.roster)
 
         self.ui.statusbar.addPermanentWidget(
@@ -828,6 +835,10 @@ class QtMain(mlxc.main.Main):
         super().__init__(loop)
         self.roster = mlxc.roster.RosterManager(
             self.accounts,
+            self.client,
+            self.writeman,
+        )
+        self.avatar = mlxcqt.avatar.AvatarManager(
             self.client,
             self.writeman,
         )
