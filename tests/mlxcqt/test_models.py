@@ -10,6 +10,8 @@ import mlxc.identity as identity
 import mlxc.instrumentable_list
 import mlxc.roster
 
+import mlxcqt.avatar
+
 import mlxcqt.models as models
 
 from aioxmpp.testutils import (
@@ -812,7 +814,8 @@ class TestRosterModel(unittest.TestCase):
             unittest.mock.Mock(spec=mlxc.roster.AbstractRosterItem)
             for i in range(3)
         )
-        self.m = models.RosterModel(self.roster)
+        self.avatar = unittest.mock.Mock(spec=mlxcqt.avatar.AvatarManager)
+        self.m = models.RosterModel(self.roster, self.avatar)
         self.listener = make_listener(self.m)
 
     def test_uses_model_list_adaptor(self):
@@ -823,9 +826,15 @@ class TestRosterModel(unittest.TestCase):
                 unittest.mock.patch("mlxcqt.model_adaptor.ModelListAdaptor")
             )
 
-            result = models.RosterModel(items)
+            result = models.RosterModel(items, self.avatar)
 
         ModelListAdaptor.assert_called_once_with(items, result)
+
+    def test_connects_to_on_avatar_changed_weakly(self):
+        self.avatar.on_avatar_changed.connect.assert_called_once_with(
+            self.m._on_avatar_changed,
+            self.avatar.on_avatar_changed.WEAK,
+        )
 
     def test_row_count_on_root_follows_items(self):
         self.assertEqual(
@@ -967,3 +976,43 @@ class TestRosterModel(unittest.TestCase):
         )
 
         self.listener.on_label_edited.assert_not_called()
+
+    def test_emits_dataChanged_on_avatar_change(self):
+        self.roster[0].account = unittest.mock.sentinel.account1
+        self.roster[0].address = TEST_JID1
+        self.roster[1].account = unittest.mock.sentinel.account2
+        self.roster[1].address = TEST_JID1
+        self.roster[2].account = unittest.mock.sentinel.account1
+        self.roster[2].address = TEST_JID2
+
+        cb = unittest.mock.Mock()
+        self.m.dataChanged.connect(cb)
+
+        self.m._on_avatar_changed(
+            unittest.mock.sentinel.account1,
+            TEST_JID2,
+        )
+
+        cb.assert_called_once_with(
+            self.m.index(2, 0),
+            self.m.index(2, 0),
+            [Qt.Qt.DecorationRole],
+        )
+
+    def test_ignores_avatars_for_non_contact_unknown_addresses(self):
+        self.roster[0].account = unittest.mock.sentinel.account1
+        self.roster[0].address = TEST_JID1
+        self.roster[1].account = unittest.mock.sentinel.account2
+        self.roster[1].address = TEST_JID1
+        self.roster[2].account = unittest.mock.sentinel.account1
+        self.roster[2].address = TEST_JID2
+
+        cb = unittest.mock.Mock()
+        self.m.dataChanged.connect(cb)
+
+        self.m._on_avatar_changed(
+            unittest.mock.sentinel.account2,
+            TEST_JID2,
+        )
+
+        cb.assert_not_called()

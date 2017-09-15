@@ -8,6 +8,8 @@ import mlxc.identity
 import mlxc.instrumentable_list
 import mlxc.roster
 
+import mlxcqt.avatar
+
 from . import Qt
 from . import model_adaptor
 
@@ -523,9 +525,14 @@ class RosterModel(Qt.QAbstractListModel):
 
     def __init__(self,
                  items: mlxc.instrumentable_list.AbstractModelListView[
-                     mlxc.roster.AbstractRosterItem]):
+                     mlxc.roster.AbstractRosterItem],
+                 avatar_manager: mlxcqt.avatar.AvatarManager):
         super().__init__()
         self._items = items
+        self._avatar_manager = avatar_manager
+        self._avatar_manager.on_avatar_changed.connect(
+            self._on_avatar_changed,
+            self._avatar_manager.on_avatar_changed.WEAK)
         self.__adaptor = model_adaptor.ModelListAdaptor(
             self._items, self
         )
@@ -564,3 +571,10 @@ class RosterModel(Qt.QAbstractListModel):
 
         self.on_label_edited(self._items[index.row()], value)
         return False
+
+    def _on_avatar_changed(self, account, address):
+        for i, item in enumerate(self._items):
+            if item.account != account or item.address != address:
+                continue
+            index = self.index(i, 0)
+            self.dataChanged.emit(index, index, [Qt.Qt.DecorationRole])

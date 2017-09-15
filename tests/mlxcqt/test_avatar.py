@@ -1,4 +1,6 @@
+import asyncio
 import contextlib
+import itertools
 import unittest
 import unittest.mock
 
@@ -19,6 +21,73 @@ from aioxmpp.testutils import (
 
 TEST_JID1 = aioxmpp.JID.fromstr("romeo@montague.lit")
 TEST_JID2 = aioxmpp.JID.fromstr("juliet@capulet.lit")
+
+
+class Testrender_avatar_image(unittest.TestCase):
+    def test_paints_on_qpicture(self):
+        image = unittest.mock.Mock(["isNull"])
+        image.isNull.return_value = False
+
+        with contextlib.ExitStack() as stack:
+            QPicture = stack.enter_context(unittest.mock.patch(
+                "mlxcqt.Qt.QPicture"
+            ))
+
+            QPainter = stack.enter_context(unittest.mock.patch(
+                "mlxcqt.Qt.QPainter"
+            ))
+
+            QRectF = stack.enter_context(unittest.mock.patch(
+                "mlxcqt.Qt.QRectF"
+            ))
+
+            result = avatar.render_avatar_image(
+                image,
+                unittest.mock.sentinel.size,
+            )
+
+        QRectF.assert_called_once_with(
+            0, 0,
+            unittest.mock.sentinel.size,
+            unittest.mock.sentinel.size
+        )
+
+        QPicture.assert_called_once_with()
+
+        QPainter.assert_called_once_with(QPicture())
+        QPainter().drawImage.assert_called_once_with(
+            QRectF(),
+            image,
+        )
+        QPainter().end()
+
+        self.assertEqual(result, QPicture())
+
+    def test_returns_None_if_image_is_null(self):
+        image = unittest.mock.Mock(["isNull"])
+        image.isNull.return_value = True
+
+        with contextlib.ExitStack() as stack:
+            QPicture = stack.enter_context(unittest.mock.patch(
+                "mlxcqt.Qt.QPicture"
+            ))
+
+            QPainter = stack.enter_context(unittest.mock.patch(
+                "mlxcqt.Qt.QPainter"
+            ))
+
+            QRectF = stack.enter_context(unittest.mock.patch(
+                "mlxcqt.Qt.QRectF"
+            ))
+
+            self.assertIsNone(avatar.render_avatar_image(
+                image,
+                unittest.mock.sentinel.size,
+            ))
+
+        QRectF.assert_not_called()
+        QPicture.assert_not_called()
+        QPainter.assert_not_called()
 
 
 class XMPPAvatarProvider(unittest.TestCase):
@@ -57,6 +126,20 @@ class XMPPAvatarProvider(unittest.TestCase):
         self.ap._on_metadata_changed(TEST_JID1, unittest.mock.sentinel.metadata)
         self.listener.on_avatar_changed.assert_called_once_with(TEST_JID1)
 
+    def test__get_image_bytes_returns_none_if_metadata_fetch_fails(self):
+        client = self._prep_client()
+
+        self.ap.prepare_client(client)
+
+        self.avatar.get_avatar_metadata.side_effect = \
+            aioxmpp.errors.XMPPError(("foo", "bar"))
+
+        result = run_coroutine(
+            self.ap._get_image_bytes(unittest.mock.sentinel.address)
+        )
+
+        self.assertIsNone(result)
+
     def test__get_image_bytes_uses_data_from_first_image_png(self):
         client = self._prep_client()
 
@@ -83,9 +166,10 @@ class XMPPAvatarProvider(unittest.TestCase):
         base.avatar3.nbytes = 4096
         base.avatar3.get_image_bytes = CoroutineMock()
 
-        self.avatar.get_avatar_metadata.return_value = [
-            base.avatar1, base.avatar2, base.avatar3,
-        ]
+        self.avatar.get_avatar_metadata.return_value = {
+            "image/png": [base.avatar2, base.avatar3],
+            "image/jpeg": [base.avatar1],
+        }
 
         result = run_coroutine(
             self.ap._get_image_bytes(unittest.mock.sentinel.address)
@@ -128,9 +212,57 @@ class XMPPAvatarProvider(unittest.TestCase):
         base.avatar3.get_image_bytes.return_value = \
             unittest.mock.sentinel.image_bytes
 
-        self.avatar.get_avatar_metadata.return_value = [
-            base.avatar1, base.avatar2, base.avatar3,
-        ]
+        self.avatar.get_avatar_metadata.return_value = {
+            "image/png": [base.avatar2, base.avatar3],
+            "image/jpeg": [base.avatar1],
+        }
+
+        result = run_coroutine(
+            self.ap._get_image_bytes(unittest.mock.sentinel.address)
+        )
+
+        self.avatar.get_avatar_metadata.assert_called_once_with(
+            unittest.mock.sentinel.address,
+        )
+
+        base.avatar1.get_image_bytes.assert_not_called()
+        base.avatar2.get_image_bytes.assert_called_once_with()
+        base.avatar3.get_image_bytes.assert_called_once_with()
+
+        self.assertEqual(result, unittest.mock.sentinel.image_bytes)
+
+    def test__get_image_bytes_tries_next_if_one_is_not_available(self):
+        client = self._prep_client()
+
+        self.ap.prepare_client(client)
+
+        base = unittest.mock.Mock()
+        base.avatar1 = unittest.mock.Mock(
+            spec=aioxmpp.avatar.service.AbstractAvatarDescriptor)
+        base.avatar1.mime_type = "image/jpeg"
+        base.avatar1.nbytes = 4096
+        base.avatar1.get_image_bytes = CoroutineMock()
+
+        base.avatar2 = unittest.mock.Mock(
+            spec=aioxmpp.avatar.service.AbstractAvatarDescriptor)
+        base.avatar2.mime_type = "image/png"
+        base.avatar2.nbytes = 4096
+        base.avatar2.get_image_bytes = CoroutineMock()
+        base.avatar2.get_image_bytes.side_effect = \
+            aioxmpp.errors.XMPPCancelError(("foo", "bar"))
+
+        base.avatar3 = unittest.mock.Mock(
+            spec=aioxmpp.avatar.service.AbstractAvatarDescriptor)
+        base.avatar3.mime_type = "image/png"
+        base.avatar3.nbytes = 4096
+        base.avatar3.get_image_bytes = CoroutineMock()
+        base.avatar3.get_image_bytes.return_value = \
+            unittest.mock.sentinel.image_bytes
+
+        self.avatar.get_avatar_metadata.return_value = {
+            "image/png": [base.avatar2, base.avatar3],
+            "image/jpeg": [base.avatar1],
+        }
 
         result = run_coroutine(
             self.ap._get_image_bytes(unittest.mock.sentinel.address)
@@ -173,9 +305,57 @@ class XMPPAvatarProvider(unittest.TestCase):
         base.avatar3.get_image_bytes.return_value = \
             unittest.mock.sentinel.image_bytes
 
-        self.avatar.get_avatar_metadata.return_value = [
-            base.avatar1, base.avatar2, base.avatar3,
-        ]
+        self.avatar.get_avatar_metadata.return_value = {
+            "image/png": [base.avatar2, base.avatar3],
+            "image/jpeg": [base.avatar1],
+        }
+
+        result = run_coroutine(
+            self.ap._get_image_bytes(unittest.mock.sentinel.address)
+        )
+
+        self.avatar.get_avatar_metadata.assert_called_once_with(
+            unittest.mock.sentinel.address,
+        )
+
+        base.avatar1.get_image_bytes.assert_not_called()
+        base.avatar2.get_image_bytes.assert_called_once_with()
+        base.avatar3.get_image_bytes.assert_called_once_with()
+
+        self.assertEqual(result, unittest.mock.sentinel.image_bytes)
+
+    def test__get_image_bytes_tries_unknown_if_all_png_fail(self):
+        client = self._prep_client()
+
+        self.ap.prepare_client(client)
+
+        base = unittest.mock.Mock()
+        base.avatar1 = unittest.mock.Mock(
+            spec=aioxmpp.avatar.service.AbstractAvatarDescriptor)
+        base.avatar1.mime_type = "image/jpeg"
+        base.avatar1.nbytes = 4096
+        base.avatar1.get_image_bytes = CoroutineMock()
+
+        base.avatar2 = unittest.mock.Mock(
+            spec=aioxmpp.avatar.service.AbstractAvatarDescriptor)
+        base.avatar2.mime_type = "image/png"
+        base.avatar2.nbytes = 4096
+        base.avatar2.get_image_bytes = CoroutineMock()
+        base.avatar2.get_image_bytes.side_effect = RuntimeError()
+
+        base.avatar3 = unittest.mock.Mock(
+            spec=aioxmpp.avatar.service.AbstractAvatarDescriptor)
+        base.avatar3.mime_type = "image/png"
+        base.avatar3.nbytes = 4096
+        base.avatar3.get_image_bytes = CoroutineMock()
+        base.avatar3.get_image_bytes.return_value = \
+            unittest.mock.sentinel.image_bytes
+
+        self.avatar.get_avatar_metadata.return_value = {
+            "image/png": [base.avatar2],
+            None: [base.avatar3],
+            "image/jpeg": [base.avatar1],
+        }
 
         result = run_coroutine(
             self.ap._get_image_bytes(unittest.mock.sentinel.address)
@@ -217,9 +397,10 @@ class XMPPAvatarProvider(unittest.TestCase):
         base.avatar3.get_image_bytes = CoroutineMock()
         base.avatar3.get_image_bytes.side_effect = RuntimeError()
 
-        self.avatar.get_avatar_metadata.return_value = [
-            base.avatar1, base.avatar2, base.avatar3,
-        ]
+        self.avatar.get_avatar_metadata.return_value = {
+            "image/png": [base.avatar2, base.avatar3],
+            "image/jpeg": [base.avatar1],
+        }
 
         result = run_coroutine(
             self.ap._get_image_bytes(unittest.mock.sentinel.address)
@@ -232,6 +413,34 @@ class XMPPAvatarProvider(unittest.TestCase):
         base.avatar1.get_image_bytes.assert_not_called()
         base.avatar2.get_image_bytes.assert_called_once_with()
         base.avatar3.get_image_bytes.assert_called_once_with()
+
+        self.assertIsNone(result)
+
+    def test__get_image_bytes_returns_if_no_image_png_in_result(self):
+        client = self._prep_client()
+
+        self.ap.prepare_client(client)
+
+        base = unittest.mock.Mock()
+        base.avatar1 = unittest.mock.Mock(
+            spec=aioxmpp.avatar.service.AbstractAvatarDescriptor)
+        base.avatar1.mime_type = "image/jpeg"
+        base.avatar1.nbytes = 4096
+        base.avatar1.get_image_bytes = CoroutineMock()
+
+        self.avatar.get_avatar_metadata.return_value = {
+            "image/jpeg": [base.avatar1],
+        }
+
+        result = run_coroutine(
+            self.ap._get_image_bytes(unittest.mock.sentinel.address)
+        )
+
+        self.avatar.get_avatar_metadata.assert_called_once_with(
+            unittest.mock.sentinel.address,
+        )
+
+        base.avatar1.get_image_bytes.assert_not_called()
 
         self.assertIsNone(result)
 
@@ -253,7 +462,7 @@ class XMPPAvatarProvider(unittest.TestCase):
             unittest.mock.sentinel.address
         )
 
-    def test_fetch_avatar_uses__get_image_bytes(self):
+    def test_fetch_avatar_uses__get_image_bytes_and_render_avatar_image(self):
         with contextlib.ExitStack() as stack:
             _get_image_bytes = stack.enter_context(unittest.mock.patch.object(
                 self.ap, "_get_image_bytes",
@@ -265,12 +474,8 @@ class XMPPAvatarProvider(unittest.TestCase):
                 "mlxcqt.Qt.QImage"
             ))
 
-            QPicture = stack.enter_context(unittest.mock.patch(
-                "mlxcqt.Qt.QPicture"
-            ))
-
-            QPainter = stack.enter_context(unittest.mock.patch(
-                "mlxcqt.Qt.QPainter"
+            render_avatar_image = stack.enter_context(unittest.mock.patch(
+                "mlxcqt.avatar.render_avatar_image"
             ))
 
             result = run_coroutine(self.ap.fetch_avatar(
@@ -286,16 +491,63 @@ class XMPPAvatarProvider(unittest.TestCase):
             "PNG",
         )
 
-        QPicture.assert_called_once_with()
+        render_avatar_image.assert_called_once_with(QImage.fromData(), 48)
 
-        QPainter.assert_called_once_with(QPicture())
-        QPainter().drawImage.assert_called_once_with(
-            Qt.QRectF(0, 0, 48, 48),
-            QImage.fromData(),
+        self.assertEqual(result, render_avatar_image())
+
+    def test_get_avatar_raises_KeyError_when_cold(self):
+        with self.assertRaises(KeyError):
+            self.ap.get_avatar(unittest.mock.sentinel.address)
+
+    def test_get_avatar_returns_result_from_fetch_avatar(self):
+        def generate_images():
+            for i in itertools.count():
+                yield getattr(unittest.mock.sentinel, "image{}".format(i))
+
+        def generate_bytes():
+            for i in itertools.count():
+                if i == 1:
+                    yield None
+                yield unittest.mock.sentinel.image_bytes
+
+        with contextlib.ExitStack() as stack:
+            _get_image_bytes = stack.enter_context(unittest.mock.patch.object(
+                self.ap, "_get_image_bytes",
+                new=CoroutineMock()
+            ))
+            _get_image_bytes.side_effect = generate_bytes()
+
+            QImage = stack.enter_context(unittest.mock.patch(
+                "mlxcqt.Qt.QImage"
+            ))
+
+            render_avatar_image = stack.enter_context(unittest.mock.patch(
+                "mlxcqt.avatar.render_avatar_image"
+            ))
+            render_avatar_image.side_effect = generate_images()
+
+            pic1 = run_coroutine(self.ap.fetch_avatar(
+                unittest.mock.sentinel.address1,
+            ))
+            self.assertIsNotNone(pic1)
+
+            pic2 = run_coroutine(self.ap.fetch_avatar(
+                unittest.mock.sentinel.address2,
+            ))
+            self.assertIsNone(pic2)
+
+        self.assertEqual(
+            self.ap.get_avatar(unittest.mock.sentinel.address1),
+            unittest.mock.sentinel.image0,
         )
-        QPainter().end()
 
-        self.assertEqual(result, QPicture())
+        self.assertEqual(
+            self.ap.get_avatar(unittest.mock.sentinel.address2),
+            None,
+        )
+
+        with self.assertRaises(KeyError):
+            self.ap.get_avatar(unittest.mock.sentinel.address)
 
 
 class Testfirst_grapheme(unittest.TestCase):
@@ -671,6 +923,9 @@ class TestAvatarManager(unittest.TestCase):
         self.am = avatar.AvatarManager(self.client, self.writeman)
         self.listener = make_listener(self.am)
 
+    def tearDown(self):
+        self.am.close()
+
     def test_get_avatar_font_uses_general_font(self):
         with contextlib.ExitStack() as stack:
             QFontDatabase = stack.enter_context(unittest.mock.patch(
@@ -696,6 +951,9 @@ class TestAvatarManager(unittest.TestCase):
 
     def test__prepare_client_creates_RosterNameAvatarProvider_and_links_it(
             self):
+        client = unittest.mock.Mock()
+        account = unittest.mock.Mock()
+
         with contextlib.ExitStack() as stack:
             RosterNameAvatarProvider = stack.enter_context(unittest.mock.patch(
                 "mlxcqt.avatar.RosterNameAvatarProvider",
@@ -707,13 +965,13 @@ class TestAvatarManager(unittest.TestCase):
             )
 
             self.am._prepare_client(
-                unittest.mock.sentinel.account,
-                unittest.mock.sentinel.client,
+                account,
+                client,
             )
 
         RosterNameAvatarProvider.assert_called_once_with()
         RosterNameAvatarProvider().prepare_client.assert_called_once_with(
-            unittest.mock.sentinel.client
+            client
         )
         RosterNameAvatarProvider().on_avatar_changed.connect\
             .assert_called_once_with(
@@ -725,11 +983,50 @@ class TestAvatarManager(unittest.TestCase):
         _on_backend_avatar_changed.assert_not_called()
         cb(unittest.mock.sentinel.address)
         _on_backend_avatar_changed.assert_called_once_with(
-            unittest.mock.sentinel.account,
+            account,
+            unittest.mock.sentinel.address,
+        )
+
+    def test__prepare_client_creates_XMPPAvatarProvider_and_links_it(self):
+        client = unittest.mock.Mock()
+        account = unittest.mock.Mock()
+
+        with contextlib.ExitStack() as stack:
+            XMPPAvatarProvider = stack.enter_context(unittest.mock.patch(
+                "mlxcqt.avatar.XMPPAvatarProvider",
+            ))
+
+            _on_xmpp_avatar_changed = stack.enter_context(
+                unittest.mock.patch.object(self.am,
+                                           "_on_xmpp_avatar_changed")
+            )
+
+            self.am._prepare_client(
+                account,
+                client,
+            )
+
+        XMPPAvatarProvider.assert_called_once_with(account)
+        XMPPAvatarProvider().prepare_client.assert_called_once_with(client)
+        XMPPAvatarProvider().on_avatar_changed.connect\
+            .assert_called_once_with(
+                unittest.mock.ANY)
+
+        _, (cb, ), _ = \
+            XMPPAvatarProvider().on_avatar_changed.connect.mock_calls[0]
+
+        _on_xmpp_avatar_changed.assert_not_called()
+        cb(unittest.mock.sentinel.address)
+        _on_xmpp_avatar_changed.assert_called_once_with(
+            account,
+            XMPPAvatarProvider(),
             unittest.mock.sentinel.address,
         )
 
     def test__shutdown_client_unlinks_RosterNameAvatarProvider(self):
+        client = unittest.mock.Mock()
+        account = unittest.mock.Mock()
+
         with contextlib.ExitStack() as stack:
             RosterNameAvatarProvider = stack.enter_context(unittest.mock.patch(
                 "mlxcqt.avatar.RosterNameAvatarProvider",
@@ -741,21 +1038,52 @@ class TestAvatarManager(unittest.TestCase):
             )
 
             self.am._prepare_client(
-                unittest.mock.sentinel.account,
-                unittest.mock.sentinel.client,
+                account,
+                client,
             )
 
             RosterNameAvatarProvider().on_avatar_changed.disconnect\
                 .assert_not_called()
 
             self.am._shutdown_client(
-                unittest.mock.sentinel.account,
-                unittest.mock.sentinel.client,
+                account,
+                client,
             )
 
         RosterNameAvatarProvider().on_avatar_changed.disconnect\
             .assert_called_once_with(
                 RosterNameAvatarProvider().on_avatar_changed.connect())
+
+    def test__shutdown_client_unlinks_XMPPAvatarProvider(self):
+        client = unittest.mock.Mock()
+        account = unittest.mock.Mock()
+
+        with contextlib.ExitStack() as stack:
+            XMPPAvatarProvider = stack.enter_context(unittest.mock.patch(
+                "mlxcqt.avatar.XMPPAvatarProvider",
+            ))
+
+            _on_backend_avatar_changed = stack.enter_context(
+                unittest.mock.patch.object(self.am,
+                                           "_on_backend_avatar_changed")
+            )
+
+            self.am._prepare_client(
+                account,
+                client,
+            )
+
+            XMPPAvatarProvider().on_avatar_changed.disconnect\
+                .assert_not_called()
+
+            self.am._shutdown_client(
+                account,
+                client,
+            )
+
+        XMPPAvatarProvider().on_avatar_changed.disconnect\
+            .assert_called_once_with(
+                XMPPAvatarProvider().on_avatar_changed.connect())
 
     def test__on_backend_avatar_changed_emits_on_avatar_changed(self):
         self.am._on_backend_avatar_changed(
@@ -801,6 +1129,11 @@ class TestAvatarManager(unittest.TestCase):
             ))
             RosterNameAvatarProvider().get_avatar.return_value = None
 
+            XMPPAvatarProvider = stack.enter_context(unittest.mock.patch(
+                "mlxcqt.avatar.XMPPAvatarProvider",
+            ))
+            XMPPAvatarProvider().get_avatar.return_value = None
+
             self.am._prepare_client(
                 unittest.mock.sentinel.account,
                 client,
@@ -810,6 +1143,13 @@ class TestAvatarManager(unittest.TestCase):
             render_dummy_avatar = stack.enter_context(unittest.mock.patch(
                 "mlxcqt.avatar.render_dummy_avatar"
             ))
+
+            _fetch_in_background = stack.enter_context(
+                unittest.mock.patch.object(
+                    self.am,
+                    "_fetch_in_background",
+                )
+            )
 
             get_avatar_font = stack.enter_context(unittest.mock.patch.object(
                 self.am,
@@ -822,6 +1162,11 @@ class TestAvatarManager(unittest.TestCase):
                 TEST_JID1,
             )
 
+        XMPPAvatarProvider().get_avatar.assert_called_once_with(
+            TEST_JID1,
+        )
+        _fetch_in_background.assert_not_called()
+
         RosterNameAvatarProvider().get_avatar.assert_called_once_with(
             TEST_JID1,
             unittest.mock.sentinel.avatar_font,
@@ -833,6 +1178,123 @@ class TestAvatarManager(unittest.TestCase):
             48,
         )
 
+        self.assertEqual(result, render_dummy_avatar())
+
+    def test_get_avatar_spawns_lookup_on_KeyError_from_xmpp_avatar_and_falls_back(self):  # NOQA
+        client = unittest.mock.Mock()
+
+        with contextlib.ExitStack() as stack:
+            RosterNameAvatarProvider = stack.enter_context(unittest.mock.patch(
+                "mlxcqt.avatar.RosterNameAvatarProvider",
+            ))
+            RosterNameAvatarProvider().get_avatar.return_value = \
+                unittest.mock.sentinel.image
+
+            XMPPAvatarProvider = stack.enter_context(unittest.mock.patch(
+                "mlxcqt.avatar.XMPPAvatarProvider",
+            ))
+            XMPPAvatarProvider().get_avatar.side_effect = KeyError
+
+            self.am._prepare_client(
+                unittest.mock.sentinel.account,
+                client,
+            )
+
+        with contextlib.ExitStack() as stack:
+            render_dummy_avatar = stack.enter_context(unittest.mock.patch(
+                "mlxcqt.avatar.render_dummy_avatar"
+            ))
+
+            _fetch_in_background = stack.enter_context(
+                unittest.mock.patch.object(
+                    self.am,
+                    "_fetch_in_background",
+                )
+            )
+
+            get_avatar_font = stack.enter_context(unittest.mock.patch.object(
+                self.am,
+                "get_avatar_font",
+            ))
+            get_avatar_font.return_value = unittest.mock.sentinel.avatar_font
+
+            result = self.am.get_avatar(
+                unittest.mock.sentinel.account,
+                TEST_JID1,
+            )
+
+        XMPPAvatarProvider().get_avatar.assert_called_once_with(
+            TEST_JID1,
+        )
+
+        _fetch_in_background.assert_called_once_with(
+            unittest.mock.sentinel.account,
+            XMPPAvatarProvider(),
+            TEST_JID1,
+        )
+
+        RosterNameAvatarProvider().get_avatar.assert_called_once_with(
+            TEST_JID1,
+            unittest.mock.sentinel.avatar_font,
+        )
+
+        self.assertEqual(result, RosterNameAvatarProvider().get_avatar())
+
+    def test_get_avatar_returns_xmpp_avatar_if_available(self):
+        client = unittest.mock.Mock()
+
+        with contextlib.ExitStack() as stack:
+            RosterNameAvatarProvider = stack.enter_context(unittest.mock.patch(
+                "mlxcqt.avatar.RosterNameAvatarProvider",
+            ))
+            RosterNameAvatarProvider().get_avatar.return_value = \
+                unittest.mock.sentinel.rn_image
+
+            XMPPAvatarProvider = stack.enter_context(unittest.mock.patch(
+                "mlxcqt.avatar.XMPPAvatarProvider",
+            ))
+            XMPPAvatarProvider().get_avatar.return_value = \
+                unittest.mock.sentinel.xmpp_image
+
+            self.am._prepare_client(
+                unittest.mock.sentinel.account,
+                client,
+            )
+
+        with contextlib.ExitStack() as stack:
+            render_dummy_avatar = stack.enter_context(unittest.mock.patch(
+                "mlxcqt.avatar.render_dummy_avatar"
+            ))
+
+            _fetch_in_background = stack.enter_context(
+                unittest.mock.patch.object(
+                    self.am,
+                    "_fetch_in_background",
+                )
+            )
+
+            get_avatar_font = stack.enter_context(unittest.mock.patch.object(
+                self.am,
+                "get_avatar_font",
+            ))
+            get_avatar_font.return_value = unittest.mock.sentinel.avatar_font
+
+            result = self.am.get_avatar(
+                unittest.mock.sentinel.account,
+                TEST_JID1,
+            )
+
+        XMPPAvatarProvider().get_avatar.assert_called_once_with(
+            TEST_JID1,
+        )
+
+        _fetch_in_background.assert_not_called()
+
+        RosterNameAvatarProvider().get_avatar.assert_not_called()
+        render_dummy_avatar.assert_not_called()
+
+        self.assertEqual(result, XMPPAvatarProvider().get_avatar())
+
     def test_get_avatar_falls_passes_name_surrogate_to_render_dummy(self):
         client = unittest.mock.Mock()
 
@@ -841,6 +1303,11 @@ class TestAvatarManager(unittest.TestCase):
                 "mlxcqt.avatar.RosterNameAvatarProvider",
             ))
             RosterNameAvatarProvider().get_avatar.return_value = None
+
+            XMPPAvatarProvider = stack.enter_context(unittest.mock.patch(
+                "mlxcqt.avatar.XMPPAvatarProvider",
+            ))
+            XMPPAvatarProvider().get_avatar.return_value = None
 
             self.am._prepare_client(
                 unittest.mock.sentinel.account,
@@ -864,6 +1331,10 @@ class TestAvatarManager(unittest.TestCase):
                 unittest.mock.sentinel.name_surrogate,
             )
 
+        XMPPAvatarProvider().get_avatar.assert_called_once_with(
+            TEST_JID1,
+        )
+
         RosterNameAvatarProvider().get_avatar.assert_called_once_with(
             TEST_JID1,
             unittest.mock.sentinel.avatar_font,
@@ -875,6 +1346,84 @@ class TestAvatarManager(unittest.TestCase):
             48,
         )
 
+        self.assertEqual(result, render_dummy_avatar())
+
     def test__fetch_avatar_and_emit_signal(self):
         fetch_func = CoroutineMock()
         fetch_func.return_value = unittest.mock.Mock(spec=Qt.QPicture)
+
+    def test__fetch_in_background_makes_lookup_in_background(self):
+        provider = unittest.mock.Mock(spec=avatar.XMPPAvatarProvider)
+        provider.fetch_avatar = CoroutineMock()
+
+        self.am._fetch_in_background(unittest.mock.sentinel.account,
+                                     provider,
+                                     unittest.mock.sentinel.address)
+
+        run_coroutine(asyncio.sleep(0.01))
+
+        provider.fetch_avatar.assert_called_once_with(
+            unittest.mock.sentinel.address,
+        )
+        self.listener.on_avatar_changed.assert_called_once_with(
+            unittest.mock.sentinel.account,
+            unittest.mock.sentinel.address,
+        )
+
+    def test__on_xmpp_avatar_changed_causes_lookup(self):
+        provider = unittest.mock.Mock(spec=avatar.XMPPAvatarProvider)
+        provider.get_avatar.return_value = unittest.mock.sentinel.value
+
+        with contextlib.ExitStack() as stack:
+            _fetch_in_background = stack.enter_context(
+                unittest.mock.patch.object(
+                    self.am,
+                    "_fetch_in_background",
+                )
+            )
+
+            self.am._on_xmpp_avatar_changed(
+                unittest.mock.sentinel.account,
+                provider,
+                unittest.mock.sentinel.address
+            )
+
+        provider.get_avatar.assert_called_once_with(
+            unittest.mock.sentinel.address,
+        )
+
+        _fetch_in_background.assert_called_once_with(
+            unittest.mock.sentinel.account,
+            provider,
+            unittest.mock.sentinel.address
+        )
+
+        self.listener.on_avatar_changed.assert_not_called()
+        provider.fetch_avatar.assert_not_called()
+
+    def test__on_xmpp_avatar_changed_does_not_cause_lookup_if_not_in_cache(
+            self):
+        provider = unittest.mock.Mock(spec=avatar.XMPPAvatarProvider)
+        provider.get_avatar.side_effect = KeyError
+
+        with contextlib.ExitStack() as stack:
+            _fetch_in_background = stack.enter_context(
+                unittest.mock.patch.object(
+                    self.am,
+                    "_fetch_in_background",
+                )
+            )
+
+            self.am._on_xmpp_avatar_changed(
+                unittest.mock.sentinel.account,
+                provider,
+                unittest.mock.sentinel.address
+            )
+
+        provider.get_avatar.assert_called_once_with(
+            unittest.mock.sentinel.address,
+        )
+
+        self.listener.on_avatar_changed.assert_not_called()
+        provider.fetch_avatar.assert_not_called()
+        _fetch_in_background.assert_not_called()
