@@ -478,7 +478,7 @@ class RosterWidget(Qt.QWidget):
         self.ui.setupUi(self)
         self.ui.filter_widget.on_tags_changed.connect(self._update_filters)
 
-        self.roster_model = models.RosterModel(roster_manager)
+        self.roster_model = models.RosterModel(roster_manager, avatar_manager)
         self.roster_model.on_label_edited.connect(
             self._label_edited,
         )
@@ -611,15 +611,21 @@ class RosterWidget(Qt.QWidget):
         )
 
     def _selection_changed(self, selected, deselected):
+        roster_model = self.ui.roster_view.model()
         selection_model = self.ui.roster_view.selectionModel()
         all_selected = selection_model.selectedIndexes()
         selected_count = len(all_selected)
 
+        selected_items = [
+            roster_model.data(index, models.ROLE_OBJECT)
+            for index in all_selected
+        ]
+
         self.ui.action_rename.setEnabled(
-            selected_count == 1 and selection_model.currentIndex().isValid()
+            any(item.can_set_label for item in selected_items)
         )
         self.ui.action_manage_tags.setEnabled(
-            selected_count > 0
+            any(item.can_manage_tags for item in selected_items)
         )
         self.ui.action_subscribe.setEnabled(
             selected_count > 0
@@ -649,49 +655,51 @@ class RosterWidget(Qt.QWidget):
         conv = item.create_conversation(client)
         self.conversations.adopt_conversation(account, conv)
 
-    def _get_all_tags(self):
-        all_groups = set()
-        for account in self.accounts:
-            try:
-                client = self.client.client_by_account(account)
-            except KeyError:
-                continue
-            all_groups |= set(
-                client.summon(aioxmpp.RosterClient).groups.keys()
+    @asyncio.coroutine
+    def _apply_tags(self, items, to_add, to_remove):
+        mlxc.tasks.manager.update_text(
+            "Changing tags of {} roster items".format(
+                len(items)
             )
-        return all_groups
+        )
+        tasks = []
+        for item in items:
+            # first check whether an operation is needed
+            item_tags = set(item.tags)
+            if not (item_tags & to_remove or to_add - item_tags):
+                continue
+            task = asyncio.ensure_future(
+                item.update_tags(to_add, to_remove)
+            )
+            tasks.append(task)
+        yield from asyncio.gather(*tasks)
 
     @utils.asyncify
     @asyncio.coroutine
     def _manage_tags(self, _):
         items = [
-            self.roster_model.data(
-                self.ui.roster_view.model().mapToSource(index),
-                models.ROLE_OBJECT,
+            item for item in (
+                self.roster_model.data(
+                    self.ui.roster_view.model().mapToSource(index),
+                    models.ROLE_OBJECT,
+                )
+                for index in self.ui.roster_view.selectedIndexes()
             )
-            for index in self.ui.roster_view.selectedIndexes()
+            if item.can_manage_tags
         ]
         widget = roster_tags.RosterTagsPopup()
         pos = Qt.QCursor.pos()
-        result = yield from widget.run(pos, self._get_all_tags(), items)
+        result = yield from widget.run(pos, self.roster_manager.tags, items)
         if result is not None:
             to_add, to_remove = result
-            tasks = []
-            for item in items:
-                client = self.main.client.client_by_account(item.account)
-                roster = client.summon(aioxmpp.RosterClient)
-                task = asyncio.ensure_future(
-                    roster.set_entry(
-                        item.address,
-                        add_to_groups=to_add,
-                        remove_from_groups=to_remove,
-                    )
-                )
-                tasks.append(task)
-            yield from asyncio.gather(*tasks)
+            mlxc.tasks.manager.start(self._apply_tags(
+                items,
+                to_add,
+                to_remove,
+            ))
 
     def _roster_context_menu_requested(self, pos):
-        all_tags = list(self._get_all_tags())
+        all_tags = list(self.roster_manager.tags)
         all_tags.sort(key=str.casefold)
         self._filter_menu.clear()
 

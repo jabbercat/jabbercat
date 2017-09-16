@@ -26,13 +26,13 @@ class RosterTagsPopup(Qt.QFrame):
         self.close()
 
     @asyncio.coroutine
-    def run(self, pos, all_groups, roster_items):
+    def run(self, pos, all_tags, roster_items):
         assert not hasattr(self, "_future")
         self._future = asyncio.Future()
         try:
             self.ui.tags.setup(
-                all_groups,
-                [item.groups for item in roster_items],
+                all_tags,
+                [item.tags for item in roster_items],
             )
             self.setWindowFlags(Qt.Qt.Popup)
             self.move(pos)
