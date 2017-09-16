@@ -882,6 +882,7 @@ class QtMain(mlxc.main.Main):
     def run_core(self):
         self.window.show()
         yield from super().run_core()
+        self.avatar.close()
         try:
             yield from asyncio.wait_for(self.client.shutdown(),
                                         timeout=5)
