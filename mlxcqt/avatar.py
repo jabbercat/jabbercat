@@ -7,10 +7,10 @@ import unicodedata
 
 import aioxmpp
 
-import mlxc.client
-import mlxc.identity
-import mlxc.storage
-import mlxc.utils
+import jclib.client
+import jclib.identity
+import jclib.storage
+import jclib.utils
 
 import mlxcqt.utils
 
@@ -88,7 +88,7 @@ def render_dummy_avatar(font: Qt.QFont,
                         size: float,
                         colour_text: str=None):
     colour = mlxcqt.utils.text_to_qtcolor(
-        mlxc.utils.normalise_text_for_hash(colour_text or name)
+        jclib.utils.normalise_text_for_hash(colour_text or name)
     )
     grapheme = first_grapheme(name)
     picture = Qt.QPicture()
@@ -124,7 +124,7 @@ class XMPPAvatarProvider:
 
     on_avatar_changed = aioxmpp.callbacks.Signal()
 
-    def __init__(self, account: mlxc.identity.Account):
+    def __init__(self, account: jclib.identity.Account):
         super().__init__()
         self.__tokens = []
         self._account = account
@@ -275,8 +275,8 @@ class AvatarManager:
     on_avatar_changed = aioxmpp.callbacks.Signal()
 
     def __init__(self,
-                 client: mlxc.client.Client,
-                 writeman: mlxc.storage.WriteManager):
+                 client: jclib.client.Client,
+                 writeman: jclib.storage.WriteManager):
         super().__init__()
         self._queue = asyncio.Queue()
         self._enqueued = set()
@@ -339,7 +339,7 @@ class AvatarManager:
         )
 
     def get_avatar(self,
-                   account: mlxc.identity.Account,
+                   account: jclib.identity.Account,
                    address: aioxmpp.JID,
                    name_surrogate: typing.Optional[str]=None) -> Qt.QPicture:
         """
@@ -383,7 +383,7 @@ class AvatarManager:
                                    BASE_SIZE)
 
     def _on_xmpp_avatar_changed(self,
-                                account: mlxc.identity.Account,
+                                account: jclib.identity.Account,
                                 service: XMPPAvatarProvider,
                                 address: aioxmpp.JID):
         # first check if the current avatar is in cache, otherwise don’t bother
@@ -397,13 +397,13 @@ class AvatarManager:
         self._fetch_in_background(account, service, address)
 
     def _on_backend_avatar_changed(self,
-                                   account: mlxc.identity.Account,
+                                   account: jclib.identity.Account,
                                    address: aioxmpp.JID):
         self.on_avatar_changed(account, address)
 
     def _prepare_client(self,
-                        account: mlxc.identity.Account,
-                        client: mlxc.client.Client):
+                        account: jclib.identity.Account,
+                        client: jclib.client.Client):
         xmpp_avatar = XMPPAvatarProvider(account)
         xmpp_avatar.prepare_client(client)
 
@@ -420,7 +420,7 @@ class AvatarManager:
         self.__accountmap[account] = tokens, generator, xmpp_avatar
 
     def _shutdown_client(self,
-                         account: mlxc.identity.Account,
-                         client: mlxc.client.Client):
+                         account: jclib.identity.Account,
+                         client: jclib.client.Client):
         tokens, *_ = self.__accountmap.pop(account)
         _disconnect_all(tokens)

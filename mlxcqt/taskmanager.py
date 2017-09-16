@@ -1,6 +1,6 @@
 import asyncio
 
-import mlxc.tasks
+import jclib.tasks
 
 from . import Qt
 
@@ -19,10 +19,10 @@ class TasksModel(Qt.QAbstractListModel):
         self._tasks = []
         self._clear_action = clear_action
         self._cancel_action = cancel_action
-        mlxc.tasks.manager.on_task_added.connect(
+        jclib.tasks.manager.on_task_added.connect(
             self._add_task
         )
-        mlxc.tasks.manager.on_task_changed.connect(
+        jclib.tasks.manager.on_task_changed.connect(
             self._task_changed
         )
 
@@ -263,13 +263,13 @@ class TaskStatusWidget(Qt.QWidget):
         self.ui = tasks_status_widget.Ui_TaskStatusWidget()
         self.ui.setupUi(self)
 
-        mlxc.tasks.manager.on_task_added.connect(
+        jclib.tasks.manager.on_task_added.connect(
             self._on_task_update,
         )
-        mlxc.tasks.manager.on_task_changed.connect(
+        jclib.tasks.manager.on_task_changed.connect(
             self._on_task_update,
         )
-        mlxc.tasks.manager.on_task_done.connect(
+        jclib.tasks.manager.on_task_done.connect(
             self._on_task_update,
         )
 
@@ -305,7 +305,7 @@ class TaskStatusWidget(Qt.QWidget):
         self._popup.show()
 
     def _update(self):
-        all_tasks = list(mlxc.tasks.manager.tasks)
+        all_tasks = list(jclib.tasks.manager.tasks)
 
         tasks_with_progress = [
             task for task in all_tasks

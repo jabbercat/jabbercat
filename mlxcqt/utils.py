@@ -10,7 +10,7 @@ import unicodedata
 
 import aioxmpp.structs
 
-import mlxc.utils
+import jclib.utils
 
 from . import Qt, model_adaptor
 
@@ -251,7 +251,7 @@ class JIDValidator(Qt.QValidator):
 _dragndrop_rng = random.SystemRandom()
 _dragndrop_state = None, None
 
-DRAG_MIME_TYPE = "application/vnd.net.zombofant.mlxc.drag-key"
+DRAG_MIME_TYPE = "application/vnd.org.jabbercat.drag-key"
 
 
 def start_drag(data):
@@ -281,7 +281,7 @@ def get_drag(key):
 
 
 def text_to_qtcolor(text):
-    r, g, b = mlxc.utils.text_to_colour(
+    r, g, b = jclib.utils.text_to_colour(
         text,
     )
     return Qt.QColor(r * 255, g * 255, b * 255)

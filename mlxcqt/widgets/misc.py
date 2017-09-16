@@ -1,4 +1,4 @@
-import mlxc.identity
+import jclib.identity
 
 from .. import Qt, models
 
@@ -112,7 +112,7 @@ class AccountSelectorBox(Qt.QComboBox):
                 self.currentAccountChanged.emit()
             return
         if not isinstance(new_index.data(models.ROLE_OBJECT),
-                          mlxc.identity.Account):
+                          jclib.identity.Account):
             return
         new_index = Qt.QPersistentModelIndex(new_index)
         if new_index != self._account_index:

@@ -6,9 +6,9 @@ import PyQt5.Qt as Qt
 
 import aioxmpp
 
-import mlxc.identity as identity
-import mlxc.instrumentable_list
-import mlxc.roster
+import jclib.identity as identity
+import jclib.instrumentable_list
+import jclib.roster
 
 import mlxcqt.avatar
 
@@ -360,7 +360,7 @@ class TestConversationsModel(unittest.TestCase):
         def make_mock():
             return unittest.mock.Mock(["label"])
 
-        self.cs = mlxc.instrumentable_list.ModelList()
+        self.cs = jclib.instrumentable_list.ModelList()
         self.cs.append(make_mock())
         self.cs.append(make_mock())
         self.cs.append(make_mock())
@@ -809,9 +809,9 @@ class TestFlattenModelToSeparators(unittest.TestCase):
 
 class TestRosterModel(unittest.TestCase):
     def setUp(self):
-        self.roster = mlxc.instrumentable_list.ModelList()
+        self.roster = jclib.instrumentable_list.ModelList()
         self.roster.extend(
-            unittest.mock.Mock(spec=mlxc.roster.AbstractRosterItem)
+            unittest.mock.Mock(spec=jclib.roster.AbstractRosterItem)
             for i in range(3)
         )
         self.avatar = unittest.mock.Mock(spec=mlxcqt.avatar.AvatarManager)

@@ -3,10 +3,10 @@ import enum
 
 import aioxmpp.callbacks
 
-import mlxc.conversation
-import mlxc.identity
-import mlxc.instrumentable_list
-import mlxc.roster
+import jclib.conversation
+import jclib.identity
+import jclib.instrumentable_list
+import jclib.roster
 
 import mlxcqt.avatar
 
@@ -23,7 +23,7 @@ class AccountsModel(Qt.QAbstractTableModel):
     COLUMN_ENABLED = 1
     COLUMN_COUNT = 2
 
-    def __init__(self, accounts: mlxc.identity.Accounts):
+    def __init__(self, accounts: jclib.identity.Accounts):
         super().__init__()
         self.__accounts = accounts
         self.__adaptor = model_adaptor.ModelListAdaptor(
@@ -116,7 +116,7 @@ class ConversationsModel(Qt.QAbstractTableModel):
     COLUMN_COUNT = 1
 
     def __init__(self,
-                 conversations: mlxc.conversation.ConversationManager):
+                 conversations: jclib.conversation.ConversationManager):
         super().__init__()
         self.__conversations = conversations
         self.__adaptor = model_adaptor.ModelListAdaptor(
@@ -524,8 +524,8 @@ class RosterModel(Qt.QAbstractListModel):
     on_label_edited = aioxmpp.callbacks.Signal()
 
     def __init__(self,
-                 items: mlxc.instrumentable_list.AbstractModelListView[
-                     mlxc.roster.AbstractRosterItem],
+                 items: jclib.instrumentable_list.AbstractModelListView[
+                     jclib.roster.AbstractRosterItem],
                  avatar_manager: mlxcqt.avatar.AvatarManager):
         super().__init__()
         self._items = items

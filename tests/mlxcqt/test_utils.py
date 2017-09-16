@@ -512,5 +512,5 @@ class TestDragNDropUtils(unittest.TestCase):
     def test_drag_mime_type(self):
         self.assertEqual(
             utils.DRAG_MIME_TYPE,
-            "application/vnd.net.zombofant.mlxc.drag-key"
+            "application/vnd.org.jabbercat.drag-key"
         )

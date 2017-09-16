@@ -6,7 +6,7 @@ import unittest.mock
 
 import aioxmpp
 
-import mlxc.identity
+import jclib.identity
 
 import mlxcqt.avatar as avatar
 import mlxcqt.Qt as Qt
@@ -92,7 +92,7 @@ class Testrender_avatar_image(unittest.TestCase):
 
 class XMPPAvatarProvider(unittest.TestCase):
     def setUp(self):
-        self.account = unittest.mock.Mock(spec=mlxc.identity.Account)
+        self.account = unittest.mock.Mock(spec=jclib.identity.Account)
         self.avatar = unittest.mock.Mock(spec=aioxmpp.AvatarService)
         self.avatar.get_avatar_metadata = CoroutineMock()
         self.ap = avatar.XMPPAvatarProvider(self.account)
@@ -692,7 +692,7 @@ class Testrender_dummy_avatar(unittest.TestCase):
             ))
 
             normalise_text_for_hash = stack.enter_context(unittest.mock.patch(
-                "mlxc.utils.normalise_text_for_hash"
+                "jclib.utils.normalise_text_for_hash"
             ))
 
             result = avatar.render_dummy_avatar(
@@ -755,7 +755,7 @@ class Testrender_dummy_avatar(unittest.TestCase):
             ))
 
             normalise_text_for_hash = stack.enter_context(unittest.mock.patch(
-                "mlxc.utils.normalise_text_for_hash"
+                "jclib.utils.normalise_text_for_hash"
             ))
 
             result = avatar.render_dummy_avatar(
@@ -936,8 +936,8 @@ class TestRosterNameAvatarProvider(unittest.TestCase):
 
 class TestAvatarManager(unittest.TestCase):
     def setUp(self):
-        self.client = unittest.mock.Mock(spec=mlxc.client.Client)
-        self.writeman = unittest.mock.Mock(spec=mlxc.storage.WriteManager)
+        self.client = unittest.mock.Mock(spec=jclib.client.Client)
+        self.writeman = unittest.mock.Mock(spec=jclib.storage.WriteManager)
         self.am = avatar.AvatarManager(self.client, self.writeman)
         self.listener = make_listener(self.am)
 

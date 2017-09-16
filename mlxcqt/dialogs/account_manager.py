@@ -2,8 +2,8 @@ import asyncio
 
 import PyQt5.Qt as Qt
 
-import mlxc.instrumentable_list
-import mlxc.identity
+import jclib.instrumentable_list
+import jclib.identity
 
 from .. import utils, models
 from ..ui import dlg_account_manager
@@ -13,7 +13,7 @@ from . import add_account
 
 class DlgAccountManager(Qt.QDialog):
     def __init__(self, client,
-                 accounts: mlxc.identity.Accounts,
+                 accounts: jclib.identity.Accounts,
                  *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.ui = dlg_account_manager.Ui_DlgAccountManager()
@@ -58,8 +58,8 @@ class DlgAccountManager(Qt.QDialog):
         self._update_buttons_for(object_)
 
     def _update_buttons_for(self, object_):
-        # is_identity = isinstance(object_, mlxc.identity.Identity)
-        is_account = isinstance(object_, mlxc.identity.Account)
+        # is_identity = isinstance(object_, jclib.identity.Identity)
+        is_account = isinstance(object_, jclib.identity.Account)
 
         self.ui.account_edit.setEnabled(is_account)
         self.ui.account_remove.setEnabled(is_account)

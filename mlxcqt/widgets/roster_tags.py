@@ -1,4 +1,4 @@
-import mlxc.instrumentable_list
+import jclib.instrumentable_list
 
 from .. import models, Qt
 from ..ui import roster_tags_box
@@ -39,7 +39,7 @@ class RosterTagsBox(Qt.QWidget):
         if clear:
             self.clear()
 
-        self._all_groups_model = mlxc.instrumentable_list.ModelList(all_groups)
+        self._all_groups_model = jclib.instrumentable_list.ModelList(all_groups)
 
         if not clear and self._model:
             old_selected = self._model.selected

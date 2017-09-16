@@ -6,11 +6,11 @@ import aioxmpp
 import aioxmpp.cache
 import aioxmpp.im.p2p
 
-import mlxc.conversation
-import mlxc.main
-import mlxc.roster
-import mlxc.utils
-import mlxc.tasks
+import jclib.conversation
+import jclib.main
+import jclib.roster
+import jclib.utils
+import jclib.tasks
 
 import mlxcqt.avatar
 
@@ -68,7 +68,7 @@ class RosterItemDelegate(Qt.QItemDelegate):
     def layout_tags(self, font_metrics: Qt.QFontMetrics, tags, width):
         tags = tuple(sorted(
             ((tag_full,
-              mlxc.utils.normalise_text_for_hash(tag_full))
+              jclib.utils.normalise_text_for_hash(tag_full))
              for tag_full in tags),
             key=lambda x: x[1]
         ))
@@ -463,10 +463,10 @@ class RosterItemDelegate(Qt.QItemDelegate):
 
 class RosterWidget(Qt.QWidget):
     def __init__(self,
-                 client: mlxc.client.Client,
-                 accounts: mlxc.identity.Accounts,
-                 roster_manager: mlxc.roster.RosterManager,
-                 conversations: mlxc.conversation.ConversationManager,
+                 client: jclib.client.Client,
+                 accounts: jclib.identity.Accounts,
+                 roster_manager: jclib.roster.RosterManager,
+                 conversations: jclib.conversation.ConversationManager,
                  avatar_manager: mlxcqt.avatar.AvatarManager,
                  parent=None):
         super().__init__(parent=parent)
@@ -546,7 +546,7 @@ class RosterWidget(Qt.QWidget):
 
     @asyncio.coroutine
     def _set_label(self, item, new_label):
-        mlxc.tasks.manager.update_text(
+        jclib.tasks.manager.update_text(
             self.tr("Renaming contact {!r} to {!r}").format(
                 item.label,
                 new_label or "",
@@ -559,7 +559,7 @@ class RosterWidget(Qt.QWidget):
 
     def _label_edited(self, item, new_label):
         new_label = new_label or None
-        mlxc.tasks.manager.start(
+        jclib.tasks.manager.start(
             self._set_label(item, new_label)
         )
 
@@ -657,7 +657,7 @@ class RosterWidget(Qt.QWidget):
 
     @asyncio.coroutine
     def _apply_tags(self, items, to_add, to_remove):
-        mlxc.tasks.manager.update_text(
+        jclib.tasks.manager.update_text(
             "Changing tags of {} roster items".format(
                 len(items)
             )
@@ -692,7 +692,7 @@ class RosterWidget(Qt.QWidget):
         result = yield from widget.run(pos, self.roster_manager.tags, items)
         if result is not None:
             to_add, to_remove = result
-            mlxc.tasks.manager.start(self._apply_tags(
+            jclib.tasks.manager.start(self._apply_tags(
                 items,
                 to_add,
                 to_remove,
@@ -717,7 +717,7 @@ class RosterWidget(Qt.QWidget):
 
         for tag in all_tags:
             color = utils.text_to_qtcolor(
-                mlxc.utils.normalise_text_for_hash(tag)
+                jclib.utils.normalise_text_for_hash(tag)
             )
             action = self._filter_menu.addAction(tag)
             icon = Qt.QPixmap(16, 16)
@@ -816,7 +816,7 @@ class MainWindow(Qt.QMainWindow):
         if result is None:
             return
         account, peer_jid, display_name, tags = result
-        mlxc.tasks.manager.start(self.add_contact(
+        jclib.tasks.manager.start(self.add_contact(
             account,
             peer_jid,
             display_name,
@@ -844,7 +844,7 @@ class MainWindow(Qt.QMainWindow):
     @asyncio.coroutine
     def join_muc(self, account, mucjid, nick):
         nick = nick or "test"
-        mlxc.tasks.manager.update_text(
+        jclib.tasks.manager.update_text(
             "Joining group chat {} as {}".format(mucjid, nick)
         )
         client = self.main.client.client_by_account(account)
@@ -858,12 +858,12 @@ class MainWindow(Qt.QMainWindow):
         return result
 
 
-class QtMain(mlxc.main.Main):
+class QtMain(jclib.main.Main):
     Client = client.Client
 
     def __init__(self, loop):
         super().__init__(loop)
-        self.roster = mlxc.roster.RosterManager(
+        self.roster = jclib.roster.RosterManager(
             self.accounts,
             self.client,
             self.writeman,
@@ -872,7 +872,7 @@ class QtMain(mlxc.main.Main):
             self.client,
             self.writeman,
         )
-        self.conversations = mlxc.conversation.ConversationManager(
+        self.conversations = jclib.conversation.ConversationManager(
             self.accounts,
             self.client,
         )

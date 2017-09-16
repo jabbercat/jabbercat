@@ -2,8 +2,8 @@ import asyncio
 
 import aioxmpp
 
-import mlxc.client
-import mlxc.identity
+import jclib.client
+import jclib.identity
 
 from .. import Qt, utils, models
 from ..ui import dlg_add_contact
@@ -11,8 +11,8 @@ from ..ui import dlg_add_contact
 
 class DlgAddContact(Qt.QDialog):
     def __init__(self,
-                 client: mlxc.client.Client,
-                 accounts: mlxc.identity.Accounts,
+                 client: jclib.client.Client,
+                 accounts: jclib.identity.Accounts,
                  *args, **kwargs):
         super().__init__(*args, **kwargs)
 

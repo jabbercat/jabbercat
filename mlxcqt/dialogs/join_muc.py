@@ -2,7 +2,7 @@ import asyncio
 
 import aioxmpp
 
-import mlxc.identity
+import jclib.identity
 
 from .. import Qt, models, utils
 
@@ -10,7 +10,7 @@ from ..ui import dlg_join_muc
 
 
 class JoinMuc(Qt.QDialog):
-    def __init__(self, accounts: mlxc.identity.Account, *args, **kwargs):
+    def __init__(self, accounts: jclib.identity.Account, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.ui = dlg_join_muc.Ui_DlgJoinMUC()
         self.ui.setupUi(self)

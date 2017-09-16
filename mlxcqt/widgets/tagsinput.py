@@ -2,7 +2,7 @@ import functools
 
 import aioxmpp.callbacks
 
-import mlxc.utils
+import jclib.utils
 
 from .. import Qt, utils
 from ..ui import tags_input, tag_bubble
@@ -102,7 +102,7 @@ class TagBubble(Qt.QWidget):
     def text(self, text):
         self._ui.label.setText(text)
         color = utils.text_to_qtcolor(
-            mlxc.utils.normalise_text_for_hash(text)
+            jclib.utils.normalise_text_for_hash(text)
         )
         self._palette.setColor(Qt.QPalette.Window, color)
         self.setPalette(self._palette)

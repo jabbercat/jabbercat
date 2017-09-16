@@ -1,12 +1,12 @@
 import asyncio
 
-import mlxc.client
-import mlxc.identity
+import jclib.client
+import jclib.identity
 
 from .dialogs import password_prompt
 
 
-class Client(mlxc.client.Client):
+class Client(jclib.client.Client):
     @asyncio.coroutine
     def _invoke_password_dialog(self, jid):
         dlg = password_prompt.DlgPasswordPrompt(
@@ -18,7 +18,7 @@ class Client(mlxc.client.Client):
         if store:
             try:
                 yield from self.set_stored_password(jid, password)
-            except mlxc.client.PasswordStoreIsUnsafe:
+            except jclib.client.PasswordStoreIsUnsafe:
                 pass
 
         return password

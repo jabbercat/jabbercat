@@ -8,7 +8,7 @@ import aioxmpp.im.p2p
 import aioxmpp.im.service
 import aioxmpp.structs
 
-import mlxc.conversation
+import jclib.conversation
 
 from . import Qt, utils, models
 
@@ -178,7 +178,7 @@ class ConversationView(Qt.QWidget):
         ))
 
 
-# class ConversationsController(mlxc.conversation.Conversations):
+# class ConversationsController(jclib.conversation.Conversations):
 #     def __init__(self, identities, client):
 #         super().__init__(identities, client)
 #         self._conversation_views = {}

@@ -4,9 +4,9 @@ import PyQt5.Qt as Qt
 
 import aioxmpp
 
-import mlxc.client
-import mlxc.config
-import mlxc.identity
+import jclib.client
+import jclib.config
+import jclib.identity
 
 from .. import utils, models
 
@@ -15,8 +15,8 @@ from ..ui import dlg_add_account
 
 class DlgAddAccount(Qt.QWizard):
     def __init__(self,
-                 client: mlxc.client.Client,
-                 accounts: mlxc.identity.Accounts, parent=None):
+                 client: jclib.client.Client,
+                 accounts: jclib.identity.Accounts, parent=None):
         super().__init__(parent)
         self._client = client
         self._accounts = accounts
@@ -42,7 +42,7 @@ class DlgAddAccount(Qt.QWizard):
         jid = aioxmpp.JID.fromstr(self.field("jid"))
         self._accounts.new_account(
             jid,
-            tuple(round(x * 255) for x in mlxc.utils.text_to_colour(str(jid)))
+            tuple(round(x * 255) for x in jclib.utils.text_to_colour(str(jid)))
         )
 
         try:
@@ -50,7 +50,7 @@ class DlgAddAccount(Qt.QWizard):
                 jid,
                 self.field("password"),
             )
-        except mlxc.client.PasswordStoreIsUnsafe:
+        except jclib.client.PasswordStoreIsUnsafe:
             pass
 
-        mlxc.config.config_manager.writeback()
+        jclib.config.config_manager.writeback()

@@ -8,9 +8,9 @@ from .ui.dlg_edit_custom_presence import Ui_dlg_edit_custom_presence
 class DlgCustomPresenceStates(Qt.QDialog, Ui_dlg_custom_presence_states):
     def __init__(self, main_window):
         super().__init__()
-        self.mlxc = main_window.mlxc
-        self.presence_states = self.mlxc.client.presence_states
-        self.presence_states_qmodel = self.mlxc.client.presence_states_qmodel
+        self.jclib = main_window.jclib
+        self.presence_states = self.jclib.client.presence_states
+        self.presence_states_qmodel = self.jclib.client.presence_states_qmodel
 
         self.setupUi(self)
         self.setModal(False)
