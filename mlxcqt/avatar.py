@@ -83,9 +83,12 @@ def render_dummy_avatar_grapheme(painter: Qt.QPainter,
     )
 
 
-def render_dummy_avatar(font: Qt.QFont, name: str, size: float):
+def render_dummy_avatar(font: Qt.QFont,
+                        name: str,
+                        size: float,
+                        colour_text: str=None):
     colour = mlxcqt.utils.text_to_qtcolor(
-        mlxc.utils.normalise_text_for_hash(name)
+        mlxc.utils.normalise_text_for_hash(colour_text or name)
     )
     grapheme = first_grapheme(name)
     picture = Qt.QPicture()
@@ -251,7 +254,8 @@ class RosterNameAvatarProvider:
             return
         if name is None:
             return
-        return render_dummy_avatar(font, name, BASE_SIZE)
+        return render_dummy_avatar(font, name, BASE_SIZE,
+                                   str(address))
 
     def _on_entry_updated(self, item):
         self.on_avatar_changed(item.jid)
@@ -370,9 +374,9 @@ class AvatarManager:
                 return result
 
             font = self.get_avatar_font()
-            # result = generator.get_avatar(address, font)
-            # if result is not None:
-            #     return result
+            result = generator.get_avatar(address, font)
+            if result is not None:
+                return result
 
         return render_dummy_avatar(font,
                                    name_surrogate or str(address),

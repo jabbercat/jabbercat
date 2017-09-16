@@ -324,53 +324,6 @@ class XMPPAvatarProvider(unittest.TestCase):
 
         self.assertEqual(result, unittest.mock.sentinel.image_bytes)
 
-    def test__get_image_bytes_tries_unknown_if_all_png_fail(self):
-        client = self._prep_client()
-
-        self.ap.prepare_client(client)
-
-        base = unittest.mock.Mock()
-        base.avatar1 = unittest.mock.Mock(
-            spec=aioxmpp.avatar.service.AbstractAvatarDescriptor)
-        base.avatar1.mime_type = "image/jpeg"
-        base.avatar1.nbytes = 4096
-        base.avatar1.get_image_bytes = CoroutineMock()
-
-        base.avatar2 = unittest.mock.Mock(
-            spec=aioxmpp.avatar.service.AbstractAvatarDescriptor)
-        base.avatar2.mime_type = "image/png"
-        base.avatar2.nbytes = 4096
-        base.avatar2.get_image_bytes = CoroutineMock()
-        base.avatar2.get_image_bytes.side_effect = RuntimeError()
-
-        base.avatar3 = unittest.mock.Mock(
-            spec=aioxmpp.avatar.service.AbstractAvatarDescriptor)
-        base.avatar3.mime_type = "image/png"
-        base.avatar3.nbytes = 4096
-        base.avatar3.get_image_bytes = CoroutineMock()
-        base.avatar3.get_image_bytes.return_value = \
-            unittest.mock.sentinel.image_bytes
-
-        self.avatar.get_avatar_metadata.return_value = {
-            "image/png": [base.avatar2],
-            None: [base.avatar3],
-            "image/jpeg": [base.avatar1],
-        }
-
-        result = run_coroutine(
-            self.ap._get_image_bytes(unittest.mock.sentinel.address)
-        )
-
-        self.avatar.get_avatar_metadata.assert_called_once_with(
-            unittest.mock.sentinel.address,
-        )
-
-        base.avatar1.get_image_bytes.assert_not_called()
-        base.avatar2.get_image_bytes.assert_called_once_with()
-        base.avatar3.get_image_bytes.assert_called_once_with()
-
-        self.assertEqual(result, unittest.mock.sentinel.image_bytes)
-
     def test__get_image_bytes_returns_none_if_all_fail(self):
         client = self._prep_client()
 
@@ -773,6 +726,70 @@ class Testrender_dummy_avatar(unittest.TestCase):
 
         self.assertEqual(result, QPicture())
 
+    def test_use_colour_text_over_text_for_colouring_if_given(self):
+        with contextlib.ExitStack() as stack:
+            QPainter = stack.enter_context(unittest.mock.patch(
+                "mlxcqt.Qt.QPainter"
+            ))
+
+            QPicture = stack.enter_context(unittest.mock.patch(
+                "mlxcqt.Qt.QPicture"
+            ))
+
+            first_grapheme = stack.enter_context(unittest.mock.patch(
+                "mlxcqt.avatar.first_grapheme"
+            ))
+
+            render_dummy_avatar_base = stack.enter_context(unittest.mock.patch(
+                "mlxcqt.avatar.render_dummy_avatar_base"
+            ))
+
+            render_dummy_avatar_grapheme = stack.enter_context(
+                unittest.mock.patch(
+                    "mlxcqt.avatar.render_dummy_avatar_grapheme"
+                )
+            )
+
+            text_to_qtcolor = stack.enter_context(unittest.mock.patch(
+                "mlxcqt.utils.text_to_qtcolor"
+            ))
+
+            normalise_text_for_hash = stack.enter_context(unittest.mock.patch(
+                "mlxc.utils.normalise_text_for_hash"
+            ))
+
+            result = avatar.render_dummy_avatar(
+                unittest.mock.sentinel.font,
+                unittest.mock.sentinel.name,
+                unittest.mock.sentinel.size,
+                colour_text=unittest.mock.sentinel.colour_text
+            )
+
+        normalise_text_for_hash.assert_called_once_with(
+            unittest.mock.sentinel.colour_text
+        )
+        text_to_qtcolor.assert_called_once_with(normalise_text_for_hash())
+
+        first_grapheme.assert_called_once_with(unittest.mock.sentinel.name)
+
+        QPicture.assert_called_once_with()
+        QPainter.assert_called_once_with(QPicture())
+
+        render_dummy_avatar_base.assert_called_once_with(
+            QPainter(),
+            text_to_qtcolor(),
+            unittest.mock.sentinel.size,
+        )
+
+        render_dummy_avatar_grapheme.assert_called_once_with(
+            QPainter(),
+            first_grapheme(),
+            unittest.mock.sentinel.font,
+            unittest.mock.sentinel.size,
+        )
+
+        self.assertEqual(result, QPicture())
+
 
 class TestRosterNameAvatarProvider(unittest.TestCase):
     def setUp(self):
@@ -844,6 +861,7 @@ class TestRosterNameAvatarProvider(unittest.TestCase):
             unittest.mock.sentinel.font,
             unittest.mock.sentinel.name,
             48,
+            str(TEST_JID1),
         )
 
         self.assertEqual(result, render_dummy_avatar())
