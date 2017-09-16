@@ -58,7 +58,7 @@
         <translation type="obsolete">Konto löschen</translation>
     </message>
     <message>
-        <location filename="mlxcqt/client.py" line="90"/>
+        <location filename="jabbercat/client.py" line="90"/>
         <source>JID</source>
         <translation>JID</translation>
     </message>

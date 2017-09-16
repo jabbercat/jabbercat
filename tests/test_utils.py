@@ -4,8 +4,8 @@ import unittest.mock
 
 import aioxmpp.callbacks
 
-import mlxcqt.Qt as Qt
-import mlxcqt.utils as utils
+import jabbercat.Qt as Qt
+import jabbercat.utils as utils
 
 
 def mk_model_mock():
@@ -304,7 +304,7 @@ class TestDictItemModel(unittest.TestCase):
         with contextlib.ExitStack() as stack:
             ModelListAdaptor = stack.enter_context(
                 unittest.mock.patch(
-                    "mlxcqt.model_adaptor.ModelListAdaptor",
+                    "jabbercat.model_adaptor.ModelListAdaptor",
                     new=base.ModelListAdaptor
                 )
             )
@@ -431,7 +431,7 @@ class TestJIDValidator(unittest.TestCase):
 class TestDragNDropUtils(unittest.TestCase):
     def test_start_drag_returns_key(self):
         o = object()
-        with unittest.mock.patch("mlxcqt.utils._dragndrop_rng") as rng:
+        with unittest.mock.patch("jabbercat.utils._dragndrop_rng") as rng:
             key = utils.start_drag(o)
 
         rng.getrandbits.assert_called_with(64)
@@ -443,7 +443,7 @@ class TestDragNDropUtils(unittest.TestCase):
 
     def test_pop_drag_returns_data_stored_with_start_drag_if_key_matches(self):
         o = object()
-        with unittest.mock.patch("mlxcqt.utils._dragndrop_rng") as rng:
+        with unittest.mock.patch("jabbercat.utils._dragndrop_rng") as rng:
             key = utils.start_drag(o)
             data = utils.pop_drag(key)
 
@@ -451,7 +451,7 @@ class TestDragNDropUtils(unittest.TestCase):
 
     def test_pop_drag_returns_None_if_key_mismatches(self):
         o = object()
-        with unittest.mock.patch("mlxcqt.utils._dragndrop_rng") as rng:
+        with unittest.mock.patch("jabbercat.utils._dragndrop_rng") as rng:
             key = utils.start_drag(o)
             data = utils.pop_drag(object())
 
@@ -459,7 +459,7 @@ class TestDragNDropUtils(unittest.TestCase):
 
     def test_pop_drag_returns_None_on_second_call_if_first_had_incorrect_key(self):
         o = object()
-        with unittest.mock.patch("mlxcqt.utils._dragndrop_rng") as rng:
+        with unittest.mock.patch("jabbercat.utils._dragndrop_rng") as rng:
             key = utils.start_drag(o)
             data1 = utils.pop_drag(object())
             data2 = utils.pop_drag(key)
@@ -469,7 +469,7 @@ class TestDragNDropUtils(unittest.TestCase):
 
     def test_pop_drag_returns_None_on_second_call_if_first_had_correct_key(self):
         o = object()
-        with unittest.mock.patch("mlxcqt.utils._dragndrop_rng") as rng:
+        with unittest.mock.patch("jabbercat.utils._dragndrop_rng") as rng:
             key = utils.start_drag(o)
             data1 = utils.pop_drag(key)
             data2 = utils.pop_drag(key)
@@ -482,7 +482,7 @@ class TestDragNDropUtils(unittest.TestCase):
 
     def test_get_drag_returns_data_stored_with_start_drag_if_key_matches(self):
         o = object()
-        with unittest.mock.patch("mlxcqt.utils._dragndrop_rng") as rng:
+        with unittest.mock.patch("jabbercat.utils._dragndrop_rng") as rng:
             key = utils.start_drag(o)
             data = utils.get_drag(key)
 
@@ -490,7 +490,7 @@ class TestDragNDropUtils(unittest.TestCase):
 
     def test_get_drag_returns_None_if_key_mismatches(self):
         o = object()
-        with unittest.mock.patch("mlxcqt.utils._dragndrop_rng") as rng:
+        with unittest.mock.patch("jabbercat.utils._dragndrop_rng") as rng:
             key = utils.start_drag(o)
             data = utils.get_drag(object())
 
@@ -498,7 +498,7 @@ class TestDragNDropUtils(unittest.TestCase):
 
     def test_get_drag_the_same_data_on_each_call(self):
         o = object()
-        with unittest.mock.patch("mlxcqt.utils._dragndrop_rng") as rng:
+        with unittest.mock.patch("jabbercat.utils._dragndrop_rng") as rng:
             key = utils.start_drag(o)
             data1 = utils.get_drag(key)
             data2 = utils.get_drag(key)

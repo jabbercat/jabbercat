@@ -1,9 +1,9 @@
 import unittest
 import unittest.mock
 
-import mlxcqt.model_adaptor as model_adaptor
+import jabbercat.model_adaptor as model_adaptor
 
-from mlxcqt import Qt
+from jabbercat import Qt
 
 
 class TestModelListAdaptor(unittest.TestCase):

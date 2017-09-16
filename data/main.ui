@@ -58,7 +58,7 @@
      <height>28</height>
     </rect>
    </property>
-   <widget class="QMenu" name="menuMLXC">
+   <widget class="QMenu" name="menuJabberCat">
     <property name="title">
      <string>&amp;JabberCat</string>
     </property>
@@ -72,7 +72,7 @@
     <addaction name="action_add_contact"/>
     <addaction name="action_invite_contact"/>
    </widget>
-   <addaction name="menuMLXC"/>
+   <addaction name="menuJabberCat"/>
    <addaction name="menuContacts"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>

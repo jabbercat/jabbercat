@@ -12,7 +12,7 @@ import jclib.identity
 import jclib.storage
 import jclib.utils
 
-import mlxcqt.utils
+import jabbercat.utils
 
 from . import Qt
 
@@ -87,7 +87,7 @@ def render_dummy_avatar(font: Qt.QFont,
                         name: str,
                         size: float,
                         colour_text: str=None):
-    colour = mlxcqt.utils.text_to_qtcolor(
+    colour = jabbercat.utils.text_to_qtcolor(
         jclib.utils.normalise_text_for_hash(colour_text or name)
     )
     grapheme = first_grapheme(name)

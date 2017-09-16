@@ -84,7 +84,7 @@
     <item>
      <widget class="QLabel" name="label_6">
       <property name="text">
-       <string>I have picked a colour for your account. This colour is used within MLXC to show that something is related to this account. You can change this colour to anything you like or leave it as it is. This colour is not shown to any contacts.</string>
+       <string>I have picked a colour for your account. This colour is used within JabberCat to show that something is related to this account. You can change this colour to anything you like or leave it as it is. This colour is not shown to any contacts.</string>
       </property>
       <property name="wordWrap">
        <bool>true</bool>
@@ -117,13 +117,13 @@
   <customwidget>
    <class>PageCredentials</class>
    <extends>QWizardPage</extends>
-   <header>mlxcqt.widgets.add_account_pages</header>
+   <header>jabbercat.widgets.add_account_pages</header>
    <container>1</container>
   </customwidget>
   <customwidget>
    <class>PageConnecting</class>
    <extends>QWizardPage</extends>
-   <header>mlxcqt.widgets.add_account_pages</header>
+   <header>jabbercat.widgets.add_account_pages</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

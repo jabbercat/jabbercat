@@ -106,7 +106,7 @@
   <customwidget>
    <class>RosterTagsBox</class>
    <extends>QWidget</extends>
-   <header>mlxcqt.widgets.roster_tags</header>
+   <header>jabbercat.widgets.roster_tags</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

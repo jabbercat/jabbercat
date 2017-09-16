@@ -8,7 +8,7 @@ import jclib.identity
 import jclib.instrumentable_list
 import jclib.roster
 
-import mlxcqt.avatar
+import jabbercat.avatar
 
 from . import Qt
 from . import model_adaptor
@@ -526,7 +526,7 @@ class RosterModel(Qt.QAbstractListModel):
     def __init__(self,
                  items: jclib.instrumentable_list.AbstractModelListView[
                      jclib.roster.AbstractRosterItem],
-                 avatar_manager: mlxcqt.avatar.AvatarManager):
+                 avatar_manager: jabbercat.avatar.AvatarManager):
         super().__init__()
         self._items = items
         self._avatar_manager = avatar_manager

@@ -1,7 +1,7 @@
 BUILDUI=./utils/buildui.py -5
 
 UIC_SOURCE_FILES=$(wildcard data/*.ui)
-UIC_PYTHON_FILES=$(patsubst data/%.ui,mlxcqt/ui/%.py,$(UIC_SOURCE_FILES))
+UIC_PYTHON_FILES=$(patsubst data/%.ui,jabbercat/ui/%.py,$(UIC_SOURCE_FILES))
 
 RESOURCE_SOURCES=$(addprefix data/,$(shell xpath -e 'RCC/qresource/file/text()' data/resources.qrc 2>/dev/null))
 
@@ -18,7 +18,7 @@ lupdate:
 lrelease: $(TS_FILES)
 	lrelease-qt5 mlxc-qt.pro
 
-$(UIC_PYTHON_FILES): mlxcqt/ui/%.py: data/%.ui
+$(UIC_PYTHON_FILES): jabbercat/ui/%.py: data/%.ui
 	$(BUILDUI) $< $@
 
 resources.rcc: data/resources.qrc $(RESOURCE_SOURCES)

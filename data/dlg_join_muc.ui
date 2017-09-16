@@ -70,7 +70,7 @@
   <customwidget>
    <class>AccountSelectorBox</class>
    <extends>QComboBox</extends>
-   <header>mlxcqt.widgets</header>
+   <header>jabbercat.widgets</header>
   </customwidget>
  </customwidgets>
  <resources/>

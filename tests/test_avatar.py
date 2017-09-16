@@ -8,8 +8,8 @@ import aioxmpp
 
 import jclib.identity
 
-import mlxcqt.avatar as avatar
-import mlxcqt.Qt as Qt
+import jabbercat.avatar as avatar
+import jabbercat.Qt as Qt
 
 from aioxmpp.testutils import (
     make_connected_client,
@@ -30,15 +30,15 @@ class Testrender_avatar_image(unittest.TestCase):
 
         with contextlib.ExitStack() as stack:
             QPicture = stack.enter_context(unittest.mock.patch(
-                "mlxcqt.Qt.QPicture"
+                "jabbercat.Qt.QPicture"
             ))
 
             QPainter = stack.enter_context(unittest.mock.patch(
-                "mlxcqt.Qt.QPainter"
+                "jabbercat.Qt.QPainter"
             ))
 
             QRectF = stack.enter_context(unittest.mock.patch(
-                "mlxcqt.Qt.QRectF"
+                "jabbercat.Qt.QRectF"
             ))
 
             result = avatar.render_avatar_image(
@@ -69,15 +69,15 @@ class Testrender_avatar_image(unittest.TestCase):
 
         with contextlib.ExitStack() as stack:
             QPicture = stack.enter_context(unittest.mock.patch(
-                "mlxcqt.Qt.QPicture"
+                "jabbercat.Qt.QPicture"
             ))
 
             QPainter = stack.enter_context(unittest.mock.patch(
-                "mlxcqt.Qt.QPainter"
+                "jabbercat.Qt.QPainter"
             ))
 
             QRectF = stack.enter_context(unittest.mock.patch(
-                "mlxcqt.Qt.QRectF"
+                "jabbercat.Qt.QRectF"
             ))
 
             self.assertIsNone(avatar.render_avatar_image(
@@ -424,11 +424,11 @@ class XMPPAvatarProvider(unittest.TestCase):
             _get_image_bytes.return_value = unittest.mock.sentinel.image_bytes
 
             QImage = stack.enter_context(unittest.mock.patch(
-                "mlxcqt.Qt.QImage"
+                "jabbercat.Qt.QImage"
             ))
 
             render_avatar_image = stack.enter_context(unittest.mock.patch(
-                "mlxcqt.avatar.render_avatar_image"
+                "jabbercat.avatar.render_avatar_image"
             ))
 
             result = run_coroutine(self.ap.fetch_avatar(
@@ -471,11 +471,11 @@ class XMPPAvatarProvider(unittest.TestCase):
             _get_image_bytes.side_effect = generate_bytes()
 
             QImage = stack.enter_context(unittest.mock.patch(
-                "mlxcqt.Qt.QImage"
+                "jabbercat.Qt.QImage"
             ))
 
             render_avatar_image = stack.enter_context(unittest.mock.patch(
-                "mlxcqt.avatar.render_avatar_image"
+                "jabbercat.avatar.render_avatar_image"
             ))
             render_avatar_image.side_effect = generate_images()
 
@@ -563,15 +563,15 @@ class Testrender_dummy_avatar_base(unittest.TestCase):
 
         with contextlib.ExitStack() as stack:
             QPen = stack.enter_context(unittest.mock.patch(
-                "mlxcqt.Qt.QPen"
+                "jabbercat.Qt.QPen"
             ))
 
             QColor = stack.enter_context(unittest.mock.patch(
-                "mlxcqt.Qt.QColor"
+                "jabbercat.Qt.QColor"
             ))
 
             QRectF = stack.enter_context(unittest.mock.patch(
-                "mlxcqt.Qt.QRectF"
+                "jabbercat.Qt.QRectF"
             ))
 
             avatar.render_dummy_avatar_base(
@@ -605,23 +605,23 @@ class Testrender_dummy_avatar_grapheme(unittest.TestCase):
 
         with contextlib.ExitStack() as stack:
             QFont = stack.enter_context(unittest.mock.patch(
-                "mlxcqt.Qt.QFont"
+                "jabbercat.Qt.QFont"
             ))
 
             QRectF = stack.enter_context(unittest.mock.patch(
-                "mlxcqt.Qt.QRectF"
+                "jabbercat.Qt.QRectF"
             ))
 
             QPen = stack.enter_context(unittest.mock.patch(
-                "mlxcqt.Qt.QPen"
+                "jabbercat.Qt.QPen"
             ))
 
             QBrush = stack.enter_context(unittest.mock.patch(
-                "mlxcqt.Qt.QBrush"
+                "jabbercat.Qt.QBrush"
             ))
 
             QColor = stack.enter_context(unittest.mock.patch(
-                "mlxcqt.Qt.QColor"
+                "jabbercat.Qt.QColor"
             ))
 
             avatar.render_dummy_avatar_grapheme(
@@ -666,29 +666,29 @@ class Testrender_dummy_avatar(unittest.TestCase):
     def test_uses_other_render_functions_on_new_picture(self):
         with contextlib.ExitStack() as stack:
             QPainter = stack.enter_context(unittest.mock.patch(
-                "mlxcqt.Qt.QPainter"
+                "jabbercat.Qt.QPainter"
             ))
 
             QPicture = stack.enter_context(unittest.mock.patch(
-                "mlxcqt.Qt.QPicture"
+                "jabbercat.Qt.QPicture"
             ))
 
             first_grapheme = stack.enter_context(unittest.mock.patch(
-                "mlxcqt.avatar.first_grapheme"
+                "jabbercat.avatar.first_grapheme"
             ))
 
             render_dummy_avatar_base = stack.enter_context(unittest.mock.patch(
-                "mlxcqt.avatar.render_dummy_avatar_base"
+                "jabbercat.avatar.render_dummy_avatar_base"
             ))
 
             render_dummy_avatar_grapheme = stack.enter_context(
                 unittest.mock.patch(
-                    "mlxcqt.avatar.render_dummy_avatar_grapheme"
+                    "jabbercat.avatar.render_dummy_avatar_grapheme"
                 )
             )
 
             text_to_qtcolor = stack.enter_context(unittest.mock.patch(
-                "mlxcqt.utils.text_to_qtcolor"
+                "jabbercat.utils.text_to_qtcolor"
             ))
 
             normalise_text_for_hash = stack.enter_context(unittest.mock.patch(
@@ -729,29 +729,29 @@ class Testrender_dummy_avatar(unittest.TestCase):
     def test_use_colour_text_over_text_for_colouring_if_given(self):
         with contextlib.ExitStack() as stack:
             QPainter = stack.enter_context(unittest.mock.patch(
-                "mlxcqt.Qt.QPainter"
+                "jabbercat.Qt.QPainter"
             ))
 
             QPicture = stack.enter_context(unittest.mock.patch(
-                "mlxcqt.Qt.QPicture"
+                "jabbercat.Qt.QPicture"
             ))
 
             first_grapheme = stack.enter_context(unittest.mock.patch(
-                "mlxcqt.avatar.first_grapheme"
+                "jabbercat.avatar.first_grapheme"
             ))
 
             render_dummy_avatar_base = stack.enter_context(unittest.mock.patch(
-                "mlxcqt.avatar.render_dummy_avatar_base"
+                "jabbercat.avatar.render_dummy_avatar_base"
             ))
 
             render_dummy_avatar_grapheme = stack.enter_context(
                 unittest.mock.patch(
-                    "mlxcqt.avatar.render_dummy_avatar_grapheme"
+                    "jabbercat.avatar.render_dummy_avatar_grapheme"
                 )
             )
 
             text_to_qtcolor = stack.enter_context(unittest.mock.patch(
-                "mlxcqt.utils.text_to_qtcolor"
+                "jabbercat.utils.text_to_qtcolor"
             ))
 
             normalise_text_for_hash = stack.enter_context(unittest.mock.patch(
@@ -849,7 +849,7 @@ class TestRosterNameAvatarProvider(unittest.TestCase):
 
         with contextlib.ExitStack() as stack:
             render_dummy_avatar = stack.enter_context(unittest.mock.patch(
-                "mlxcqt.avatar.render_dummy_avatar"
+                "jabbercat.avatar.render_dummy_avatar"
             ))
 
             result = self.ag.get_avatar(
@@ -877,7 +877,7 @@ class TestRosterNameAvatarProvider(unittest.TestCase):
 
         with contextlib.ExitStack() as stack:
             render_dummy_avatar = stack.enter_context(unittest.mock.patch(
-                "mlxcqt.avatar.render_dummy_avatar"
+                "jabbercat.avatar.render_dummy_avatar"
             ))
 
             result = self.ag.get_avatar(
@@ -900,7 +900,7 @@ class TestRosterNameAvatarProvider(unittest.TestCase):
 
         with contextlib.ExitStack() as stack:
             render_dummy_avatar = stack.enter_context(unittest.mock.patch(
-                "mlxcqt.avatar.render_dummy_avatar"
+                "jabbercat.avatar.render_dummy_avatar"
             ))
 
             result = self.ag.get_avatar(
@@ -915,7 +915,7 @@ class TestRosterNameAvatarProvider(unittest.TestCase):
     def test_get_avatar_returns_None_if_client_not_set_up(self):
         with contextlib.ExitStack() as stack:
             render_dummy_avatar = stack.enter_context(unittest.mock.patch(
-                "mlxcqt.avatar.render_dummy_avatar"
+                "jabbercat.avatar.render_dummy_avatar"
             ))
 
             result = self.ag.get_avatar(
@@ -947,7 +947,7 @@ class TestAvatarManager(unittest.TestCase):
     def test_get_avatar_font_uses_general_font(self):
         with contextlib.ExitStack() as stack:
             QFontDatabase = stack.enter_context(unittest.mock.patch(
-                "mlxcqt.Qt.QFontDatabase",
+                "jabbercat.Qt.QFontDatabase",
             ))
 
             result = self.am.get_avatar_font()
@@ -974,7 +974,7 @@ class TestAvatarManager(unittest.TestCase):
 
         with contextlib.ExitStack() as stack:
             RosterNameAvatarProvider = stack.enter_context(unittest.mock.patch(
-                "mlxcqt.avatar.RosterNameAvatarProvider",
+                "jabbercat.avatar.RosterNameAvatarProvider",
             ))
 
             _on_backend_avatar_changed = stack.enter_context(
@@ -1011,7 +1011,7 @@ class TestAvatarManager(unittest.TestCase):
 
         with contextlib.ExitStack() as stack:
             XMPPAvatarProvider = stack.enter_context(unittest.mock.patch(
-                "mlxcqt.avatar.XMPPAvatarProvider",
+                "jabbercat.avatar.XMPPAvatarProvider",
             ))
 
             _on_xmpp_avatar_changed = stack.enter_context(
@@ -1047,7 +1047,7 @@ class TestAvatarManager(unittest.TestCase):
 
         with contextlib.ExitStack() as stack:
             RosterNameAvatarProvider = stack.enter_context(unittest.mock.patch(
-                "mlxcqt.avatar.RosterNameAvatarProvider",
+                "jabbercat.avatar.RosterNameAvatarProvider",
             ))
 
             _on_backend_avatar_changed = stack.enter_context(
@@ -1078,7 +1078,7 @@ class TestAvatarManager(unittest.TestCase):
 
         with contextlib.ExitStack() as stack:
             XMPPAvatarProvider = stack.enter_context(unittest.mock.patch(
-                "mlxcqt.avatar.XMPPAvatarProvider",
+                "jabbercat.avatar.XMPPAvatarProvider",
             ))
 
             _on_backend_avatar_changed = stack.enter_context(
@@ -1118,7 +1118,7 @@ class TestAvatarManager(unittest.TestCase):
             self):
         with contextlib.ExitStack() as stack:
             render_dummy_avatar = stack.enter_context(unittest.mock.patch(
-                "mlxcqt.avatar.render_dummy_avatar"
+                "jabbercat.avatar.render_dummy_avatar"
             ))
 
             get_avatar_font = stack.enter_context(unittest.mock.patch.object(
@@ -1143,12 +1143,12 @@ class TestAvatarManager(unittest.TestCase):
 
         with contextlib.ExitStack() as stack:
             RosterNameAvatarProvider = stack.enter_context(unittest.mock.patch(
-                "mlxcqt.avatar.RosterNameAvatarProvider",
+                "jabbercat.avatar.RosterNameAvatarProvider",
             ))
             RosterNameAvatarProvider().get_avatar.return_value = None
 
             XMPPAvatarProvider = stack.enter_context(unittest.mock.patch(
-                "mlxcqt.avatar.XMPPAvatarProvider",
+                "jabbercat.avatar.XMPPAvatarProvider",
             ))
             XMPPAvatarProvider().get_avatar.return_value = None
 
@@ -1159,7 +1159,7 @@ class TestAvatarManager(unittest.TestCase):
 
         with contextlib.ExitStack() as stack:
             render_dummy_avatar = stack.enter_context(unittest.mock.patch(
-                "mlxcqt.avatar.render_dummy_avatar"
+                "jabbercat.avatar.render_dummy_avatar"
             ))
 
             _fetch_in_background = stack.enter_context(
@@ -1203,13 +1203,13 @@ class TestAvatarManager(unittest.TestCase):
 
         with contextlib.ExitStack() as stack:
             RosterNameAvatarProvider = stack.enter_context(unittest.mock.patch(
-                "mlxcqt.avatar.RosterNameAvatarProvider",
+                "jabbercat.avatar.RosterNameAvatarProvider",
             ))
             RosterNameAvatarProvider().get_avatar.return_value = \
                 unittest.mock.sentinel.image
 
             XMPPAvatarProvider = stack.enter_context(unittest.mock.patch(
-                "mlxcqt.avatar.XMPPAvatarProvider",
+                "jabbercat.avatar.XMPPAvatarProvider",
             ))
             XMPPAvatarProvider().get_avatar.side_effect = KeyError
 
@@ -1220,7 +1220,7 @@ class TestAvatarManager(unittest.TestCase):
 
         with contextlib.ExitStack() as stack:
             render_dummy_avatar = stack.enter_context(unittest.mock.patch(
-                "mlxcqt.avatar.render_dummy_avatar"
+                "jabbercat.avatar.render_dummy_avatar"
             ))
 
             _fetch_in_background = stack.enter_context(
@@ -1263,13 +1263,13 @@ class TestAvatarManager(unittest.TestCase):
 
         with contextlib.ExitStack() as stack:
             RosterNameAvatarProvider = stack.enter_context(unittest.mock.patch(
-                "mlxcqt.avatar.RosterNameAvatarProvider",
+                "jabbercat.avatar.RosterNameAvatarProvider",
             ))
             RosterNameAvatarProvider().get_avatar.return_value = \
                 unittest.mock.sentinel.rn_image
 
             XMPPAvatarProvider = stack.enter_context(unittest.mock.patch(
-                "mlxcqt.avatar.XMPPAvatarProvider",
+                "jabbercat.avatar.XMPPAvatarProvider",
             ))
             XMPPAvatarProvider().get_avatar.return_value = \
                 unittest.mock.sentinel.xmpp_image
@@ -1281,7 +1281,7 @@ class TestAvatarManager(unittest.TestCase):
 
         with contextlib.ExitStack() as stack:
             render_dummy_avatar = stack.enter_context(unittest.mock.patch(
-                "mlxcqt.avatar.render_dummy_avatar"
+                "jabbercat.avatar.render_dummy_avatar"
             ))
 
             _fetch_in_background = stack.enter_context(
@@ -1318,12 +1318,12 @@ class TestAvatarManager(unittest.TestCase):
 
         with contextlib.ExitStack() as stack:
             RosterNameAvatarProvider = stack.enter_context(unittest.mock.patch(
-                "mlxcqt.avatar.RosterNameAvatarProvider",
+                "jabbercat.avatar.RosterNameAvatarProvider",
             ))
             RosterNameAvatarProvider().get_avatar.return_value = None
 
             XMPPAvatarProvider = stack.enter_context(unittest.mock.patch(
-                "mlxcqt.avatar.XMPPAvatarProvider",
+                "jabbercat.avatar.XMPPAvatarProvider",
             ))
             XMPPAvatarProvider().get_avatar.return_value = None
 
@@ -1334,7 +1334,7 @@ class TestAvatarManager(unittest.TestCase):
 
         with contextlib.ExitStack() as stack:
             render_dummy_avatar = stack.enter_context(unittest.mock.patch(
-                "mlxcqt.avatar.render_dummy_avatar"
+                "jabbercat.avatar.render_dummy_avatar"
             ))
 
             get_avatar_font = stack.enter_context(unittest.mock.patch.object(

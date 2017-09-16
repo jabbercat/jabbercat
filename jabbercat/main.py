@@ -12,7 +12,7 @@ import jclib.roster
 import jclib.utils
 import jclib.tasks
 
-import mlxcqt.avatar
+import jabbercat.avatar
 
 from . import (
     Qt, client, utils,
@@ -467,7 +467,7 @@ class RosterWidget(Qt.QWidget):
                  accounts: jclib.identity.Accounts,
                  roster_manager: jclib.roster.RosterManager,
                  conversations: jclib.conversation.ConversationManager,
-                 avatar_manager: mlxcqt.avatar.AvatarManager,
+                 avatar_manager: jabbercat.avatar.AvatarManager,
                  parent=None):
         super().__init__(parent=parent)
         self.accounts = accounts
@@ -868,7 +868,7 @@ class QtMain(jclib.main.Main):
             self.client,
             self.writeman,
         )
-        self.avatar = mlxcqt.avatar.AvatarManager(
+        self.avatar = jabbercat.avatar.AvatarManager(
             self.client,
             self.writeman,
         )

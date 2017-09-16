@@ -121,7 +121,7 @@
   <customwidget>
    <class>TagsInput</class>
    <extends>QWidget</extends>
-   <header>mlxcqt.widgets.tagsinput</header>
+   <header>jabbercat.widgets.tagsinput</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

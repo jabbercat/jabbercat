@@ -21,7 +21,7 @@ class DlgCheckCertificate(Qt.QDialog, Ui_dlg_check_certificate):
                 "dlg_check_certificate",
                 "While connecting the account {account_jid}, the certificate of"
                 " the server could not be verified. Below is the information"
-                " MLXC is sure about:").format(
+                " JabberCat is sure about:").format(
                     account_jid=account.jid,
                 )
         )

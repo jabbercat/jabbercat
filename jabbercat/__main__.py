@@ -6,13 +6,13 @@ import sys
 
 os.environ["QUAMASH_QTIMPL"] = "PyQt5"
 
-import mlxcqt.Qt as Qt
+import jabbercat.Qt as Qt
 import quamash
 
 app = Qt.QApplication(sys.argv)
 app.setQuitOnLastWindowClosed(False)
 
-import mlxcqt.main
+import jabbercat.main
 
 logging.basicConfig(level=logging.DEBUG)
 logging.getLogger("quamash").setLevel(logging.INFO)
@@ -28,8 +28,8 @@ else:
     app.installTranslator(qttr)
 
 qttr = Qt.QTranslator(parent=app)
-if not qttr.load("qttranslations/mlxcqt_" + locale):
-    logging.warning("failed to load MLXC translations for %s", locale)
+if not qttr.load("qttranslations/jabbercat_" + locale):
+    logging.warning("failed to load JabberCat translations for %s", locale)
 else:
     app.installTranslator(qttr)
 
@@ -37,7 +37,7 @@ Qt.QResource.registerResource("resources.rcc")
 
 asyncio.set_event_loop(quamash.QEventLoop(app=app))
 loop = asyncio.get_event_loop()
-main = mlxcqt.main.QtMain(loop)
+main = jabbercat.main.QtMain(loop)
 try:
     returncode = loop.run_until_complete(main.run())
 finally:

@@ -65,7 +65,7 @@
        <item>
         <widget class="QLabel" name="custom_store_label">
          <property name="text">
-          <string>The configured password store does not support changing the password from within MLXC.</string>
+          <string>The configured password store does not support changing the password from within JabberCat.</string>
          </property>
          <property name="wordWrap">
           <bool>true</bool>

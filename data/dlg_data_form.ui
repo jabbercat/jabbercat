@@ -17,7 +17,7 @@
    <item>
     <widget class="QLabel" name="warning">
      <property name="text">
-      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;{jid} has sent you a form.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Warning:&lt;/span&gt; This form is not provided by MLXC. Data entered here will be sent to {jid} once you confirm. In transit, it can be read by both your server and the server of {jid}.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;{jid} has sent you a form.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Warning:&lt;/span&gt; This form is not provided by JabberCat. Data entered here will be sent to {jid} once you confirm. In transit, it can be read by both your server and the server of {jid}.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
      </property>
      <property name="wordWrap">
       <bool>true</bool>

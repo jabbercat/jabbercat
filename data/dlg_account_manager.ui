@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Account Manager – MLXC</string>
+   <string>Account Manager – JabberCat</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout_2">
    <item>
@@ -125,7 +125,7 @@ The connection to the account will be terminated.</string>
   <customwidget>
    <class>PlaceholderTableView</class>
    <extends>QTableView</extends>
-   <header>mlxcqt.widgets.misc</header>
+   <header>jabbercat.widgets.misc</header>
   </customwidget>
  </customwidgets>
  <resources/>

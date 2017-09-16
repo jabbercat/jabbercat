@@ -10,9 +10,9 @@ import jclib.identity as identity
 import jclib.instrumentable_list
 import jclib.roster
 
-import mlxcqt.avatar
+import jabbercat.avatar
 
-import mlxcqt.models as models
+import jabbercat.models as models
 
 from aioxmpp.testutils import (
     make_listener,
@@ -40,7 +40,7 @@ class TestAccountsModel(unittest.TestCase):
 
         with contextlib.ExitStack() as stack:
             ModelListAdaptor = stack.enter_context(
-                unittest.mock.patch("mlxcqt.model_adaptor.ModelListAdaptor")
+                unittest.mock.patch("jabbercat.model_adaptor.ModelListAdaptor")
             )
 
             result = models.AccountsModel(accounts)
@@ -372,7 +372,7 @@ class TestConversationsModel(unittest.TestCase):
 
         with contextlib.ExitStack() as stack:
             ModelListAdaptor = stack.enter_context(
-                unittest.mock.patch("mlxcqt.model_adaptor.ModelListAdaptor")
+                unittest.mock.patch("jabbercat.model_adaptor.ModelListAdaptor")
             )
 
             result = models.ConversationsModel(convs)
@@ -814,7 +814,7 @@ class TestRosterModel(unittest.TestCase):
             unittest.mock.Mock(spec=jclib.roster.AbstractRosterItem)
             for i in range(3)
         )
-        self.avatar = unittest.mock.Mock(spec=mlxcqt.avatar.AvatarManager)
+        self.avatar = unittest.mock.Mock(spec=jabbercat.avatar.AvatarManager)
         self.m = models.RosterModel(self.roster, self.avatar)
         self.listener = make_listener(self.m)
 
@@ -823,7 +823,7 @@ class TestRosterModel(unittest.TestCase):
 
         with contextlib.ExitStack() as stack:
             ModelListAdaptor = stack.enter_context(
-                unittest.mock.patch("mlxcqt.model_adaptor.ModelListAdaptor")
+                unittest.mock.patch("jabbercat.model_adaptor.ModelListAdaptor")
             )
 
             result = models.RosterModel(items, self.avatar)
