@@ -16,7 +16,9 @@ class JoinMuc(Qt.QDialog):
         self.ui.setupUi(self)
 
         self.base_model = models.AccountsModel(accounts)
-        self.ui.account.setModel(self.base_model)
+        filtered = models.FilterDisabledItems(self.ui.account)
+        filtered.setSourceModel(self.base_model)
+        self.ui.account.setModel(filtered)
 
         self._jid_validator = utils.JIDValidator()
 
