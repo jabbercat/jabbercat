@@ -23,7 +23,7 @@ class DlgAddContact(Qt.QDialog):
         self.ui.setupUi(self)
 
         self.ui.account.currentIndexChanged.connect(
-           self._current_index_changed
+            self._current_index_changed
         )
 
         validator = utils.JIDValidator(self.ui.peer_jid)
@@ -33,8 +33,6 @@ class DlgAddContact(Qt.QDialog):
         filtered = models.FilterDisabledItems(self.ui.account)
         filtered.setSourceModel(self.base_model)
         self.ui.account.setModel(filtered)
-
-        print("configured")
 
     def _current_index_changed(self, index):
         all_tags = self._get_all_tags()
