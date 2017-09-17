@@ -109,6 +109,9 @@
    </property>
   </action>
   <action name="action_invite_contact">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="text">
     <string>Invite contact…</string>
    </property>
