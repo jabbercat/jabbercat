@@ -1016,3 +1016,65 @@ class TestRosterModel(unittest.TestCase):
         )
 
         cb.assert_not_called()
+
+
+class TestRosterFilterModel(unittest.TestCase):
+    def setUp(self):
+        self.roster = jclib.instrumentable_list.ModelList()
+        self.roster.extend(
+            unittest.mock.Mock(spec=jclib.roster.AbstractRosterItem)
+            for i in range(3)
+        )
+
+        self.roster[0].tags = ["foo", "bar"]
+        self.roster[1].tags = ["bar"]
+        self.roster[2].tags = ["foo", "baz"]
+
+        self.avatar = unittest.mock.Mock(spec=jabbercat.avatar.AvatarManager)
+        self.rm = models.RosterModel(self.roster, self.avatar)
+        self.rfm = models.RosterFilterModel()
+        self.rfm.setSourceModel(self.rm)
+        self.listener = make_listener(self.rfm)
+
+    def tearDown(self):
+        pass
+
+    def test_filterAcceptsRow_passes_by_default(self):
+        self.assertTrue(
+            self.rfm.filterAcceptsRow(0, Qt.QModelIndex()),
+        )
+
+    def test_filter_by_tags(self):
+        self.rfm.filter_by_tags = {"foo"}
+
+        self.assertTrue(self.rfm.filterAcceptsRow(0, Qt.QModelIndex()))
+        self.assertFalse(self.rfm.filterAcceptsRow(1, Qt.QModelIndex()))
+        self.assertTrue(self.rfm.filterAcceptsRow(2, Qt.QModelIndex()))
+
+    def test_filter_by_text_matches_on_jid(self):
+        self.roster[0].address = TEST_JID1
+        self.roster[0].label = "Romeo Montague"
+        self.roster[1].address = TEST_JID2
+        self.roster[1].label = "Juliet Capulet"
+        self.roster[2].address = aioxmpp.JID.fromstr("test@server.example")
+        self.roster[2].label = "Meaningful Label"
+
+        self.rfm.filter_by_text = "test"
+
+        self.assertFalse(self.rfm.filterAcceptsRow(0, Qt.QModelIndex()))
+        self.assertFalse(self.rfm.filterAcceptsRow(1, Qt.QModelIndex()))
+        self.assertTrue(self.rfm.filterAcceptsRow(2, Qt.QModelIndex()))
+
+    def test_filter_by_text_matches_on_label(self):
+        self.roster[0].address = TEST_JID1
+        self.roster[0].label = "Romeo Montague"
+        self.roster[1].address = TEST_JID2
+        self.roster[1].label = "Juliet Capulet"
+        self.roster[2].address = aioxmpp.JID.fromstr("test@server.example")
+        self.roster[2].label = "Meaningful Label"
+
+        self.rfm.filter_by_text = "montague"
+
+        self.assertTrue(self.rfm.filterAcceptsRow(0, Qt.QModelIndex()))
+        self.assertFalse(self.rfm.filterAcceptsRow(1, Qt.QModelIndex()))
+        self.assertFalse(self.rfm.filterAcceptsRow(2, Qt.QModelIndex()))

@@ -1,5 +1,6 @@
 import bisect
 import enum
+import unicodedata
 
 import aioxmpp.callbacks
 
@@ -578,3 +579,57 @@ class RosterModel(Qt.QAbstractListModel):
                 continue
             index = self.index(i, 0)
             self.dataChanged.emit(index, index, [Qt.Qt.DecorationRole])
+
+
+class RosterFilterModel(Qt.QSortFilterProxyModel):
+    def __init__(self, parent: Qt.QObject=None):
+        super().__init__(parent)
+
+        self._filter_by_tags = frozenset()
+        self._filter_by_text = None
+
+    @staticmethod
+    def _normalize_for_find(s: str):
+        return unicodedata.normalize("NFKC", s).casefold()
+
+    @property
+    def filter_by_tags(self):
+        return self._filter_by_tags
+
+    @filter_by_tags.setter
+    def filter_by_tags(self, value):
+        self._filter_by_tags = frozenset(value)
+        self.invalidateFilter()
+
+    @property
+    def filter_by_text(self):
+        return self._filter_by_text
+
+    @filter_by_text.setter
+    def filter_by_text(self, value: str):
+        self._filter_by_text = self._normalize_for_find(value)
+
+    @filter_by_text.deleter
+    def filter_by_text(self):
+        self._filter_by_text = None
+
+    def _contains_normalized(self, normed: str, other: str):
+        return normed in self._normalize_for_find(other)
+
+    def filterAcceptsRow(self,
+                         source_row: int,
+                         source_parent: Qt.QModelIndex):
+        source = self.sourceModel()
+        item = source.data(
+            source.index(source_row, 0, source_parent), ROLE_OBJECT
+        )
+
+        if self._filter_by_text is not None:
+            if not self._contains_normalized(self._filter_by_text,
+                                             str(item.address)):
+                return False
+
+        if set(item.tags) & self._filter_by_tags != self._filter_by_tags:
+            return False
+
+        return True
