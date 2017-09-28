@@ -246,13 +246,13 @@ class MainWindow(Qt.QMainWindow):
         )
         account = item.account
         try:
-            client = self.client.client_by_account(account)
+            client = self.main.client.client_by_account(account)
         except KeyError:
             # FIXME: show a user-visible error here
             return
 
         conv = item.create_conversation(client)
-        self.conversations.adopt_conversation(account, conv)
+        self.main.conversations.adopt_conversation(account, conv)
 
     def _roster_context_menu_requested(self, pos):
         self._roster_item_menu.popup(self.ui.roster_view.mapToGlobal(pos))

@@ -31,6 +31,9 @@
        <enum>Qt::Horizontal</enum>
       </property>
       <widget class="QListView" name="roster_view">
+       <property name="editTriggers">
+        <set>QAbstractItemView::EditKeyPressed|QAbstractItemView::SelectedClicked</set>
+       </property>
        <property name="selectionMode">
         <enum>QAbstractItemView::ExtendedSelection</enum>
        </property>
