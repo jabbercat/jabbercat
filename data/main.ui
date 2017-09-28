@@ -16,12 +16,12 @@
   <widget class="QWidget" name="centralwidget">
    <layout class="QVBoxLayout" name="verticalLayout">
     <item>
-     <widget class="TagsInput" name="magic_bar" native="true">
-      <property name="sizePolicy">
-       <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-        <horstretch>0</horstretch>
-        <verstretch>0</verstretch>
-       </sizepolicy>
+     <widget class="TagsInput" name="magic_bar">
+      <property name="placeholderText">
+       <string>Search …</string>
+      </property>
+      <property name="clearButtonEnabled">
+       <bool>true</bool>
       </property>
      </widget>
     </item>
@@ -216,9 +216,8 @@
  <customwidgets>
   <customwidget>
    <class>TagsInput</class>
-   <extends>QWidget</extends>
+   <extends>QLineEdit</extends>
    <header>jabbercat.widgets.tagsinput</header>
-   <container>1</container>
   </customwidget>
  </customwidgets>
  <resources/>

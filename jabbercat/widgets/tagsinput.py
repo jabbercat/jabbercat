@@ -7,6 +7,8 @@ import jclib.utils
 from .. import Qt, utils
 from ..ui import tags_input, tag_bubble
 
+from . import tagsmenu
+
 
 class TagButton(Qt.QAbstractButton):
     def __init__(self, parent=None):
@@ -175,3 +177,19 @@ class TagsInput(Qt.QFrame):
     @property
     def tags(self):
         return self._tags.keys()
+
+
+class TagsInput(Qt.QLineEdit):
+    def __init__(self, parent):
+        super().__init__()
+        self._filter_menu = tagsmenu.TagsMenu()
+        self._filter_menu.setIcon(Qt.QIcon.fromTheme("view-filter"))
+        self.addAction(self._filter_menu.menuAction(), self.LeadingPosition)
+
+    @property
+    def tags_filter_model(self):
+        return self._filter_menu.source_model
+
+    @tags_filter_model.setter
+    def tags_filter_model(self, model):
+        self._filter_menu.source_model = model

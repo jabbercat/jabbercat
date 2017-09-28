@@ -1,5 +1,7 @@
 import bisect
+import collections.abc
 import enum
+import typing
 import unicodedata
 
 import aioxmpp.callbacks
@@ -8,11 +10,11 @@ import jclib.conversation
 import jclib.identity
 import jclib.instrumentable_list
 import jclib.roster
+import jclib.utils
 
 import jabbercat.avatar
 
-from . import Qt
-from . import model_adaptor
+from . import Qt, model_adaptor, utils
 
 
 ROLE_OBJECT = Qt.Qt.UserRole + 1
@@ -586,7 +588,9 @@ class RosterFilterModel(Qt.QSortFilterProxyModel):
     def __init__(self, parent: Qt.QObject=None):
         super().__init__(parent)
 
-        self._filter_by_tags = frozenset()
+        self._tags_filter_model = None
+        self._tags_filter_set = None
+        self._tags_filter_set_connections = []
         self._filter_by_text = None
 
     @staticmethod
@@ -594,12 +598,35 @@ class RosterFilterModel(Qt.QSortFilterProxyModel):
         return unicodedata.normalize("NFKC", s).casefold()
 
     @property
-    def filter_by_tags(self):
-        return self._filter_by_tags
+    def tags_filter_model(self):
+        return self._tags_filter_model
 
-    @filter_by_tags.setter
-    def filter_by_tags(self, value):
-        self._filter_by_tags = frozenset(value)
+    @tags_filter_model.setter
+    def tags_filter_model(self, value: Qt.QAbstractItemModel):
+        for signal, token in self._tags_filter_set_connections:
+            signal.disconnect(token)
+        self._tags_filter_set_connections.clear()
+
+        self._tags_filter_model = value
+
+        if self._tags_filter_model is not None:
+            self._tags_filter_set = CheckModelSet(
+                self._tags_filter_model,
+                0, Qt.Qt.DisplayRole,
+            )
+            self._tags_filter_set_connections.append(
+                (
+                    self._tags_filter_set.on_changed,
+                    self._tags_filter_set.on_changed.connect(
+                        self._tags_set_changed,
+                        self._tags_filter_set.on_changed.WEAK
+                    )
+                )
+            )
+
+        self.invalidateFilter()
+
+    def _tags_set_changed(self):
         self.invalidateFilter()
 
     @property
@@ -627,11 +654,210 @@ class RosterFilterModel(Qt.QSortFilterProxyModel):
         )
 
         if self._filter_by_text is not None:
-            if not self._contains_normalized(self._filter_by_text,
-                                             str(item.address)):
+            if (not self._contains_normalized(self._filter_by_text,
+                                              str(item.address)) and
+                    not self._contains_normalized(self._filter_by_text,
+                                                  item.label)):
                 return False
 
-        if set(item.tags) & self._filter_by_tags != self._filter_by_tags:
+        filter_tags = self._tags_filter_set.checked
+        if set(item.tags) & filter_tags != filter_tags:
             return False
 
         return True
+
+
+class TagsModel(Qt.QAbstractListModel):
+    def __init__(self,
+                 model: jclib.instrumentable_list.AbstractModelListView[str],
+                 parent: Qt.QObject = None):
+        super().__init__()
+        self._model = model
+        self.__adaptor = model_adaptor.ModelListAdaptor(
+            self._model, self
+        )
+
+    def rowCount(self, parent: Qt.QModelIndex = Qt.QModelIndex()) -> int:
+        if parent.isValid():
+            return 0
+        return len(self._model)
+
+    def data(self,
+             index: Qt.QModelIndex,
+             role: int = Qt.Qt.DisplayRole):
+        if not index.isValid():
+            return None
+
+        tag = self._model[index.row()]
+        if role == Qt.Qt.DisplayRole or role == ROLE_OBJECT:
+            return tag
+        elif role == Qt.Qt.DecorationRole:
+            return utils.text_to_qtcolor(
+                jclib.utils.normalise_text_for_hash(tag)
+            )
+
+
+class CheckModel(Qt.QIdentityProxyModel):
+    def __init__(self, parent: Qt.QObject = None):
+        super().__init__(parent)
+        self._checked_items = set()
+        self.rowsAboutToBeRemoved.connect(self._begin_remove_rows)
+        self._check_column = 0
+
+    def _begin_remove_rows(self, parent, index1, index2):
+        removed_objects = {
+            self.data(self.index(i, self.check_column, parent), ROLE_OBJECT)
+            for i in range(index1, index2 + 1)
+        }
+        self._checked_items -= removed_objects
+
+    @property
+    def check_column(self) -> int:
+        """
+        The column at which the check box is inserted.
+        """
+        return self._check_column
+
+    @check_column.setter
+    def check_column(self, value: int):
+        self.beginResetModel()
+        self._check_column = value
+        self.endResetModel()
+
+    @property
+    def checked_items(self):
+        """
+        The ROLE_OBJECT data of each checked item as a set.
+        """
+        return self._checked_items
+
+    def flags(self, index: Qt.QModelIndex):
+        flags = super().flags(index)
+        if index.column() == self.check_column:
+            flags |= Qt.Qt.ItemIsUserCheckable
+        return flags
+
+    def data(self, index: Qt.QModelIndex, role: int = Qt.Qt.DisplayRole):
+        if not index.isValid():
+            return super().data(index, role)
+        if role == Qt.Qt.CheckStateRole and index.column() == self.check_column:
+            value = super().data(index, ROLE_OBJECT)
+            return (Qt.Qt.Checked
+                    if value in self._checked_items
+                    else Qt.Qt.Unchecked)
+        return super().data(index, role)
+
+    def setData(self, index: Qt.QModelIndex, value, role: int = Qt.Qt.EditRole):
+        if not index.isValid():
+            return super().setData(index, value, role)
+        if index.column() != self.check_column:
+            return super().setData(index, value, role)
+        if role != Qt.Qt.CheckStateRole:
+            return super().setDate(index, value, role)
+
+        if value == Qt.Qt.Checked:
+            self._checked_items.add(self.data(index, ROLE_OBJECT))
+        else:
+            self._checked_items.discard(self.data(index, ROLE_OBJECT))
+
+        self.dataChanged.emit(index, index, [Qt.Qt.CheckStateRole])
+
+        return True
+
+    def clear_check_states(self):
+        self._checked_items.clear()
+        self.dataChanged.emit(
+            self.index(0, self._check_column),
+            self.index(self.rowCount() - 1, self._check_column),
+            [Qt.Qt.CheckStateRole],
+        )
+
+
+class CheckModelSet:
+    on_changed = aioxmpp.callbacks.Signal()
+
+    def __init__(self,
+                 model: Qt.QAbstractItemModel,
+                 check_column: int,
+                 set_role: int,
+                 set_column: int = None):
+        super().__init__()
+        self._model = model
+        self._model.dataChanged.connect(self._data_changed)
+        self._model.rowsInserted.connect(self._rows_inserted)
+        self._model.rowsAboutToBeRemoved.connect(self._rows_about_to_be_removed)
+        self._model.modelAboutToBeReset.connect(self._model_about_to_be_reset)
+        self._model.modelReset.connect(self._model_reset)
+        self._check_column = check_column
+        self._set_role = set_role
+        self._set_column = (set_column
+                            if set_column is not None
+                            else check_column)
+        self._internal_set = set()
+        self._model_reset()
+
+    def _data_changed(self,
+                      top_left: Qt.QModelIndex,
+                      bottom_right: Qt.QModelIndex,
+                      roles: typing.Iterable[int] = []):
+        if roles and Qt.Qt.CheckStateRole not in roles:
+            return
+        if self._check_column not in range(top_left.column(),
+                                           bottom_right.column() + 1):
+            return
+        for row in range(top_left.row(), bottom_right.row() + 1):
+            checked = (
+                self._model.data(self._model.index(row, self._check_column),
+                                 Qt.Qt.CheckStateRole) == Qt.Qt.Checked
+            )
+            element = self._model.data(
+                self._model.index(row, self._set_column),
+                self._set_role
+            )
+            if checked:
+                self._internal_set.add(element)
+            else:
+                self._internal_set.discard(element)
+        self.on_changed()
+
+    def _rows_inserted(self, parent, index1, index2):
+        changed = False
+        for row in range(index1, index2 + 1):
+            check_index = self._model.index(row, self._check_column)
+            if self._model.data(check_index,
+                                Qt.Qt.CheckStateRole) != Qt.Qt.Checked:
+                continue
+
+            element_index = self._model.index(row, self._set_column)
+            element = self._model.data(element_index, self._set_role)
+            self._internal_set.add(element)
+            changed = True
+
+        if changed:
+            self.on_changed()
+
+    def _rows_about_to_be_removed(self, parent, index1, index2):
+        changed = False
+        for row in range(index1, index2 + 1):
+            check_index = self._model.index(row, self._check_column)
+            if self._model.data(check_index,
+                                Qt.Qt.CheckStateRole) != Qt.Qt.Checked:
+                continue
+
+            element_index = self._model.index(row, self._set_column)
+            element = self._model.data(element_index, self._set_role)
+            self._internal_set.discard(element)
+            changed = True
+        if changed:
+            self.on_changed()
+
+    def _model_about_to_be_reset(self):
+        self._internal_set.clear()
+
+    def _model_reset(self):
+        self._rows_inserted(None, 0, self._model.rowCount() - 1)
+        self.on_changed()
+
+    @property
+    def checked(self) -> typing.Set:
+        return self._internal_set

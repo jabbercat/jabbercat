@@ -1,3 +1,4 @@
+import collections.abc
 import contextlib
 import unittest
 import unittest.mock
@@ -9,8 +10,11 @@ import aioxmpp
 import jclib.identity as identity
 import jclib.instrumentable_list
 import jclib.roster
+import jclib.utils
 
 import jabbercat.avatar
+
+import jabbercat.utils as utils
 
 import jabbercat.models as models
 
@@ -1034,6 +1038,16 @@ class TestRosterFilterModel(unittest.TestCase):
         self.rm = models.RosterModel(self.roster, self.avatar)
         self.rfm = models.RosterFilterModel()
         self.rfm.setSourceModel(self.rm)
+
+        self.tags = jclib.instrumentable_list.ModelList([
+            "foo", "bar", "baz",
+        ])
+        self.tags_model = models.TagsModel(self.tags)
+        self.tags_check_model = models.CheckModel()
+        self.tags_check_model.setSourceModel(self.tags_model)
+
+        self.rfm.tags_filter_model = self.tags_check_model
+
         self.listener = make_listener(self.rfm)
 
     def tearDown(self):
@@ -1045,11 +1059,42 @@ class TestRosterFilterModel(unittest.TestCase):
         )
 
     def test_filter_by_tags(self):
-        self.rfm.filter_by_tags = {"foo"}
+        self.tags_check_model.setData(
+            self.tags_check_model.index(0, 0),
+            Qt.Qt.Checked,
+            Qt.Qt.CheckStateRole,
+        )
 
         self.assertTrue(self.rfm.filterAcceptsRow(0, Qt.QModelIndex()))
         self.assertFalse(self.rfm.filterAcceptsRow(1, Qt.QModelIndex()))
         self.assertTrue(self.rfm.filterAcceptsRow(2, Qt.QModelIndex()))
+
+    def test_filter_by_tags_follows_model(self):
+        self.tags_check_model.setData(
+            self.tags_check_model.index(0, 0),
+            Qt.Qt.Checked,
+            Qt.Qt.CheckStateRole,
+        )
+
+        self.tags_check_model.setData(
+            self.tags_check_model.index(1, 0),
+            Qt.Qt.Checked,
+            Qt.Qt.CheckStateRole,
+        )
+
+        self.assertTrue(self.rfm.filterAcceptsRow(0, Qt.QModelIndex()))
+        self.assertFalse(self.rfm.filterAcceptsRow(1, Qt.QModelIndex()))
+        self.assertFalse(self.rfm.filterAcceptsRow(2, Qt.QModelIndex()))
+
+        self.tags_check_model.setData(
+            self.tags_check_model.index(0, 0),
+            Qt.Qt.Unchecked,
+            Qt.Qt.CheckStateRole,
+        )
+
+        self.assertTrue(self.rfm.filterAcceptsRow(0, Qt.QModelIndex()))
+        self.assertTrue(self.rfm.filterAcceptsRow(1, Qt.QModelIndex()))
+        self.assertFalse(self.rfm.filterAcceptsRow(2, Qt.QModelIndex()))
 
     def test_filter_by_text_matches_on_jid(self):
         self.roster[0].address = TEST_JID1
@@ -1073,8 +1118,381 @@ class TestRosterFilterModel(unittest.TestCase):
         self.roster[2].address = aioxmpp.JID.fromstr("test@server.example")
         self.roster[2].label = "Meaningful Label"
 
-        self.rfm.filter_by_text = "montague"
+        self.rfm.filter_by_text = "meaningful"
 
-        self.assertTrue(self.rfm.filterAcceptsRow(0, Qt.QModelIndex()))
+        self.assertFalse(self.rfm.filterAcceptsRow(0, Qt.QModelIndex()))
         self.assertFalse(self.rfm.filterAcceptsRow(1, Qt.QModelIndex()))
-        self.assertFalse(self.rfm.filterAcceptsRow(2, Qt.QModelIndex()))
+        self.assertTrue(self.rfm.filterAcceptsRow(2, Qt.QModelIndex()))
+
+
+class TestTagsModel(unittest.TestCase):
+    def setUp(self):
+        self.tags = jclib.instrumentable_list.ModelList([
+            "foo",
+            "bar",
+        ])
+        self.m = models.TagsModel(self.tags)
+
+    def test_uses_model_list_adaptor(self):
+        tags = unittest.mock.Mock()
+
+        with contextlib.ExitStack() as stack:
+            ModelListAdaptor = stack.enter_context(
+                unittest.mock.patch("jabbercat.model_adaptor.ModelListAdaptor")
+            )
+
+            result = models.TagsModel(tags)
+
+        ModelListAdaptor.assert_called_once_with(tags, result)
+
+    def test_row_count_on_root_follows_tags(self):
+        self.assertEqual(
+            self.m.rowCount(Qt.QModelIndex()),
+            2,
+        )
+
+        del self.tags[1]
+
+        self.assertEqual(
+            self.m.rowCount(Qt.QModelIndex()),
+            1,
+        )
+
+    def test_index_checks_row(self):
+        self.assertFalse(
+            self.m.index(-1, 0, Qt.QModelIndex()).isValid(),
+        )
+
+        self.assertTrue(
+            self.m.index(0, 0, Qt.QModelIndex()).isValid(),
+        )
+
+        self.assertTrue(
+            self.m.index(1, 0, Qt.QModelIndex()).isValid(),
+        )
+
+        self.assertFalse(
+            self.m.index(2, 0, Qt.QModelIndex()).isValid(),
+        )
+
+    def test_index_checks_parent(self):
+        self.assertFalse(
+            self.m.index(0, 0, self.m.index(0, 0)).isValid(),
+        )
+
+    def test_index_checks_column(self):
+        self.assertFalse(
+            self.m.index(0, -1, Qt.QModelIndex()).isValid(),
+        )
+
+        self.assertTrue(
+            self.m.index(0, 0, Qt.QModelIndex()).isValid(),
+        )
+
+        self.assertFalse(
+            self.m.index(0, 1, Qt.QModelIndex()).isValid(),
+        )
+
+    def test_row_count_on_items(self):
+        self.assertEqual(
+            self.m.rowCount(self.m.index(1, 0, Qt.QModelIndex())),
+            0,
+        )
+
+    def test_data_returns_None_for_invalid_index(self):
+        self.assertIsNone(
+            self.m.data(Qt.QModelIndex(), Qt.Qt.DisplayRole),
+        )
+
+    def test_data_returns_None_for_other_roles(self):
+        self.assertIsNone(
+            self.m.data(
+                self.m.index(1),
+                unittest.mock.sentinel.role
+            ),
+        )
+
+    def test_data_returns_tag_name_for_display_role(self):
+        for i, tag in enumerate(self.tags):
+            self.assertEqual(
+                self.m.data(self.m.index(i), Qt.Qt.DisplayRole),
+                tag,
+            )
+
+    def test_data_returns_tag_name_for_object_role(self):
+        for i, tag in enumerate(self.tags):
+            self.assertEqual(
+                self.m.data(self.m.index(i), models.ROLE_OBJECT),
+                tag,
+            )
+
+    def test_data_returns_color_for_decoration_role(self):
+        for i, tag in enumerate(self.tags):
+            color = utils.text_to_qtcolor(
+                jclib.utils.normalise_text_for_hash(tag)
+            )
+            self.assertEqual(
+                self.m.data(self.m.index(i), Qt.Qt.DecorationRole),
+                color,
+            )
+
+    def test_flags(self):
+        self.assertEqual(
+            self.m.flags(self.m.index(1)),
+            Qt.Qt.ItemIsSelectable | Qt.Qt.ItemIsEnabled |
+            Qt.Qt.ItemNeverHasChildren
+        )
+
+
+class TestCheckModel(unittest.TestCase):
+    def setUp(self):
+        self.tags = jclib.instrumentable_list.ModelList([
+            "foo",
+            "bar",
+        ])
+        self.tm = models.TagsModel(self.tags)
+        self.m = models.CheckModel()
+        self.m.setSourceModel(self.tm)
+
+        self.listener = unittest.mock.Mock([])
+        self.listener.dataChanged = unittest.mock.Mock()
+        self.listener.dataChanged.return_value = None
+        self.m.dataChanged.connect(self.listener.dataChanged)
+
+    def test_is_identity_proxy_model(self):
+        self.assertIsInstance(
+            self.m,
+            Qt.QIdentityProxyModel,
+        )
+
+    def test_check_column_defaults_to_0(self):
+        self.assertEqual(self.m.check_column, 0)
+
+    def test_flags_include_user_checkable_for_check_column(self):
+        self.assertEqual(
+            self.m.flags(self.m.index(0, 0)),
+            Qt.Qt.ItemIsSelectable | Qt.Qt.ItemIsEnabled |
+            Qt.Qt.ItemNeverHasChildren | Qt.Qt.ItemIsUserCheckable
+        )
+
+    def test_data_returns_None_for_check_state_role_and_invalid_index(self):
+        self.assertIsNone(
+            self.m.data(Qt.QModelIndex(), Qt.Qt.CheckStateRole),
+        )
+
+    def test_data_returns_valid_check_state_for_check_column(self):
+        self.assertEqual(
+            self.m.data(self.m.index(0, 0), Qt.Qt.CheckStateRole),
+            Qt.Qt.Unchecked,
+        )
+
+    def test_setData_allows_checking_items(self):
+        result = self.m.setData(
+            self.m.index(0, 0),
+            Qt.Qt.Checked,
+            Qt.Qt.CheckStateRole,
+        )
+
+        self.listener.dataChanged.assert_called_once_with(
+            self.m.index(0, 0),
+            self.m.index(0, 0),
+            [Qt.Qt.CheckStateRole],
+        )
+
+        self.assertTrue(result)
+
+        self.assertEqual(
+            self.m.data(self.m.index(0, 0), Qt.Qt.CheckStateRole),
+            Qt.Qt.Checked,
+        )
+
+        self.assertSetEqual({"foo"}, self.m.checked_items)
+
+    def test_check_uncheck_etc(self):
+        self.m.setData(
+            self.m.index(0, 0),
+            Qt.Qt.Checked,
+            Qt.Qt.CheckStateRole,
+        )
+        self.assertSetEqual({"foo"}, self.m.checked_items)
+
+        self.m.setData(
+            self.m.index(1, 0),
+            Qt.Qt.Checked,
+            Qt.Qt.CheckStateRole,
+        )
+        self.assertSetEqual({"foo", "bar"}, self.m.checked_items)
+
+        self.m.setData(
+            self.m.index(1, 0),
+            Qt.Qt.Unchecked,
+            Qt.Qt.CheckStateRole,
+        )
+        self.assertSetEqual({"foo"}, self.m.checked_items)
+
+        self.m.setData(
+            self.m.index(1, 0),
+            Qt.Qt.Checked,
+            Qt.Qt.CheckStateRole,
+        )
+        self.assertSetEqual({"foo", "bar"}, self.m.checked_items)
+
+        self.m.setData(
+            self.m.index(0, 0),
+            Qt.Qt.Unchecked,
+            Qt.Qt.CheckStateRole,
+        )
+        self.assertSetEqual({"bar"}, self.m.checked_items)
+
+    def test_remove_checked_items_when_removed(self):
+        self.m.setData(self.m.index(0, 0), Qt.Qt.Checked, Qt.Qt.CheckStateRole)
+
+        del self.tags[0]
+
+        self.assertSetEqual(set(), self.m.checked_items)
+
+    def test_clear_check_states(self):
+        self.m.setData(self.m.index(0, 0), Qt.Qt.Checked, Qt.Qt.CheckStateRole)
+        self.m.setData(self.m.index(1, 0), Qt.Qt.Checked, Qt.Qt.CheckStateRole)
+
+        self.listener.dataChanged.reset_mock()
+
+        self.m.clear_check_states()
+
+        self.listener.dataChanged.assert_called_once_with(
+            self.m.index(0, 0),
+            self.m.index(self.m.rowCount() - 1, 0),
+            [Qt.Qt.CheckStateRole]
+        )
+
+
+class TestCheckModelSet(unittest.TestCase):
+    def setUp(self):
+        self.model = Qt.QStandardItemModel()
+
+        for tag in ["foo", "bar", "baz"]:
+            self.model.appendRow(self._make_item(tag))
+
+        self.s = models.CheckModelSet(
+            self.model,
+            1,
+            models.ROLE_OBJECT,
+            0,
+        )
+
+        self.listener = make_listener(self.s)
+
+    def _make_item(self, tag):
+        col1, col2 = Qt.QStandardItem(), Qt.QStandardItem()
+        col1.setData("This is " + tag, Qt.Qt.DisplayRole)
+        col1.setData(tag, models.ROLE_OBJECT)
+        col2.setData(Qt.Qt.Unchecked, Qt.Qt.CheckStateRole)
+        col2.setData("filter for this", Qt.Qt.DisplayRole)
+        return col1, col2
+
+    def test_empty_by_default(self):
+        self.assertCountEqual(set(), self.s.checked)
+
+    def test_follows_checked_items(self):
+        self.model.setData(
+            self.model.index(1, 1),
+            Qt.Qt.Checked,
+            Qt.Qt.CheckStateRole,
+        )
+
+        self.assertCountEqual(
+            {"bar"},
+            self.s.checked,
+        )
+
+        self.listener.on_changed.assert_called_once_with()
+        self.listener.reset_mock()
+
+        self.model.setData(
+            self.model.index(0, 1),
+            Qt.Qt.Checked,
+            Qt.Qt.CheckStateRole,
+        )
+
+        self.assertCountEqual(
+            {"foo", "bar"},
+            self.s.checked,
+        )
+
+        self.listener.on_changed.assert_called_once_with()
+        self.listener.reset_mock()
+
+        self.model.setData(
+            self.model.index(1, 1),
+            Qt.Qt.Unchecked,
+            Qt.Qt.CheckStateRole,
+        )
+
+        self.assertCountEqual(
+            {"foo"},
+            self.s.checked,
+        )
+
+        self.listener.on_changed.assert_called_once_with()
+        self.listener.reset_mock()
+
+    def test_follows_inserted_items(self):
+        col1, col2 = self._make_item("fnord")
+        col2.setData(Qt.Qt.Checked, Qt.Qt.CheckStateRole)
+        self.model.appendRow([col1, col2])
+
+        self.assertCountEqual(
+            {"fnord"},
+            self.s.checked,
+        )
+
+        self.listener.on_changed.assert_called_once_with()
+
+    def test_does_not_add_non_checked_new_items(self):
+        col1, col2 = self._make_item("fnord")
+        self.model.appendRow([col1, col2])
+
+        self.assertCountEqual(
+            {},
+            self.s.checked,
+        )
+
+        self.listener.on_changed.assert_not_called()
+
+    def test_follows_removed_items(self):
+        self.model.setData(self.model.index(1, 1),
+                           Qt.Qt.Checked,
+                           Qt.Qt.CheckStateRole)
+
+        self.assertCountEqual(
+            {"bar"},
+            self.s.checked,
+        )
+
+        self.listener.on_changed.reset_mock()
+
+        self.model.invisibleRootItem().removeRow(1)
+
+        self.assertCountEqual(
+            set(),
+            self.s.checked,
+        )
+
+        self.listener.on_changed.assert_called_once_with()
+
+    def test_initialises_properly(self):
+        self.model.setData(self.model.index(1, 1),
+                           Qt.Qt.Checked,
+                           Qt.Qt.CheckStateRole)
+
+        self.s = models.CheckModelSet(
+            self.model,
+            1,
+            models.ROLE_OBJECT,
+            0,
+        )
+
+        self.assertCountEqual(
+            {"bar"},
+            self.s.checked,
+        )

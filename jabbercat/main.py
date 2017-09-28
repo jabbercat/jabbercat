@@ -28,6 +28,7 @@ from .dialogs import (
 
 from .widgets import (
     roster_view,
+    tagsmenu,
 )
 
 from .ui.main import Ui_Main
@@ -44,6 +45,23 @@ class MainWindow(Qt.QMainWindow):
             main.accounts,
         )
 
+        self.tags_model = models.TagsModel(main.roster.tags)
+
+        self.sorted_tags = Qt.QSortFilterProxyModel()
+        self.sorted_tags.setSourceModel(self.tags_model)
+        self.sorted_tags.setSortRole(Qt.Qt.DisplayRole)
+        self.sorted_tags.setSortLocaleAware(True)
+        self.sorted_tags.setSortCaseSensitivity(False)
+        self.sorted_tags.setDynamicSortFilter(True)
+        self.sorted_tags.sort(0, Qt.Qt.AscendingOrder)
+
+        self.checked_tags = models.CheckModel()
+        self.checked_tags.setSourceModel(self.sorted_tags)
+
+        self._tags_menu = tagsmenu.TagsMenu()
+        self._tags_menu.setTitle(self.tr("Filter"))
+        self._tags_menu.source_model = self.checked_tags
+
         self.roster_model = models.RosterModel(main.roster, main.avatar)
         self.roster_model.on_label_edited.connect(
             self._roster_label_edited,
@@ -51,6 +69,7 @@ class MainWindow(Qt.QMainWindow):
 
         self.filtered_roster = models.RosterFilterModel()
         self.filtered_roster.setSourceModel(self.roster_model)
+        self.filtered_roster.tags_filter_model = self.checked_tags
 
         self.sorted_roster = Qt.QSortFilterProxyModel()
         self.sorted_roster.setSourceModel(self.filtered_roster)
@@ -96,7 +115,7 @@ class MainWindow(Qt.QMainWindow):
         # self._roster_item_menu.addAction(self.ui.action_subscribe_peer)
         # self._roster_item_menu.addAction(self.ui.action_unsubscribe_peer)
         self._roster_item_menu.addSeparator()
-        self._filter_menu = self._roster_item_menu.addMenu("Filter")
+        self._roster_item_menu.addMenu(self._tags_menu)
         self._roster_item_menu.addSeparator()
         self._roster_item_menu.addAction(self.ui.action_remove_contact)
 
@@ -145,35 +164,44 @@ class MainWindow(Qt.QMainWindow):
         )
         self.addAction(self.ui.action_focus_search_bar)
 
-        self.ui.magic_bar.on_text_changed.connect(self._filter_text_changed)
+        self.ui.magic_bar.textChanged.connect(self._filter_text_changed)
+        self.ui.magic_bar.tags_filter_model = self.checked_tags
 
         self.__identitymap = {}
+
+    def _find_tag_index(self, tag):
+        for i in range(self.checked_tags.rowCount()):
+            index = self.checked_tags.index(i, 0)
+            if self.checked_tags.data(index, Qt.Qt.DisplayRole) == tag:
+                return index
+        return Qt.QModelIndex()
 
     def _filter_text_changed(self, new_text):
         self.filtered_roster.filter_by_text = new_text
 
     def _clear_filters(self):
-        self.ui.magic_bar.clear_tags()
-
-    def _toggle_tag_filter(self, tag):
-        if self.ui.magic_bar.has_tag(tag):
-            self.ui.magic_bar.remove_tag(tag)
-        else:
-            self.ui.magic_bar.add_tag(tag)
+        self.checked_tags.clear_check_states()
 
     def _roster_tag_activated(self, tag, modifiers):
+        index = self._find_tag_index(tag)
+        if not index.isValid():
+            return
+
+        is_checked = (
+            self.checked_tags.data(index, Qt.Qt.CheckStateRole) == Qt.Qt.Checked
+        )
+
         if modifiers & Qt.Qt.ControlModifier:
-            self._toggle_tag_filter(tag)
+            self.checked_tags.setData(
+                index,
+                Qt.Qt.Unchecked if is_checked else Qt.Qt.Checked,
+                Qt.Qt.CheckStateRole
+            )
         else:
-            re_add = {tag} != set(self.ui.magic_bar.tags)
-            self.ui.magic_bar.clear_tags()
-            if re_add:
-                self.ui.magic_bar.add_tag(tag)
-
-        self._update_filters()
-
-    def _update_filters(self):
-        self.filtered_roster.filter_by_tags = self.ui.magic_bar.tags
+            self.checked_tags.clear_check_states()
+            if not is_checked:
+                self.checked_tags.setData(index, Qt.Qt.Checked,
+                                          Qt.Qt.CheckStateRole)
 
     def _roster_label_edited(self, item, new_label):
         new_label = new_label or None
@@ -227,37 +255,6 @@ class MainWindow(Qt.QMainWindow):
         self.conversations.adopt_conversation(account, conv)
 
     def _roster_context_menu_requested(self, pos):
-        all_tags = list(self.main.roster.tags)
-        all_tags.sort(key=str.casefold)
-        self._filter_menu.clear()
-
-        action = self._filter_menu.addAction("Clear all filters")
-        action.triggered.connect(self._clear_filters)
-
-        self._filter_menu.addSection("Tags")
-
-        def tag_action_triggered(tag, checked):
-            if checked:
-                self.ui.magic_bar.add_tag(tag)
-            else:
-                self.ui.magic_bar.remove_tag(tag)
-            self._update_filters()
-
-        for tag in all_tags:
-            color = utils.text_to_qtcolor(
-                jclib.utils.normalise_text_for_hash(tag)
-            )
-            action = self._filter_menu.addAction(tag)
-            icon = Qt.QPixmap(16, 16)
-            icon.fill(color)
-            icon = Qt.QIcon(icon)
-            action.setCheckable(True)
-            action.setChecked(self.ui.magic_bar.has_tag(tag))
-            action.setIcon(icon)
-            action.triggered.connect(
-                functools.partial(tag_action_triggered, tag)
-            )
-
         self._roster_item_menu.popup(self.ui.roster_view.mapToGlobal(pos))
 
     @asyncio.coroutine
