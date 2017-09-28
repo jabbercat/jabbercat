@@ -17,6 +17,7 @@ from . import model_adaptor
 
 ROLE_OBJECT = Qt.Qt.UserRole + 1
 ROLE_TAGS = Qt.Qt.UserRole + 2
+ROLE_FILTER_SCORE = Qt.Qt.UserRole + 3
 
 
 class AccountsModel(Qt.QAbstractTableModel):

@@ -16,13 +16,28 @@
   <widget class="QWidget" name="centralwidget">
    <layout class="QVBoxLayout" name="verticalLayout">
     <item>
+     <widget class="TagsInput" name="magic_bar" native="true">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+     </widget>
+    </item>
+    <item>
      <widget class="QSplitter" name="splitter">
       <property name="orientation">
        <enum>Qt::Horizontal</enum>
       </property>
-      <property name="handleWidth">
-       <number>0</number>
-      </property>
+      <widget class="QListView" name="roster_view">
+       <property name="selectionMode">
+        <enum>QAbstractItemView::ExtendedSelection</enum>
+       </property>
+       <property name="selectionBehavior">
+        <enum>QAbstractItemView::SelectRows</enum>
+       </property>
+      </widget>
       <widget class="QListView" name="conversations_view">
        <property name="autoFillBackground">
         <bool>false</bool>
@@ -79,7 +94,7 @@
   <action name="action_manage_accounts">
    <property name="icon">
     <iconset theme="document-properties">
-     <normaloff>.</normaloff>.</iconset>
+     <normaloff>../../../../.designer/backup</normaloff>../../../../.designer/backup</iconset>
    </property>
    <property name="text">
     <string>&amp;Configure accounts …</string>
@@ -99,7 +114,7 @@
   <action name="action_add_contact">
    <property name="icon">
     <iconset theme="contact-new">
-     <normaloff>.</normaloff>.</iconset>
+     <normaloff>../../../../.designer/backup</normaloff>../../../../.designer/backup</iconset>
    </property>
    <property name="text">
     <string>&amp;Add contact…</string>
@@ -110,7 +125,102 @@
     <string>&amp;Invite contact…</string>
    </property>
   </action>
+  <action name="action_focus_search_bar">
+   <property name="text">
+    <string>Focus Search Bar</string>
+   </property>
+   <property name="toolTip">
+    <string>Put focus on the search bar</string>
+   </property>
+   <property name="shortcut">
+    <string>F3</string>
+   </property>
+  </action>
+  <action name="action_manage_tags">
+   <property name="text">
+    <string>Manage tags…</string>
+   </property>
+   <property name="toolTip">
+    <string>Add/remove tags to the selected contacts.</string>
+   </property>
+   <property name="shortcut">
+    <string>Shift+F2</string>
+   </property>
+  </action>
+  <action name="action_rename">
+   <property name="text">
+    <string>Rename…</string>
+   </property>
+   <property name="toolTip">
+    <string>Rename the contact</string>
+   </property>
+   <property name="shortcut">
+    <string>F2</string>
+   </property>
+  </action>
+  <action name="action_remove_contact">
+   <property name="text">
+    <string>Remove contact…</string>
+   </property>
+   <property name="toolTip">
+    <string>Remove the contact from the list.</string>
+   </property>
+   <property name="shortcut">
+    <string>Shift+Del</string>
+   </property>
+  </action>
+  <action name="action_subscribe">
+   <property name="text">
+    <string>Subscribe to online status</string>
+   </property>
+   <property name="toolTip">
+    <string>Ask the contact to subscribe to their online status.</string>
+   </property>
+  </action>
+  <action name="action_unsubscribe_peer">
+   <property name="text">
+    <string>Unshare your online status</string>
+   </property>
+   <property name="toolTip">
+    <string>Disallow the contact to see your online status, avatar and other public information.</string>
+   </property>
+  </action>
+  <action name="action_subscribe_peer">
+   <property name="text">
+    <string>Share your online status</string>
+   </property>
+   <property name="toolTip">
+    <string>Allows the contacts to see your online status, avatar and other public information.</string>
+   </property>
+  </action>
+  <action name="action_add_contact_2">
+   <property name="text">
+    <string>Add contact…</string>
+   </property>
+   <property name="toolTip">
+    <string>Add a new contact by entering their Jabber Address.</string>
+   </property>
+  </action>
+  <action name="action_invite_contact_2">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Invite contact…</string>
+   </property>
+   <property name="toolTip">
+    <string>Invite a contact by generating an invitation link.</string>
+   </property>
+  </action>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>TagsInput</class>
+   <extends>QWidget</extends>
+   <header>jabbercat.widgets.tagsinput</header>
+   <container>1</container>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections/>
 </ui>
