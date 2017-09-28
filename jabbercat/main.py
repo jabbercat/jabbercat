@@ -145,7 +145,12 @@ class MainWindow(Qt.QMainWindow):
         )
         self.addAction(self.ui.action_focus_search_bar)
 
+        self.ui.magic_bar.on_text_changed.connect(self._filter_text_changed)
+
         self.__identitymap = {}
+
+    def _filter_text_changed(self, new_text):
+        self.filtered_roster.filter_by_text = new_text
 
     def _clear_filters(self):
         self.ui.magic_bar.clear_tags()

@@ -609,6 +609,7 @@ class RosterFilterModel(Qt.QSortFilterProxyModel):
     @filter_by_text.setter
     def filter_by_text(self, value: str):
         self._filter_by_text = self._normalize_for_find(value)
+        self.invalidateFilter()
 
     @filter_by_text.deleter
     def filter_by_text(self):

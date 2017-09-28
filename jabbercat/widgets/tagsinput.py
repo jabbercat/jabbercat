@@ -120,11 +120,13 @@ class TagTextInput(Qt.QLineEdit):
 
 class TagsInput(Qt.QFrame):
     on_tags_changed = aioxmpp.callbacks.Signal()
+    on_text_changed = aioxmpp.callbacks.Signal()
 
     def __init__(self, parent=None):
         super().__init__(parent=parent)
         self._ui = tags_input.Ui_TagsInputFrame()
         self._ui.setupUi(self)
+        self._ui.textinput.textChanged.connect(self.on_text_changed)
         self._tag_bubbles = []
         self._tags = {}
         self.setBackgroundRole(Qt.QPalette.Base)
