@@ -1,5 +1,8 @@
 import asyncio
 import functools
+import html
+import logging
+import re
 
 from datetime import datetime
 
@@ -9,6 +12,7 @@ import aioxmpp.im.service
 import aioxmpp.structs
 
 import jclib.conversation
+import jclib.utils
 
 from . import Qt, utils, models
 
@@ -25,13 +29,140 @@ class MessageInfo(Qt.QTextBlockUserData):
     from_ = None
 
 
+class MessageViewPageChannelObject(Qt.QObject):
+    def __init__(self, logger, parent=None):
+        super().__init__(parent)
+        self.logger = logger
+        self._font_family = ""
+        self._font_size = ""
+
+    on_ready = Qt.pyqtSignal([])
+    on_message = Qt.pyqtSignal(['QVariantMap'])
+    on_font_family_changed = Qt.pyqtSignal([str])
+
+    @Qt.pyqtProperty(str, notify=on_font_family_changed)
+    def font_family(self):
+        return self._font_family
+
+    @font_family.setter
+    def font_family(self, value):
+        self._font_family = value
+        self.on_font_family_changed.emit(value)
+
+    on_font_size_changed = Qt.pyqtSignal([str])
+
+    @Qt.pyqtProperty(str, notify=on_font_size_changed)
+    def font_size(self):
+        return self._font_size
+
+    @font_size.setter
+    def font_size(self, value):
+        self._font_size = value
+        self.on_font_size_changed.emit(value)
+
+    @Qt.pyqtSlot()
+    def ready(self):
+        self.logger.debug("web page called in ready!")
+        self.on_ready.emit()
+
+
+class MessageViewPage(Qt.QWebEnginePage):
+    URL = Qt.QUrl("qrc:/html/conversation-template.html")
+
+    def __init__(self, logger, parent=None):
+        super().__init__(parent=parent)
+        self.logger = logger
+        self.channel = MessageViewPageChannelObject(self.logger)
+        self._web_channel = Qt.QWebChannel()
+        self._web_channel.registerObject("channel", self.channel)
+        self.setWebChannel(self._web_channel,
+                           Qt.QWebEngineScript.ApplicationWorld)
+        self.setUrl(self.URL)
+        self.loadFinished.connect(self._load_finished)
+        self.fullScreenRequested.connect(self._full_screen_requested)
+        self.logger.debug("page initialised")
+
+    def acceptNavigationRequest(
+            self,
+            url: Qt.QUrl,
+            type: Qt.QWebEnginePage.NavigationType,
+            isMainFrame: bool) -> bool:
+        if url == self.URL:
+            return True
+        if not isMainFrame:
+            return True  # allow embedding things in frames
+        Qt.QDesktopServices.openUrl(url)
+        return False
+
+    def _load_script(self, path: str):
+        f = Qt.QFile(path)
+        f.open(Qt.QFile.ReadOnly)
+        assert f.isOpen()
+        data = bytes(f.readAll()).decode("utf-8")
+        self.runJavaScript(
+            data,
+            Qt.QWebEngineScript.ApplicationWorld
+        )
+        f.close()
+
+    def _load_finished(self, ok: bool):
+        # self._load_script(":/js/jquery.min.js")
+        self._load_script(":/qtwebchannel/qwebchannel.js")
+        self._load_script(":/js/jabbercat-api.js")
+
+    def _full_screen_requested(self, request: Qt.QWebEngineFullScreenRequest):
+        request.reject()
+
+    def font_changed(self, font: Qt.QFont):
+        self.channel.font_family = font.family()
+        self.channel.font_size = "{}pt".format(font.pointSizeF())
+
+
+class MessageView(Qt.QWebEngineView):
+    def __init__(self, parent=None):
+        super().__init__(parent=parent)
+        self.loadFinished.connect(self._load_finished)
+
+    def _propagate_fonts(self):
+        page = self.page()
+        if isinstance(page, MessageViewPage):
+            page.font_changed(self.font())
+
+    def event(self, event: Qt.QEvent):
+        if event.type() == Qt.QEvent.FontChange:
+            self._propagate_fonts()
+        return super().event(event)
+
+    def _load_finished(self, ok):
+        self._propagate_fonts()
+
+
 class ConversationView(Qt.QWidget):
-    def __init__(self, conversation_node):
-        super().__init__()
+    URL_RE = re.compile(
+        r"([<\(\[\{{](?P<url_paren>{url})[>\)\]\}}]|(\W)(?P<url_nonword>{url})\3|(?P<url_name>{url}))".format(
+            url=r"https?://\S+|xmpp:\S+",
+        ),
+        re.I,
+    )
+
+    def __init__(self, conversation_node, parent=None):
+        super().__init__(parent=parent)
         self.ui = p2p_conversation.Ui_P2PView()
         self.ui.setupUi(self)
 
         self.ui.title_label.setText(conversation_node.label)
+
+        frame_layout = Qt.QHBoxLayout()
+        frame_layout.setContentsMargins(0, 0, 0, 0)
+        self.ui.history_frame.setLayout(frame_layout)
+
+        self.history_view = MessageView(self.ui.history_frame)
+        self.history = MessageViewPage(logging.getLogger(__name__),
+                                       self.history_view)
+        self._update_zoom_factor()
+        self.history_view.setPage(self.history)
+        self.history_view.setContextMenuPolicy(Qt.Qt.NoContextMenu)
+        frame_layout.addWidget(self.history_view)
 
         self.ui.message_input.installEventFilter(self)
 
@@ -54,6 +185,16 @@ class ConversationView(Qt.QWidget):
 
         if self.__node.conversation is not None:
             self._ready()
+
+    def _update_zoom_factor(self):
+        self.history.setZoomFactor(1./self.devicePixelRatioF())
+
+    def showEvent(self, event: Qt.QShowEvent):
+        self._update_zoom_factor()
+        return super().showEvent(event)
+
+    def _screen_changed(self):
+        self._update_zoom_factor()
 
     def _ready(self):
         self.__conversation = self.__node.conversation
@@ -108,74 +249,101 @@ class ConversationView(Qt.QWidget):
         if not message.body:
             return
 
-        if member is self.__conversation.me:
-            from_ = "me"
-        elif member is not None:
-            from_ = (member.direct_jid or member.conversation_jid).bare()
+        from_jid = None
+        is_self = False
+
+        if member is not None:
+            from_jid = member.conversation_jid
+            color_input = str(
+                (member.direct_jid or member.conversation_jid).bare()
+            )
+            if member is self.__conversation.me:
+                from_ = "me"
+                is_self = True
+            elif hasattr(member, "nick"):
+                from_ = member.nick
+                color_input = member.nick
+            else:
+                from_ = str(
+                    (member.direct_jid or member.conversation_jid).bare()
+                )
         else:
-            from_ = str(message.from_.bare())
+            from_jid = None
+            from_ = str(message.from_)
+            color_input = None
 
-        # info = MessageInfo()
-        # info.from_ = from_
+        if color_input is not None:
+            qtcolor = utils.text_to_qtcolor(
+                jclib.utils.normalise_text_for_hash(color_input)
+            )
+            color_full = "rgba({:d}, {:d}, {:d}, 1.0)".format(
+                round(qtcolor.red() * 0.8),
+                round(qtcolor.green() * 0.8),
+                round(qtcolor.blue() * 0.8),
+            )
+            light_factor = 0.1
+            inv_light_factor = 1 - light_factor
+            color_weak = "rgba({:d}, {:d}, {:d}, 1.0)".format(
+                round(qtcolor.red() * light_factor + 255 * inv_light_factor),
+                round(qtcolor.green() * light_factor + 255 * inv_light_factor),
+                round(qtcolor.blue() * light_factor + 255 * inv_light_factor),
+            )
+        else:
+            color_full = "inherit"
+            color_weak = color_full
 
-        doc = self.ui.history.document()
+        body = message.body.lookup([
+            aioxmpp.structs.LanguageRange.fromstr("*")
+        ])
 
-        # if doc.isEmpty():
-        #     last_block = None
-        #     prev_from = None
-        #     cursor = Qt.QTextCursor(doc)
-        # else:
-        #     cursor = doc.rootFrame().childFrames()[-1].lastCursorPosition()
-        #     last_block = cursor.block()
-        #     prev_from = last_block.userData().from_
+        parts = []
+        last = 0
+        for match in self.URL_RE.finditer(body):
+            prev = body[last:match.start()]
+            if prev:
+                parts.append(html.escape(prev))
 
-        # if prev_from != from_:
-        #     cursor = Qt.QTextCursor(doc)
-        #     cursor.movePosition(Qt.QTextCursor.End)
-        #     fmt = self._message_frame_format()
-        #     outer_frame = cursor.insertFrame(fmt)
-        #     # start new part
-        #     fmt = Qt.QTextFrameFormat()
-        #     fmt.setWidth(Qt.QTextLength(Qt.QTextLength.FixedLength, 48))
-        #     fmt.setHeight(Qt.QTextLength(Qt.QTextLength.FixedLength, 48))
-        #     fmt.setBackground(Qt.QBrush(utils.text_to_qtcolor(from_)))
-        #     fmt.setMargin(4)
-        #     fmt.setPosition(Qt.QTextFrameFormat.FloatLeft)
-        #     cursor.insertFrame(fmt)
-        #     cursor.insertText(from_[0].upper())
-        #     cursor.movePosition(Qt.QTextCursor.NextCharacter)
-        #     tmp_cursor = outer_frame.firstCursorPosition()
-        #     tmp_cursor.block().setVisible(False)
-        #     last_block = None
+            info = match.groupdict()
+            match_s = match.group(0)
+            inner_prefix, prefix, inner_suffix, suffix = "", "", "", ""
+            url = None
+            if info["url_paren"]:
+                inner_prefix = match_s[0]
+                inner_suffix = match_s[-1]
+                url = match_s[1:-1]
+            elif info["url_nonword"]:
+                prefix = match_s[0]
+                suffix = match_s[-1]
+                url = match_s[1:-1]
+            elif info["url_name"]:
+                url = match_s
+            if prefix:
+                parts.append(html.escape(prefix))
+            parts.append("<a href='{0}'>{1}</a>".format(
+                html.escape(url),
+                html.escape(inner_prefix + url + inner_suffix),
+            ))
+            if suffix:
+                parts.append(html.escape(suffix))
+            last = match.end()
 
-        # if last_block is not None:
-        #     cursor.insertBlock()
-        # cursor.insertText("{}: {}".format(
-        #     datetime.now().replace(microsecond=0).time(),
-        #     message.body.lookup([
-        #         aioxmpp.structs.LanguageRange.fromstr("*")
-        #     ]).strip()
-        # ))
-        # cursor.block().setUserData(info)
+        parts.append(html.escape(body[last:]))
 
-        # fmt = Qt.QTextFrameFormat()
+        body = "".join(parts)
 
-        # if doc.isEmpty():
-        cursor = Qt.QTextCursor(doc)
-        cursor.movePosition(Qt.QTextCursor.End)
-        # else:
-        #     last_frame = doc.rootFrame().childFrames()[-1]
-        #     cursor = last_frame.lastCursorPosition()
-        #     cursor.movePosition(Qt.QTextCursor.NextCharacter)
-
-        # cursor.insertFrame(fmt)
-        cursor.insertText("{} {}: {}\n".format(
-            datetime.now().replace(microsecond=0).time(),
-            from_,
-            message.body.lookup([
-                aioxmpp.structs.LanguageRange.fromstr("*")
-            ]).strip()
-        ))
+        self.history.channel.on_message.emit(
+            {
+                "timestamp": str(
+                    datetime.utcnow().isoformat() + "Z"
+                ),
+                "from_self": is_self,
+                "from_jid": str(from_jid),
+                "display_name": from_,
+                "body": body,
+                "color_full": color_full,
+                "color_weak": color_weak,
+            }
+        )
 
 
 # class ConversationsController(jclib.conversation.Conversations):

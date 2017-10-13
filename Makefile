@@ -7,7 +7,7 @@ RESOURCE_SOURCES=$(addprefix data/,$(shell xpath -e 'RCC/qresource/file/text()' 
 
 TS_FILES=$(wildcard translations/*.ts)
 
-all: $(UIC_PYTHON_FILES)
+all: $(UIC_PYTHON_FILES) resources.rcc
 
 clean:
 	rm -rf $(UIC_PYTHON_FILES)
