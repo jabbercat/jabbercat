@@ -192,8 +192,12 @@ private information.
 
 To get in touch, you can:
 
-* join our MUC at `xmpp:jabbercat@conference.zombofant.net`_,
-* directly send Jabber IMs to `xmpp:jonas@wielicki.name`_ (adding them to the
-  roster before sending a message is recommended, but not needed as long as
-  your message is not multi-line).
-* send an e-mail to `mailto:jonas@wielicki.name`_.
+* join our MUC at `jabbercat@conference.zombofant.net
+  <xmpp:jabbercat@conference.zombofant.net>`_,
+* directly send Jabber IMs to `jonas@wielicki.name <xmpp:jonas@wielicki.name>`_
+  (adding them to the roster before sending a message is recommended, but not
+  needed as long as your message is not multi-line).
+* send an e-mail to `jonas@wielicki.name <mailto:jonas@wielicki.name>`_.
+
+Of course, if you feel confident with reporting issues, feel free to `open one
+at GitHub <https://github.com/jabbercat/jabbercat/issues/new>`_ right away.
