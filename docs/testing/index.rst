@@ -137,11 +137,10 @@ and possibly bad bugs, which may corrupt the conversations you’re having. Do
 not use this for anything important (yet). Some things aren’t entirely sorted
 out yet.
 
-Also, the command line you’ll be running next will produce a whole bunch of
-output. This is necessary to debug any issues you find during testing. However,
-it may also include your password in readable form, especially during the
-initial startup of an account, but also in general (when a reconnect is made
-for whatever reason).
+Also, JabberCat will produce a whole bunch of output. This is necessary to
+debug any issues you find during testing. However, it may also include your
+password in readable form, especially during the initial startup of an account,
+but also in general (when a reconnect is made for whatever reason).
 
 .. note::
 
