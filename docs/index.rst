@@ -10,6 +10,8 @@ Welcome to JabberCat's documentation!
    :maxdepth: 2
    :caption: Contents:
 
+   testing/index.rst
+
 
 Indices and tables
 ==================

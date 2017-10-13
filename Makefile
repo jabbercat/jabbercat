@@ -24,4 +24,7 @@ $(UIC_PYTHON_FILES): jabbercat/ui/%.py: data/%.ui
 resources.rcc: data/resources.qrc $(RESOURCE_SOURCES)
 	cd data; rcc --binary -o ../$@ resources.qrc
 
-.PHONY: lupdate
+docs-html:
+	cd docs; make html
+
+.PHONY: lupdate docs-html
