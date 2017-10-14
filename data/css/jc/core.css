@@ -1,14 +1,16 @@
 #messages {
-    display: flex;
-    flex-direction: column;
+
 }
 
 #messages > .message-block {
-    flex: 1 0 auto;
-    box-shadow: 0.5px 0.5px 2px rgba(0, 0, 0, 0.5);
+    /* box-shadow: 0.5px 0.5px 2px rgba(0, 0, 0, 0.5); */
     padding: 0.5em;
     margin-bottom: 0.5em;
-    align-self: flex-start;
+}
+
+#messages > .message-block > .avatar {
+    float: left;
+    padding-right: 0.5em;
 }
 
 #messages.separate-self > .message-block {
@@ -74,4 +76,8 @@
 
 body {
     background: rgba(240, 240, 240, 0.2);
+}
+
+.clearfix {
+    clear: both;
 }

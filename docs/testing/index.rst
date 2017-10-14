@@ -181,10 +181,9 @@ Known issues
   it’s not open; we’ll add notifications and unread-message counters to the
   list of conversations at some point.
 
-* Avatars (including auto-generated ones) will at some point be shown in the
-  message view, but we haven’t gotten around to implement that yet. If you have
-  strong opinions how and where those shall be included, feel free to voice
-  them.
+* Currently, we don’t update the message view when avatars are changed. This is
+  on the to-do list. (Note that the most common effect of this is that only
+  auto-generated avatars are shown in the message view.)
 
 * Setting avatars, account tags and account colors isn’t implemented yet,
   despite there being some UI for that (that UI is 100% functionless).

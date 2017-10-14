@@ -1,4 +1,5 @@
 var api_object = null;
+var account_jid = null;
 var messages_parent = document.getElementById("messages");
 var messages = new Array();
 
@@ -21,19 +22,37 @@ var make_message_block = function(first_message) {
     block_el.classList.add("message-block");
     block_el.dataset.from_jid = first_message.dataset.from_jid;
     block_el.dataset.from_self = first_message.dataset.from_self;
-    block_el.style.backgroundColor = first_message.dataset.color_weak;
+    block_el.style.background = first_message.dataset.color_weak;
     if (block_el.dataset.from_self == "true") {
         block_el.classList.add("from-self");
     }
+
+    var avatar_el = document.createElement("div");
+    avatar_el.classList.add("avatar");
+
+    var img_el = document.createElement("img");
+    var params = new URLSearchParams();
+    params.set("peer", first_message.dataset.from_jid);
+    params.set("nick", first_message.dataset.display_name);
+    params.set("account", account_jid);
+    img_el.src = "avatar:///?" + params.toString();
+    avatar_el.appendChild(img_el);
+    block_el.appendChild(avatar_el);
+
     var from_el = document.createElement("div");
     from_el.classList.add("from");
     from_el.style.color = first_message.dataset.color_full;
     from_el.textContent = first_message.dataset.display_name;
     block_el.appendChild(from_el);
+
     var messages_el = document.createElement("div");
     messages_el.classList.add("message-block-messages");
     messages_el.appendChild(first_message);
     block_el.appendChild(messages_el);
+
+    var clearfix = document.createElement("div");
+    clearfix.classList.add("clearfix");
+    block_el.appendChild(clearfix);
     return block_el;
 };
 
@@ -42,7 +61,7 @@ var message_get_block = function(msg) {
 };
 
 var block_get_messages_container = function(block) {
-    return block.children[1];
+    return block.children[2];
 };
 
 var block_get_first_message = function(block) {
@@ -270,6 +289,7 @@ var add_message = function(info) {
 }
 
 var init = function() {
+    account_jid = api_object.account_jid;
     api_object.on_message.connect(add_message);
     var body = document.body;
     body.style.fontFamily = api_object.font_family;

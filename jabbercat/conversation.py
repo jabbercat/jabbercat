@@ -14,9 +14,12 @@ import aioxmpp.structs
 import jclib.conversation
 import jclib.utils
 
-from . import Qt, utils, models
+from . import Qt, utils, models, avatar
 
 from .ui import p2p_conversation
+
+
+logger = logging.getLogger(__name__)
 
 
 def _connect_and_store_token(tokens, signal, handler):
@@ -30,11 +33,12 @@ class MessageInfo(Qt.QTextBlockUserData):
 
 
 class MessageViewPageChannelObject(Qt.QObject):
-    def __init__(self, logger, parent=None):
+    def __init__(self, logger, account_jid, parent=None):
         super().__init__(parent)
         self.logger = logger
         self._font_family = ""
         self._font_size = ""
+        self._account_jid = str(account_jid)
 
     on_ready = Qt.pyqtSignal([])
     on_message = Qt.pyqtSignal(['QVariantMap'])
@@ -60,6 +64,17 @@ class MessageViewPageChannelObject(Qt.QObject):
         self._font_size = value
         self.on_font_size_changed.emit(value)
 
+    on_account_jid_changed = Qt.pyqtSignal([str])
+
+    @Qt.pyqtProperty(str, notify=on_account_jid_changed)
+    def account_jid(self):
+        return self._account_jid
+
+    @account_jid.setter
+    def account_jid(self, value):
+        self._account_jid = value
+        self.on_account_jid_changed.emit(value)
+
     @Qt.pyqtSlot()
     def ready(self):
         self.logger.debug("web page called in ready!")
@@ -69,10 +84,10 @@ class MessageViewPageChannelObject(Qt.QObject):
 class MessageViewPage(Qt.QWebEnginePage):
     URL = Qt.QUrl("qrc:/html/conversation-template.html")
 
-    def __init__(self, logger, parent=None):
-        super().__init__(parent=parent)
+    def __init__(self, web_profile, logger, account_jid, parent=None):
+        super().__init__(web_profile, parent)
         self.logger = logger
-        self.channel = MessageViewPageChannelObject(self.logger)
+        self.channel = MessageViewPageChannelObject(self.logger, account_jid)
         self._web_channel = Qt.QWebChannel()
         self._web_channel.registerObject("channel", self.channel)
         self.setWebChannel(self._web_channel,
@@ -145,7 +160,10 @@ class ConversationView(Qt.QWidget):
         re.I,
     )
 
-    def __init__(self, conversation_node, parent=None):
+    def __init__(self,
+                 conversation_node,
+                 web_profile: Qt.QWebEngineProfile,
+                 parent=None):
         super().__init__(parent=parent)
         self.ui = p2p_conversation.Ui_P2PView()
         self.ui.setupUi(self)
@@ -157,7 +175,9 @@ class ConversationView(Qt.QWidget):
         self.ui.history_frame.setLayout(frame_layout)
 
         self.history_view = MessageView(self.ui.history_frame)
-        self.history = MessageViewPage(logging.getLogger(__name__),
+        self.history = MessageViewPage(web_profile,
+                                       logging.getLogger(__name__),
+                                       conversation_node.account.jid,
                                        self.history_view)
         self._update_zoom_factor()
         self.history_view.setPage(self.history)
@@ -260,13 +280,15 @@ class ConversationView(Qt.QWidget):
             if member is self.__conversation.me:
                 from_ = "me"
                 is_self = True
-            elif hasattr(member, "nick"):
-                from_ = member.nick
-                color_input = member.nick
             else:
                 from_ = str(
                     (member.direct_jid or member.conversation_jid).bare()
                 )
+
+            if hasattr(member, "nick"):
+                from_ = member.nick
+                color_input = member.nick
+
         else:
             from_jid = None
             from_ = str(message.from_)
@@ -283,10 +305,14 @@ class ConversationView(Qt.QWidget):
             )
             light_factor = 0.1
             inv_light_factor = 1 - light_factor
-            color_weak = "rgba({:d}, {:d}, {:d}, 1.0)".format(
-                round(qtcolor.red() * light_factor + 255 * inv_light_factor),
-                round(qtcolor.green() * light_factor + 255 * inv_light_factor),
-                round(qtcolor.blue() * light_factor + 255 * inv_light_factor),
+            color_weak = "linear-gradient(135deg, rgba({:d}, {:d}, {:d}, {}), transparent 10em)".format(
+                # round(qtcolor.red() * light_factor + 255 * inv_light_factor),
+                # round(qtcolor.green() * light_factor + 255 * inv_light_factor),
+                # round(qtcolor.blue() * light_factor + 255 * inv_light_factor),
+                round(qtcolor.red()),
+                round(qtcolor.green()),
+                round(qtcolor.blue()),
+                light_factor,
             )
         else:
             color_full = "inherit"
@@ -337,7 +363,7 @@ class ConversationView(Qt.QWidget):
                     datetime.utcnow().isoformat() + "Z"
                 ),
                 "from_self": is_self,
-                "from_jid": str(from_jid),
+                "from_jid": str(from_jid or ""),
                 "display_name": from_,
                 "body": body,
                 "color_full": color_full,

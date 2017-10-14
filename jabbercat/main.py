@@ -17,6 +17,7 @@ import jabbercat.avatar
 from . import (
     Qt, client, utils,
     conversation, models, taskmanager,
+    webintegration,
 )
 
 from .dialogs import (
@@ -318,7 +319,10 @@ class MainWindow(Qt.QMainWindow):
         self.ui.roster_view.edit(index)
 
     def _conversation_added(self, wrapper):
-        page = conversation.ConversationView(wrapper)
+        page = conversation.ConversationView(
+            wrapper,
+            self.main.web_profile,
+        )
         self.__convmap[wrapper] = page
         self.ui.conversation_pages.addWidget(page)
         self.ui.conversation_pages.setCurrentWidget(page)
@@ -410,6 +414,15 @@ class QtMain(jclib.main.Main):
         self.conversations = jclib.conversation.ConversationManager(
             self.accounts,
             self.client,
+        )
+        self.avatar_urls = webintegration.AvatarURLSchemeHandler(
+            self.accounts,
+            self.avatar,
+        )
+        self.web_profile = Qt.QWebEngineProfile()
+        self.web_profile.installUrlSchemeHandler(
+            b"avatar",
+            self.avatar_urls,
         )
         self.window = MainWindow(self)
 
