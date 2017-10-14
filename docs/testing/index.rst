@@ -181,6 +181,14 @@ Known issues
   it’s not open; we’ll add notifications and unread-message counters to the
   list of conversations at some point.
 
+* Avatars (including auto-generated ones) will at some point be shown in the
+  message view, but we haven’t gotten around to implement that yet. If you have
+  strong opinions how and where those shall be included, feel free to voice
+  them.
+
+* Setting avatars, account tags and account colors isn’t implemented yet,
+  despite there being some UI for that (that UI is 100% functionless).
+
 Reporting issues
 ~~~~~~~~~~~~~~~~
 
@@ -192,7 +200,7 @@ private information.
 To get in touch, you can:
 
 * join our MUC at `jabbercat@conference.zombofant.net
-  <xmpp:jabbercat@conference.zombofant.net>`_,
+  <xmpp:jabbercat@conference.zombofant.net?join>`_,
 * directly send Jabber IMs to `jonas@wielicki.name <xmpp:jonas@wielicki.name>`_
   (adding them to the roster before sending a message is recommended, but not
   needed as long as your message is not multi-line).
