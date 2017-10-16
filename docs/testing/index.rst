@@ -111,7 +111,7 @@ Debian/Ubuntu
         qtbase5-dev-tools python3-keyring
 
 (If you encounter issues when running ``make`` later, try installing
- ``qt5-default``, too.)
+``qt5-default``, too.)
 
 Fedora
 ^^^^^^
