@@ -1,5 +1,6 @@
 import asyncio
 import functools
+import logging
 import random
 
 import aioxmpp
@@ -33,6 +34,9 @@ from .widgets import (
 )
 
 from .ui.main import Ui_Main
+
+
+logger = logging.getLogger(__name__)
 
 
 class MainWindow(Qt.QMainWindow):
