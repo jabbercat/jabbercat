@@ -169,6 +169,12 @@ With that finished, you can start JabberCat with the following command:
 
     $ python3 -m jabbercat
 
+To collect logs to a file, use:
+
+.. code-block:: console
+
+    $ python3 -m jabbercat 2>&1 | tee filename.log
+
 
 Testing notes
 =============
