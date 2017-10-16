@@ -64,6 +64,33 @@ We recommend to do everthing in a fresh directory. Let’s call this directory
     :mod:`aioxmpp` is the XMPP library used by JabberCat. :mod:`jclib` is the
     middle-end library between XMPP and the user interface.
 
+Installing dependencies via distributions package managers
+----------------------------------------------------------
+
+ArchLinux
+~~~~~~~~~
+
+.. code-block:: console
+
+    # pacman -Syu python-pyqt5 python-pyopenssl
+
+Debian/Ubuntu
+~~~~~~~~~~~~~
+
+.. code-block:: console
+
+    # apt install python3-pyqt5 python3-pyqt5.qtwebchannel \
+        python3-pyqt5.qtwebengine python3-sqlalchemy virtualenv \
+        qtbase5-dev-tools python3-keyring
+
+(If you encounter issues when running ``make`` later, try installing
+``qt5-default``, too.)
+
+Fedora
+~~~~~~
+
+Sorry, no guidelines here. Feel free to recommend some.
+
 Setting up a virtual environment
 --------------------------------
 
@@ -86,37 +113,6 @@ from unintended mixing with the dependencies we’re going to install.
 
 Note that we intentionally use ``--system-site-packages``. You don’t want to
 install PyQt5 via Pip, really.
-
-
-Installing dependencies
------------------------
-
-Distribution-specific dependencies
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-ArchLinux
-^^^^^^^^^
-
-.. code-block:: console
-
-    # pacman -Syu python-pyqt5 python-pyopenssl
-
-Debian/Ubuntu
-^^^^^^^^^^^^^
-
-.. code-block:: console
-
-    # apt install python3-pyqt5 python3-pyqt5.qtwebchannel \
-        python3-pyqt5.qtwebengine python3-sqlalchemy virtualenv \
-        qtbase5-dev-tools python3-keyring
-
-(If you encounter issues when running ``make`` later, try installing
-``qt5-default``, too.)
-
-Fedora
-^^^^^^
-
-Sorry, no guidelines here. Feel free to recommend some.
 
 Packages from PyPI
 ~~~~~~~~~~~~~~~~~~
@@ -175,10 +171,10 @@ With that finished, you can start JabberCat with the following command:
 
 
 Testing notes
--------------
+=============
 
 Known issues
-~~~~~~~~~~~~
+------------
 
 * Sometimes, no messages are shown after joining a MUC, despite the join
   succeeding. Sometimes, not even messages sent after the join will show up.
@@ -201,7 +197,7 @@ Known issues
   the text input. Suggestions welcome.
 
 Reporting issues
-~~~~~~~~~~~~~~~~
+----------------
 
 When reporting issues, if possible please get in contact with a developer
 before filing an issue on GitHub. This is to avoid incomplete bug reports and
