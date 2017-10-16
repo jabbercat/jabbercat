@@ -241,8 +241,11 @@ class MainWindow(Qt.QMainWindow):
         )
 
     def _roster_item_activated(self, index):
+        unsorted_index = self.sorted_roster.mapToSource(index)
+        unfiltered_index = self.filtered_roster.mapToSource(unsorted_index)
+
         item = self.roster_model.data(
-            self.ui.roster_view.model().mapToSource(index),
+            unfiltered_index,
             models.ROLE_OBJECT,
         )
         account = item.account
