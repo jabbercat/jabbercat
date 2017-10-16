@@ -184,6 +184,8 @@ Known issues
   it’s not open; we’ll add notifications and unread-message counters to the
   list of conversations at some point.
 
+* Similarly, handling of highlighting/mentions in MUCs is not implemented yet.
+
 * Currently, we don’t update the message view when avatars are changed. This is
   on the to-do list. (Note that the most common effect of this is that only
   auto-generated avatars are shown in the message view.)
@@ -195,6 +197,15 @@ Known issues
 
 * Some kind of nickname and emoji completion suggestions will be implemented for
   the text input. Suggestions welcome.
+
+Focus areas
+-----------
+
+For the early testing, there’s not really a focus. Report each and every thing
+which you feel is off with the UX. If you think it may simply be a missing
+feature, you can either report it (if there’s a chance we might miss it
+otherwise), ask a dev in the MUC or directly (see below) or simply report it.
+Issues are cheap.
 
 Reporting issues
 ----------------
