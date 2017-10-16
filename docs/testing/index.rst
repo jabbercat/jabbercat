@@ -107,7 +107,11 @@ Debian/Ubuntu
 .. code-block:: console
 
     # apt install python3-pyqt5 python3-pyqt5.qtwebchannel \
-        python3-pyqt5.qtwebengine
+        python3-pyqt5.qtwebengine python3-sqlalchemy virtualenv \
+        qtbase5-dev-tools python3-keyring
+
+(If you encounter issues when running ``make`` later, try installing
+ ``qt5-default``, too.)
 
 Fedora
 ^^^^^^
@@ -119,7 +123,7 @@ Packages from PyPI
 
 .. code-block:: console
 
-    $ pip3 install aioopenssl aiosasl
+    $ pip3 install aioopenssl aiosasl quamash
     $ cd aioxmpp
     $ pip3 install -e .
     $ cd ..
@@ -160,6 +164,9 @@ Now, let’s build the files needed for JabberCat to run (assuming you are in th
 
     $ make
 
+If ``make`` fails with an error related to an invocation of ``rcc`` and you are
+running debian, try installing ``qt5-default``.
+
 With that finished, you can start JabberCat with the following command:
 
 .. code-block:: console
@@ -187,6 +194,11 @@ Known issues
 
 * Setting avatars, account tags and account colors isn’t implemented yet,
   despite there being some UI for that (that UI is 100% functionless).
+
+* The text input will be sized more reasonably at some point.
+
+* Some kind of nickname and emoji completion suggestions will be implemented for
+  the text input. Suggestions welcome.
 
 Reporting issues
 ~~~~~~~~~~~~~~~~
