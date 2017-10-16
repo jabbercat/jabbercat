@@ -226,3 +226,18 @@ To get in touch, you can:
 
 Of course, if you feel confident with reporting issues, feel free to `open one
 at GitHub <https://github.com/jabbercat/jabbercat/issues/new>`_ right away.
+
+
+Information to include in issue reports
+---------------------------------------
+
+If possible, please include the output of:
+
+.. code-block:: console
+
+    $ python3 -m jabbercat --version
+
+This will print the JabberCat version, as well as the versions of a few key
+dependencies and basic information about your OS. This helps with debugging.
+If you don’t feel comfortable sharing any of the included information, feel
+free to redact.
