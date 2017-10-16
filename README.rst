@@ -7,7 +7,7 @@ If you are intrigued by the User Experience provided by modern, non-XMPP and/or
 non-free chat applications, this is for you. We aim to provide
 Conversations-like chat experience based on XMPP on the Desktop!
 
-.. image:: docs/screenshots/newui.png
+.. image:: docs/screenshots/new-message-view.png
 
 How to test
 ===========
