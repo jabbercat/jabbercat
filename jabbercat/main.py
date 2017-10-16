@@ -210,6 +210,12 @@ class MainWindow(Qt.QMainWindow):
 
     def _roster_label_edited(self, item, new_label):
         new_label = new_label or None
+        if item.label == new_label:
+            logger.debug("not emitting a roster change for label edit: "
+                         "label is unchanged (%r == %r)",
+                         item.label, new_label)
+            return
+
         jclib.tasks.manager.start(
             self._roster_set_label(item, new_label)
         )
