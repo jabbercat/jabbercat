@@ -20,7 +20,7 @@ class JoinMuc(Qt.QDialog):
         filtered.setSourceModel(self.base_model)
         self.ui.account.setModel(filtered)
 
-        self._jid_validator = utils.JIDValidator()
+        self._jid_validator = utils.MUCJIDValidator()
 
         self.ui.mucjid.setValidator(self._jid_validator)
         self.ui.mucjid.editingFinished.connect(
@@ -28,7 +28,9 @@ class JoinMuc(Qt.QDialog):
         )
 
     def _mucjid_edited(self):
-        jid = aioxmpp.JID.fromstr(self.ui.mucjid.text())
+        jid = aioxmpp.JID.fromstr(
+            self._jid_validator.strip_url_parts(self.ui.mucjid.text())
+        )
         if jid.resource and not self.ui.nickname.text():
             self.ui.nickname.setText(jid.resource)
             self.ui.mucjid.setText(str(jid.bare()))

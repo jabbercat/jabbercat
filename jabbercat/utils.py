@@ -248,6 +248,22 @@ class JIDValidator(Qt.QValidator):
             return (Qt.QValidator.Invalid, text, pos)
 
 
+class MUCJIDValidator(JIDValidator):
+    _XMPP_PREFIX = "xmpp:"
+    _JOIN_SUFFIX = "?join"
+
+    def strip_url_parts(self, text):
+        # strip xmpp: prefix and ?join suffix if given
+        if text.startswith(self._XMPP_PREFIX):
+            text = text[len(self._XMPP_PREFIX):]
+            if text.endswith(self._JOIN_SUFFIX):
+                text = text[:-len(self._JOIN_SUFFIX)]
+        return text
+
+    def validate(self, text, pos):
+        return super().validate(self.strip_url_parts(text), pos)
+
+
 _dragndrop_rng = random.SystemRandom()
 _dragndrop_state = None, None
 
