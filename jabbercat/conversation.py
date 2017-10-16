@@ -154,7 +154,7 @@ class MessageView(Qt.QWebEngineView):
 
 class ConversationView(Qt.QWidget):
     URL_RE = re.compile(
-        r"([<\(\[\{{](?P<url_paren>{url})[>\)\]\}}]|(\W)(?P<url_nonword>{url})\3|(?P<url_name>{url}))".format(
+        r"([<\(\[\{{](?P<url_paren>{url})[>\)\]\}}]|(\W)(?P<url_nonword>{url})\3|\b(?P<url_name>{url})\b)".format(
             url=r"https?://\S+|xmpp:\S+",
         ),
         re.I,
