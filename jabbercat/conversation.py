@@ -355,7 +355,7 @@ class ConversationView(Qt.QWidget):
 
         parts.append(html.escape(body[last:]))
 
-        body = "".join(parts)
+        body = "<br/>".join("".join(parts).split("\n"))
 
         self.history.channel.on_message.emit(
             {
