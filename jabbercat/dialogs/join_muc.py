@@ -19,6 +19,8 @@ class JoinMuc(Qt.QDialog):
         filtered = models.FilterDisabledItems(self.ui.account)
         filtered.setSourceModel(self.base_model)
         self.ui.account.setModel(filtered)
+        if filtered.rowCount() == 1:
+            self.ui.account.setCurrentIndex(0)
 
         self._jid_validator = utils.MUCJIDValidator()
 
