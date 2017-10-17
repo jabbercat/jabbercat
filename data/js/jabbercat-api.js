@@ -285,7 +285,11 @@ var add_message = function(info) {
 
     insert_message_item(message_item);
 
-    window.scrollTo(0, document.body.scrollHeight);
+    // delay to ensure that the DOM has updated already
+    setTimeout(
+        function(){window.scrollTo(0, document.body.scrollHeight);},
+        50
+    );
 }
 
 var init = function() {
