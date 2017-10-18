@@ -104,7 +104,10 @@ def main():
 
     import jabbercat.main
 
-    logging.basicConfig(level=logging.DEBUG)
+    logging.basicConfig(
+        level=logging.DEBUG,
+        format="%(asctime)-15s %(levelname)s:%(name)s: %(message)s"
+    )
     logging.getLogger("quamash").setLevel(logging.INFO)
     logging.getLogger("aioxmpp").setLevel(logging.DEBUG)
     logging.getLogger("aioxmpp.XMLStream").setLevel(logging.DEBUG)
