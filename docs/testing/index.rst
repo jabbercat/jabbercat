@@ -72,7 +72,8 @@ ArchLinux
 
 .. code-block:: console
 
-    # pacman -Syu python-pyqt5 python-pyopenssl
+    # pacman -S python-pyqt5 python-pyopenssl python-xdg python-keyring \
+        python-sqlalchemy python-virtualenv
 
 Debian/Ubuntu
 ~~~~~~~~~~~~~
@@ -81,7 +82,7 @@ Debian/Ubuntu
 
     # apt install python3-pyqt5 python3-pyqt5.qtwebchannel \
         python3-pyqt5.qtwebengine python3-sqlalchemy virtualenv \
-        qtbase5-dev-tools python3-keyring
+        qtbase5-dev-tools python3-keyring python3-xdg
 
 (If you encounter issues when running ``make`` later, try installing
 ``qt5-default``, too.)
