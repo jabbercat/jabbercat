@@ -185,7 +185,8 @@ Known issues
 
 * Sometimes, no messages are shown after joining a MUC, despite the join
   succeeding. Sometimes, not even messages sent after the join will show up.
-  **Please, by all means, report this.** I need debug logs of that.
+  Please report this to a developer **while it is happening**. They will guide
+  you through steps to take to debug this situation.
 
 * There is no way to know if a conversation has received new messages while
   it’s not open; we’ll add notifications and unread-message counters to the
@@ -204,6 +205,13 @@ Known issues
 
 * Some kind of nickname and emoji completion suggestions will be implemented for
   the text input. Suggestions welcome.
+
+* You will sometimes see exception tracebacks -- if they are *preceded* by a
+  line starting with ``DEBUG``, do not report them (those are normal and
+  verbose, indeed, but sometimes tremendously useful).
+
+* No logging of messages to persistent storage and no access of server-side
+  archives is supported yet.
 
 Focus areas
 -----------
