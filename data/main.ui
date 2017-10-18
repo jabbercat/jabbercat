@@ -90,8 +90,15 @@
     <addaction name="action_add_contact"/>
     <addaction name="action_invite_contact"/>
    </widget>
+   <widget class="QMenu" name="menuAbout">
+    <property name="title">
+     <string>Abo&amp;ut</string>
+    </property>
+    <addaction name="action_open_python_console"/>
+   </widget>
    <addaction name="menuJabberCat"/>
    <addaction name="menuContacts"/>
+   <addaction name="menuAbout"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <action name="action_manage_accounts">
@@ -213,6 +220,14 @@
    </property>
    <property name="toolTip">
     <string>Invite a contact by generating an invitation link.</string>
+   </property>
+  </action>
+  <action name="action_open_python_console">
+   <property name="text">
+    <string>Open Python console…</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+P, Ctrl+Y, Ctrl+C</string>
    </property>
   </action>
  </widget>

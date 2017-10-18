@@ -26,6 +26,7 @@ from .dialogs import (
     join_muc,
     roster_tags,
     add_contact,
+    python_console,
 )
 
 from .widgets import (
@@ -173,6 +174,14 @@ class MainWindow(Qt.QMainWindow):
         self.ui.magic_bar.tags_filter_model = self.checked_tags
 
         self.__identitymap = {}
+
+        self.python_console = python_console.PythonConsole(self.main, self)
+        self.ui.action_open_python_console.triggered.connect(
+            self._open_python_console
+        )
+
+    def _open_python_console(self):
+        self.python_console.show()
 
     def _find_tag_index(self, tag):
         for i in range(self.checked_tags.rowCount()):
