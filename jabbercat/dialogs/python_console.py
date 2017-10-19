@@ -94,6 +94,7 @@ class PythonConsole(Qt.QDialog):
 
         self._execute_single("import this")
         self._execute_single("import asyncio, aioxmpp, jclib, jabbercat")
+        self._execute_single("import jabbercat.Qt as Qt")
         self._stdin_file.write(">>> main = {!r}\n".format(main))
         self._globals["main"] = main
 
