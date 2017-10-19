@@ -19,6 +19,7 @@ class JoinMuc(Qt.QDialog):
         filtered = models.FilterDisabledItems(self.ui.account)
         filtered.setSourceModel(self.base_model)
         self.ui.account.setModel(filtered)
+        self.ui.account.currentAccountChanged.connect(self._account_changed)
         if filtered.rowCount() == 1:
             self.ui.account.setCurrentIndex(0)
 
@@ -28,6 +29,13 @@ class JoinMuc(Qt.QDialog):
         self.ui.mucjid.editingFinished.connect(
             self._mucjid_edited
         )
+
+    def _account_changed(self):
+        new_account = self.ui.account.currentAccount()
+        if new_account is None:
+            self.ui.nickname.setPlaceholderText("")
+        else:
+            self.ui.nickname.setPlaceholderText(new_account.jid.localpart)
 
     def _mucjid_edited(self):
         jid = aioxmpp.JID.fromstr(
@@ -52,9 +60,6 @@ class JoinMuc(Qt.QDialog):
         if not self.ui.account.currentAccount():
             return
 
-        if not self.ui.nickname.text():
-            return
-
         return super().done(r)
 
     @asyncio.coroutine
@@ -67,4 +72,4 @@ class JoinMuc(Qt.QDialog):
 
         return (account,
                 aioxmpp.JID.fromstr(self.ui.mucjid.text()),
-                self.ui.nickname.text())
+                self.ui.nickname.text() or account.jid.localpart)
