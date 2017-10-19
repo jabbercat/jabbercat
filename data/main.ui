@@ -94,6 +94,8 @@
     <property name="title">
      <string>Abo&amp;ut</string>
     </property>
+    <addaction name="action_about_qt"/>
+    <addaction name="separator"/>
     <addaction name="action_open_python_console"/>
    </widget>
    <addaction name="menuJabberCat"/>
@@ -228,6 +230,11 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+P, Ctrl+Y, Ctrl+C</string>
+   </property>
+  </action>
+  <action name="action_about_qt">
+   <property name="text">
+    <string>About Qt …</string>
    </property>
   </action>
  </widget>

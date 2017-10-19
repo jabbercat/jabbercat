@@ -179,6 +179,9 @@ class MainWindow(Qt.QMainWindow):
         self.ui.action_open_python_console.triggered.connect(
             self._open_python_console
         )
+        self.ui.action_about_qt.triggered.connect(
+            Qt.QApplication.aboutQt,
+        )
 
     def _open_python_console(self):
         self.python_console.show()
