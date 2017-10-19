@@ -172,6 +172,7 @@ class MainWindow(Qt.QMainWindow):
 
         self.ui.magic_bar.textChanged.connect(self._filter_text_changed)
         self.ui.magic_bar.tags_filter_model = self.checked_tags
+        self.ui.magic_bar.installEventFilter(self)
 
         self.__identitymap = {}
 
@@ -182,6 +183,14 @@ class MainWindow(Qt.QMainWindow):
         self.ui.action_about_qt.triggered.connect(
             Qt.QApplication.aboutQt,
         )
+
+    def eventFilter(self, obj: Qt.QObject, event: Qt.QEvent) -> bool:
+        if obj is self.ui.magic_bar:
+            if event.type() == Qt.QEvent.KeyPress:
+                if event.key() == Qt.Qt.Key_Down:
+                    self.ui.roster_view.setFocus()
+                    return True
+        return super().eventFilter(obj, event)
 
     def _open_python_console(self):
         self.python_console.show()
