@@ -33,7 +33,8 @@ run-debug: all
 	@echo "=== logs will also be in $(logfile_name) ==="
 	@echo "open http://localhost:1234 in a Chromium-like browser to debug message view issues"
 	@echo
-	QTWEBENGINE_REMOTE_DEBUGGING=1234 python3 -m jabbercat 2>&1 | tee $(logfile_name) || true
+	python3 -m jabbercat --version | tee $(logfile_name)
+	QTWEBENGINE_REMOTE_DEBUGGING=1234 python3 -m jabbercat 2>&1 | tee -a $(logfile_name) || true
 	@echo
 	@echo "=== logs have been written to $(logfile_name) ==="
 	@echo
