@@ -27,6 +27,7 @@
 
 #messages.separate-self > .message-block.from-self > .from {
     text-align: right;
+    overflow-wrap: break-word;
 }
 
 #messages > .message-block > .message-block-messages {
@@ -39,6 +40,10 @@
 
 #messages > .message-block > .message-block-messages > .message > div {
     display: table-cell;
+}
+
+#messages > .message-block > .message-block-messages > .message > .body {
+    overflow-wrap: break-word;
 }
 
 #messages > .message-block > .message-block-messages > .message > .timestamp {
