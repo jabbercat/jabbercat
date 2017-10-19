@@ -300,7 +300,9 @@ class MainWindow(Qt.QMainWindow):
             return
 
         conv = item.create_conversation(client)
-        self.main.conversations.adopt_conversation(account, conv)
+        wrapper = self.main.conversations.adopt_conversation(account, conv)
+        page = self.__convmap[wrapper]
+        page.set_focus_to_message_input()
 
     def _roster_context_menu_requested(self, pos):
         self._roster_item_menu.popup(self.ui.roster_view.mapToGlobal(pos))
@@ -379,6 +381,7 @@ class MainWindow(Qt.QMainWindow):
         page = self.__convmap[conversation]
         self.main.conversations.start_soon(conversation)
         self.ui.conversation_pages.setCurrentWidget(page)
+        page.set_focus_to_message_input()
 
     @utils.asyncify
     @asyncio.coroutine

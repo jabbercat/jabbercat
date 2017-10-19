@@ -244,6 +244,9 @@ class ConversationView(Qt.QWidget):
 
         return False
 
+    def set_focus_to_message_input(self):
+        self.ui.message_input.setFocus()
+
     @utils.asyncify
     @asyncio.coroutine
     def _send_message(self):
