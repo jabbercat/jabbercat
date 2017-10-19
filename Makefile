@@ -27,7 +27,7 @@ resources.rcc: data/resources.qrc $(RESOURCE_SOURCES)
 docs-html:
 	cd docs; make html
 
-run-debug: logfile_name=jabbercat-$(shell date --iso-8601=seconds).log
+run-debug: logfile_name=jabbercat-$(shell date '+%Y-%m-%dT%H-%M-%S').log
 run-debug: all
 	@echo
 	@echo "=== logs will also be in $(logfile_name) ==="
