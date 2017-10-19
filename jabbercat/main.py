@@ -302,6 +302,7 @@ class MainWindow(Qt.QMainWindow):
         conv = item.create_conversation(client)
         wrapper = self.main.conversations.adopt_conversation(account, conv)
         page = self.__convmap[wrapper]
+        self.ui.conversation_pages.setCurrentWidget(page)
         page.set_focus_to_message_input()
 
     def _roster_context_menu_requested(self, pos):
