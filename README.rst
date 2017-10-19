@@ -12,29 +12,18 @@ Conversations-like chat experience based on XMPP on the Desktop!
 How to test
 ===========
 
-JabberCat is still in early development phases. To test, you need to install
-aioxmpp and jclib:
+We have a `Testing Guide <https://jabbercat.org/testing>`_ which gives detailed
+instructions on how to install, how to do useful tests, which issues to (not)
+report and how to report them.
 
-1. Install aioxmpp for your user::
 
-    pip3 install --user aioxmpp
+Get in touch
+============
 
-2. Clone and install jclib for your user::
-
-    git clone https://github.com/jabbercat/jclib
-    cd jclib
-    pip3 install --user -e .
-    cd ..
-
-3. Clone JabberCat::
-
-    git clone https://github.com/jabbercat/jabbercat
-    cd jabbercat
-    make
-
-4. Start JabberCat::
-
-    python3 -m jabbercat
+To get in touch with us, the best way is to `join the MUC at
+jabbercat@conference.zombofant.net
+<xmpp:jabbercat@conference.zombofant.net?join>`_. Of course, issue reports are
+also somewhat a way to get in touch, but much more formal ☺.
 
 
 Note: JABBER® is a registered trademark and its use is granted under a
