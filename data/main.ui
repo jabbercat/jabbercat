@@ -145,7 +145,7 @@
     <string>Put focus on the search bar</string>
    </property>
    <property name="shortcut">
-    <string>F3</string>
+    <string>Ctrl+L</string>
    </property>
   </action>
   <action name="action_manage_tags">
