@@ -18,7 +18,7 @@
     <item>
      <widget class="TagsInput" name="magic_bar">
       <property name="placeholderText">
-       <string>Search …</string>
+       <string notr="true" extracomment="Unused, this is set explicitly in the code to embed the shortcut.">Search…</string>
       </property>
       <property name="clearButtonEnabled">
        <bool>true</bool>

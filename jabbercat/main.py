@@ -168,11 +168,15 @@ class MainWindow(Qt.QMainWindow):
         self.ui.action_focus_search_bar.triggered.connect(
             self.ui.magic_bar.setFocus
         )
+        self.ui.action_focus_search_bar.changed.connect(
+            self._relabel_magic_bar
+        )
         self.addAction(self.ui.action_focus_search_bar)
 
         self.ui.magic_bar.textChanged.connect(self._filter_text_changed)
         self.ui.magic_bar.tags_filter_model = self.checked_tags
         self.ui.magic_bar.installEventFilter(self)
+        self._relabel_magic_bar()
 
         self.__identitymap = {}
 
@@ -182,6 +186,15 @@ class MainWindow(Qt.QMainWindow):
         )
         self.ui.action_about_qt.triggered.connect(
             Qt.QApplication.aboutQt,
+        )
+
+    def _relabel_magic_bar(self):
+        self.ui.magic_bar.setPlaceholderText(
+            self.tr("Search ({shortcut})...").format(
+                shortcut=self.ui.action_focus_search_bar.shortcut().toString(
+                    Qt.QKeySequence.NativeText
+                )
+            )
         )
 
     def eventFilter(self, obj: Qt.QObject, event: Qt.QEvent) -> bool:
