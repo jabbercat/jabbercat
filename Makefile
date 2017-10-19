@@ -27,4 +27,15 @@ resources.rcc: data/resources.qrc $(RESOURCE_SOURCES)
 docs-html:
 	cd docs; make html
 
-.PHONY: lupdate docs-html
+run-debug: logfile_name=jabbercat-$(shell date --iso-8601=seconds).log
+run-debug: all
+	@echo
+	@echo "=== logs will also be in $(logfile_name) ==="
+	@echo "open http://localhost:1234 in a Chromium-like browser to debug message view issues"
+	@echo
+	QTWEBENGINE_REMOTE_DEBUGGING=1234 python3 -m jabbercat 2>&1 | tee $(logfile_name) || true
+	@echo
+	@echo "=== logs have been written to $(logfile_name) ==="
+	@echo
+
+.PHONY: lupdate docs-html run-debug

@@ -168,13 +168,13 @@ With that finished, you can start JabberCat with the following command:
 
 .. code-block:: console
 
-    $ python3 -m jabbercat
+    $ make run-debug
 
-To collect logs to a file, use:
+This will:
 
-.. code-block:: console
-
-    $ python3 -m jabbercat 2>&1 | tee filename.log
+* create a log file with the current timestamp where all jabbercat output goes
+* make a QWebEngineView debugger listen at TCP port 1234; with a Chromium-based
+  browser, you can open the debugger by navigating to `http://localhost:1234`_.
 
 
 Testing notes
