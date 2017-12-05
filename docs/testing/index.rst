@@ -145,12 +145,15 @@ but also in general (when a reconnect is made for whatever reason).
 
 .. note::
 
-    The inclusion of your password is unfortunate, but also not trivial to fix.
+    The inclusion of your password only happens with aioxmpp version from
+    before 2017-12-05. It took a while to fix, because the fix was not entirely
+    trivial (spanning several layers), and we wanted to keep the quality of
+    aioxmpp up.
+
     It only happens when the server only offers plaintext password
     authentication, and we don’t really have control over that. The debug logs
-    include everything sent over the wire, and currently there’s no way to
-    reliably strip the password out of that (it would also kind of defeat the
-    purpose of "everything sent over the wire" debug logs).
+    include everything sent over the wire, and previously there was no way to
+    reliably strip the password out of that.
 
     Just be careful when pasting things, and when in doubt, ask for advice.
 
