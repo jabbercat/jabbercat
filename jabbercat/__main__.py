@@ -29,40 +29,11 @@ def get_git_version(path: pathlib.Path):
 
 
 def print_version():
-    import jabbercat
-    import jabbercat.version as jc_version
-    import jclib
-    import aioxmpp
-    import aioopenssl
-    import aiosasl
     import platform
-    import sqlalchemy
     import sys
 
-    print("JabberCat: {} (git: {})".format(
-        jc_version.version,
-        get_git_version(pathlib.Path(jabbercat.__path__[0]).parent) or "N/A"
-    ))
-
-    print("jclib: {} (git: {})".format(
-        None,
-        get_git_version(pathlib.Path(jclib.__path__[0]).parent) or "N/A"
-    ))
-
-    print("aioxmpp: {} (git: {})".format(
-        aioxmpp.__version__,
-        get_git_version(pathlib.Path(aioxmpp.__path__[0]).parent) or "N/A"
-    ))
-
-    print("aioopenssl: {} (git: {})".format(
-        aioopenssl.__version__,
-        get_git_version(pathlib.Path(aioopenssl.__path__[0]).parent) or "N/A"
-    ))
-
-    print("aiosasl: {} (git: {})".format(
-        aiosasl.__version__,
-        get_git_version(pathlib.Path(aiosasl.__path__[0]).parent) or "N/A"
-    ))
+    print("Platform: {}".format(platform.platform()))
+    print("Python: {}".format(sys.version))
 
     print("PyQt5: {} (Qt: {})".format(Qt.PYQT_VERSION_STR,
                                       Qt.QT_VERSION_STR))
@@ -72,13 +43,48 @@ def print_version():
         get_git_version(pathlib.Path(quamash.__path__[0]).parent) or "N/A"
     ))
 
+    import aiosasl
+
+    print("aiosasl: {} (git: {})".format(
+        aiosasl.__version__,
+        get_git_version(pathlib.Path(aiosasl.__path__[0]).parent) or "N/A"
+    ))
+
+    import aioopenssl
+
+    print("aioopenssl: {} (git: {})".format(
+        aioopenssl.__version__,
+        get_git_version(pathlib.Path(aioopenssl.__path__[0]).parent) or "N/A"
+    ))
+
+    import aioxmpp
+
+    print("aioxmpp: {} (git: {})".format(
+        aioxmpp.__version__,
+        get_git_version(pathlib.Path(aioxmpp.__path__[0]).parent) or "N/A"
+    ))
+
+    import sqlalchemy
+
     print("SQLAlchemy: {} (git: {})".format(
         sqlalchemy.__version__,
         get_git_version(pathlib.Path(sqlalchemy.__path__[0]).parent) or "N/A"
     ))
 
-    print("Platform: {}".format(platform.platform()))
-    print("Python: {}".format(sys.version))
+    import jclib
+
+    print("jclib: {} (git: {})".format(
+        None,
+        get_git_version(pathlib.Path(jclib.__path__[0]).parent) or "N/A"
+    ))
+
+    import jabbercat
+    import jabbercat.version as jc_version
+
+    print("JabberCat: {} (git: {})".format(
+        jc_version.version,
+        get_git_version(pathlib.Path(jabbercat.__path__[0]).parent) or "N/A"
+    ))
 
 
 def main():
