@@ -61,6 +61,7 @@ class AvatarURLSchemeHandler(Qt.QWebEngineUrlSchemeHandler):
 
         picture = self._avatar_manager.get_avatar(account, peer, nickname)
         canvas = Qt.QImage(48, 48, Qt.QImage.Format_ARGB32_Premultiplied)
+        canvas.fill(0)
         painter = Qt.QPainter(canvas)
         painter.drawPicture(0, 0, picture)
         painter.end()
