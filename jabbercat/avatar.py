@@ -163,8 +163,13 @@ class XMPPAvatarProvider:
             return
 
         for descriptor in metadata.get("image/png", []):
-            if not descriptor.has_image_data_in_pubsub:
-                continue
+            try:
+                return (yield from descriptor.get_image_bytes())
+            except (NotImplementedError, RuntimeError,
+                    aioxmpp.errors.XMPPCancelError):
+                pass
+
+        for descriptor in metadata.get(None, []):
             try:
                 return (yield from descriptor.get_image_bytes())
             except (NotImplementedError, RuntimeError,
