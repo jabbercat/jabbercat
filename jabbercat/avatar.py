@@ -157,7 +157,8 @@ class XMPPAvatarProvider:
     def _get_image_bytes(self, address: aioxmpp.JID) -> typing.Optional[bytes]:
         try:
             metadata = yield from self._avatar_svc.get_avatar_metadata(address)
-        except aioxmpp.errors.XMPPError as exc:
+        except (aioxmpp.errors.XMPPError,
+                aioxmpp.errors.ErroneousStanza) as exc:
             self.logger.warning("cannot fetch avatar from %s: %s",
                                 address, exc)
             return
