@@ -375,7 +375,8 @@ class MainWindow(Qt.QMainWindow):
         )
         self.__convmap[wrapper] = page
         self.ui.conversation_pages.addWidget(page)
-        self.ui.conversation_pages.setCurrentWidget(page)
+        if self.ui.conversation_pages.currentWidget() is None:
+            self.ui.conversation_pages.setCurrentWidget(page)
 
     def _conversation_item_activated(self, index):
         conversation = self.main.conversations[index.row()]
