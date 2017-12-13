@@ -7,6 +7,7 @@ import math
 import random
 import struct
 import unicodedata
+import urllib.parse
 
 import aioxmpp.structs
 
@@ -234,9 +235,19 @@ class DictItemModel(Qt.QAbstractListModel):
 
 class JIDValidator(Qt.QValidator):
     def validate(self, text, pos):
+        to_validate = text
+
         try:
-            aioxmpp.structs.JID.fromstr(text)
-            return (Qt.QValidator.Acceptable, text, pos)
+            url = urllib.parse.urlparse(text)
+        except ValueError:
+            pass
+        else:
+            if url.scheme == "xmpp" and url.path:
+                to_validate = url.path
+
+        try:
+            aioxmpp.structs.JID.fromstr(to_validate)
+            return (Qt.QValidator.Acceptable, to_validate, pos)
         except ValueError:
             # explicitly allow partial jids, i.e. those with empty localpart or
             # resource
@@ -244,8 +255,8 @@ class JIDValidator(Qt.QValidator):
                     text.startswith("@") or
                     text.endswith("/") or
                     text.startswith("/")):
-                return (Qt.QValidator.Intermediate, text, pos)
-            return (Qt.QValidator.Invalid, text, pos)
+                return (Qt.QValidator.Intermediate, to_validate, pos)
+            return (Qt.QValidator.Invalid, to_validate, pos)
 
 
 class MUCJIDValidator(JIDValidator):
