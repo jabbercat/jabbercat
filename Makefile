@@ -22,7 +22,7 @@ $(UIC_PYTHON_FILES): jabbercat/ui/%.py: data/%.ui
 	$(BUILDUI) $< $@
 
 resources.rcc: data/resources.qrc $(RESOURCE_SOURCES)
-	cd data; rcc --binary -o ../$@ resources.qrc
+	cd data; qtchooser -run-tool=rcc -qt=5 --binary -o ../$@ resources.qrc
 
 docs-html:
 	cd docs; make html
