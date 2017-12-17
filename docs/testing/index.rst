@@ -87,6 +87,14 @@ Debian/Ubuntu
 (If you encounter issues when running ``make`` later, try installing
 ``qt5-default``, too.)
 
+Gentoo
+~~~~~~
+
+.. code-block:: console
+
+    # emerge -av dev-python/sqlalchemy dev-python/keyring \
+	    dev-python/pyopenssl dev-python/PyQt5 dev-python/pyxdg
+
 Fedora
 ~~~~~~
 
@@ -103,9 +111,13 @@ Setting up a virtual environment
     this section. Skipping this section is **not** recommended for people not
     familiar with Python and PyQt5 development.
 
+The virtual environment is created and activated using the following
+commands. Make sure to select a Python interperter allowing
+Python 3.5 fatures.
+
 .. code-block:: console
 
-    $ virtualenv --system-site-packages --python python3 env
+    $ virtualenv --system-site-packages --python python3.5 env
     $ . env/bin/activate
 
 From this point forward, operations on python packages will happen within the
@@ -121,12 +133,8 @@ Packages from PyPI
 .. code-block:: console
 
     $ pip3 install aioopenssl aiosasl quamash
-    $ cd aioxmpp
-    $ pip3 install -e .
-    $ cd ..
-    $ cd jclib
-    $ pip3 install -e .
-    $ cd ..
+    $ (cd aioxmpp && pip install -e .)
+    $ (cd jclib && pip install -e .)
 
 
 Starting JabberCat
