@@ -166,7 +166,7 @@ class MainWindow(Qt.QMainWindow):
         )
 
         self.ui.action_focus_search_bar.triggered.connect(
-            self.ui.magic_bar.setFocus
+            self._select_magic_bar
         )
         self.ui.action_focus_search_bar.changed.connect(
             self._relabel_magic_bar
@@ -196,6 +196,10 @@ class MainWindow(Qt.QMainWindow):
                 )
             )
         )
+
+    def _select_magic_bar(self):
+        self.ui.magic_bar.selectAll()
+        self.ui.magic_bar.setFocus()
 
     def eventFilter(self, obj: Qt.QObject, event: Qt.QEvent) -> bool:
         if obj is self.ui.magic_bar:
