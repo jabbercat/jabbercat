@@ -309,6 +309,9 @@ class MainWindow(Qt.QMainWindow):
         self.ui.conversation_pages.setCurrentWidget(page)
         page.set_focus_to_message_input()
 
+        if self.filtered_roster.rowCount() == 1:
+            self.ui.magic_bar.clear()
+
     def _roster_context_menu_requested(self, pos):
         self._roster_item_menu.popup(self.ui.roster_view.mapToGlobal(pos))
 
