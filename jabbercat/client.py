@@ -1,7 +1,11 @@
 import asyncio
 
+import aioxmpp
+
 import jclib.client
 import jclib.identity
+
+import jabbercat
 
 from .dialogs import password_prompt
 
@@ -29,6 +33,13 @@ class Client(jclib.client.Client):
         if result is None:
             return (yield from self._invoke_password_dialog(jid))
         return result
+
+    def _new_client(self, account: jclib.identity.Account):
+        client = super()._new_client(account)
+        version_svc = client.summon(aioxmpp.VersionServer)
+        version_svc.name = "JabberCat"
+        version_svc.version = jabbercat.__version__
+        return client
 
     # @asyncio.coroutine
     # def _decide_on_certificate(self, account, verifier):
