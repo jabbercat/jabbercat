@@ -154,7 +154,7 @@ class XMPPAvatarProvider:
         self.on_avatar_changed(jid)
 
     @asyncio.coroutine
-    def _get_image_bytes(self, address: aioxmpp.JID) -> typing.Optional[bytes]:
+    def _get_image(self, address: aioxmpp.JID) -> typing.Optional[Qt.QImage]:
         try:
             metadata = yield from self._avatar_svc.get_avatar_metadata(address)
         except (aioxmpp.errors.XMPPError,
@@ -163,14 +163,15 @@ class XMPPAvatarProvider:
                                 address, exc)
             return
 
-        for descriptor in metadata.get("image/png", []):
-            if not descriptor.has_image_data_in_pubsub:
-                continue
+        for descriptor in metadata:
             try:
-                return (yield from descriptor.get_image_bytes())
+                data = yield from descriptor.get_image_bytes()
             except (NotImplementedError, RuntimeError,
                     aioxmpp.errors.XMPPCancelError):
-                pass
+                continue
+            img = Qt.QImage.fromData(data)
+            if not img.isNull():
+                return img
 
     @asyncio.coroutine
     def fetch_avatar(self, address: aioxmpp.JID) \
@@ -178,13 +179,12 @@ class XMPPAvatarProvider:
         """
         Fetch an avatar and wrap it in a QPicture.
         """
-        data = yield from self._get_image_bytes(address)
-        if data is None:
+        img = yield from self._get_image(address)
+        if img is None:
             self._cache[address] = None
             return None
 
-        picture = render_avatar_image(Qt.QImage.fromData(data, "PNG"),
-                                      BASE_SIZE)
+        picture = render_avatar_image(img, BASE_SIZE)
         self._cache[address] = picture
         return picture
 

@@ -126,7 +126,7 @@ class XMPPAvatarProvider(unittest.TestCase):
         self.ap._on_metadata_changed(TEST_JID1, unittest.mock.sentinel.metadata)
         self.listener.on_avatar_changed.assert_called_once_with(TEST_JID1)
 
-    def test__get_image_bytes_returns_none_if_metadata_fetch_fails(self):
+    def test__get_image_returns_none_if_metadata_fetch_fails(self):
         client = self._prep_client()
 
         self.ap.prepare_client(client)
@@ -135,12 +135,12 @@ class XMPPAvatarProvider(unittest.TestCase):
             aioxmpp.errors.XMPPError(("foo", "bar"))
 
         result = run_coroutine(
-            self.ap._get_image_bytes(unittest.mock.sentinel.address)
+            self.ap._get_image(unittest.mock.sentinel.address)
         )
 
         self.assertIsNone(result)
 
-    def test__get_image_bytes_uses_data_from_first_image_png(self):
+    def test__get_image_uses_QImage(self):
         client = self._prep_client()
 
         self.ap.prepare_client(client)
@@ -148,44 +148,50 @@ class XMPPAvatarProvider(unittest.TestCase):
         base = unittest.mock.Mock()
         base.avatar1 = unittest.mock.Mock(
             spec=aioxmpp.avatar.service.AbstractAvatarDescriptor)
-        base.avatar1.mime_type = "image/jpeg"
-        base.avatar1.nbytes = 4096
         base.avatar1.get_image_bytes = CoroutineMock()
+        base.avatar1.get_image_bytes.return_value = \
+            unittest.mock.sentinel.avatar1_bytes
 
         base.avatar2 = unittest.mock.Mock(
             spec=aioxmpp.avatar.service.AbstractAvatarDescriptor)
-        base.avatar2.mime_type = "image/png"
-        base.avatar2.nbytes = 4096
         base.avatar2.get_image_bytes = CoroutineMock()
         base.avatar2.get_image_bytes.return_value = \
-            unittest.mock.sentinel.image_bytes
+            unittest.mock.sentinel.avatar2_bytes
 
         base.avatar3 = unittest.mock.Mock(
             spec=aioxmpp.avatar.service.AbstractAvatarDescriptor)
-        base.avatar3.mime_type = "image/png"
-        base.avatar3.nbytes = 4096
         base.avatar3.get_image_bytes = CoroutineMock()
+        base.avatar3.get_image_bytes.return_value = \
+            unittest.mock.sentinel.avatar3_bytes
 
-        self.avatar.get_avatar_metadata.return_value = {
-            "image/png": [base.avatar2, base.avatar3],
-            "image/jpeg": [base.avatar1],
-        }
+        self.avatar.get_avatar_metadata.return_value = [
+            base.avatar1,
+            base.avatar2,
+            base.avatar3,
+        ]
 
-        result = run_coroutine(
-            self.ap._get_image_bytes(unittest.mock.sentinel.address)
-        )
+        with unittest.mock.patch("jabbercat.Qt.QImage") as QImage:
+            QImage.fromData.return_value.isNull.return_value = False
+
+            result = run_coroutine(
+                self.ap._get_image(unittest.mock.sentinel.address)
+            )
 
         self.avatar.get_avatar_metadata.assert_called_once_with(
             unittest.mock.sentinel.address,
         )
 
-        base.avatar1.get_image_bytes.assert_not_called()
-        base.avatar2.get_image_bytes.assert_called_once_with()
+        base.avatar1.get_image_bytes.assert_called_once_with()
+        base.avatar2.get_image_bytes.assert_not_called()
         base.avatar3.get_image_bytes.assert_not_called()
 
-        self.assertEqual(result, unittest.mock.sentinel.image_bytes)
+        QImage.fromData.assert_called_once_with(
+            unittest.mock.sentinel.avatar1_bytes
+        )
 
-    def test__get_image_bytes_tries_next_if_one_is_not_implemented(self):
+        self.assertEqual(result, QImage.fromData())
+
+    def test__get_image_tries_next_if_get_image_bytes_not_implemented(self):
         client = self._prep_client()
 
         self.ap.prepare_client(client)
@@ -193,33 +199,31 @@ class XMPPAvatarProvider(unittest.TestCase):
         base = unittest.mock.Mock()
         base.avatar1 = unittest.mock.Mock(
             spec=aioxmpp.avatar.service.AbstractAvatarDescriptor)
-        base.avatar1.mime_type = "image/jpeg"
-        base.avatar1.nbytes = 4096
         base.avatar1.get_image_bytes = CoroutineMock()
 
         base.avatar2 = unittest.mock.Mock(
             spec=aioxmpp.avatar.service.AbstractAvatarDescriptor)
-        base.avatar2.mime_type = "image/png"
-        base.avatar2.nbytes = 4096
         base.avatar2.get_image_bytes = CoroutineMock()
         base.avatar2.get_image_bytes.side_effect = NotImplementedError()
 
         base.avatar3 = unittest.mock.Mock(
             spec=aioxmpp.avatar.service.AbstractAvatarDescriptor)
-        base.avatar3.mime_type = "image/png"
-        base.avatar3.nbytes = 4096
         base.avatar3.get_image_bytes = CoroutineMock()
         base.avatar3.get_image_bytes.return_value = \
             unittest.mock.sentinel.image_bytes
 
-        self.avatar.get_avatar_metadata.return_value = {
-            "image/png": [base.avatar2, base.avatar3],
-            "image/jpeg": [base.avatar1],
-        }
+        self.avatar.get_avatar_metadata.return_value = [
+            base.avatar2,
+            base.avatar3,
+            base.avatar1,
+        ]
 
-        result = run_coroutine(
-            self.ap._get_image_bytes(unittest.mock.sentinel.address)
-        )
+        with unittest.mock.patch("jabbercat.Qt.QImage") as QImage:
+            QImage.fromData.return_value.isNull.return_value = False
+
+            result = run_coroutine(
+                self.ap._get_image(unittest.mock.sentinel.address)
+            )
 
         self.avatar.get_avatar_metadata.assert_called_once_with(
             unittest.mock.sentinel.address,
@@ -229,9 +233,13 @@ class XMPPAvatarProvider(unittest.TestCase):
         base.avatar2.get_image_bytes.assert_called_once_with()
         base.avatar3.get_image_bytes.assert_called_once_with()
 
-        self.assertEqual(result, unittest.mock.sentinel.image_bytes)
+        QImage.fromData.assert_called_once_with(
+            unittest.mock.sentinel.image_bytes
+        )
 
-    def test__get_image_bytes_tries_next_if_one_is_not_available(self):
+        self.assertEqual(result, QImage.fromData())
+
+    def test__get_image_tries_next_if_image_bytes_not_available(self):
         client = self._prep_client()
 
         self.ap.prepare_client(client)
@@ -239,34 +247,32 @@ class XMPPAvatarProvider(unittest.TestCase):
         base = unittest.mock.Mock()
         base.avatar1 = unittest.mock.Mock(
             spec=aioxmpp.avatar.service.AbstractAvatarDescriptor)
-        base.avatar1.mime_type = "image/jpeg"
-        base.avatar1.nbytes = 4096
         base.avatar1.get_image_bytes = CoroutineMock()
 
         base.avatar2 = unittest.mock.Mock(
             spec=aioxmpp.avatar.service.AbstractAvatarDescriptor)
-        base.avatar2.mime_type = "image/png"
-        base.avatar2.nbytes = 4096
         base.avatar2.get_image_bytes = CoroutineMock()
         base.avatar2.get_image_bytes.side_effect = \
             aioxmpp.errors.XMPPCancelError(("foo", "bar"))
 
         base.avatar3 = unittest.mock.Mock(
             spec=aioxmpp.avatar.service.AbstractAvatarDescriptor)
-        base.avatar3.mime_type = "image/png"
-        base.avatar3.nbytes = 4096
         base.avatar3.get_image_bytes = CoroutineMock()
         base.avatar3.get_image_bytes.return_value = \
             unittest.mock.sentinel.image_bytes
 
-        self.avatar.get_avatar_metadata.return_value = {
-            "image/png": [base.avatar2, base.avatar3],
-            "image/jpeg": [base.avatar1],
-        }
+        self.avatar.get_avatar_metadata.return_value = [
+            base.avatar2,
+            base.avatar3,
+            base.avatar1,
+        ]
 
-        result = run_coroutine(
-            self.ap._get_image_bytes(unittest.mock.sentinel.address)
-        )
+        with unittest.mock.patch("jabbercat.Qt.QImage") as QImage:
+            QImage.fromData.return_value.isNull.return_value = False
+
+            result = run_coroutine(
+                self.ap._get_image(unittest.mock.sentinel.address)
+            )
 
         self.avatar.get_avatar_metadata.assert_called_once_with(
             unittest.mock.sentinel.address,
@@ -276,9 +282,13 @@ class XMPPAvatarProvider(unittest.TestCase):
         base.avatar2.get_image_bytes.assert_called_once_with()
         base.avatar3.get_image_bytes.assert_called_once_with()
 
-        self.assertEqual(result, unittest.mock.sentinel.image_bytes)
+        QImage.fromData.assert_called_once_with(
+            unittest.mock.sentinel.image_bytes
+        )
 
-    def test__get_image_bytes_tries_next_if_one_fails(self):
+        self.assertEqual(result, QImage.fromData())
+
+    def test__get_image_tries_next_if_one_fails(self):
         client = self._prep_client()
 
         self.ap.prepare_client(client)
@@ -286,33 +296,32 @@ class XMPPAvatarProvider(unittest.TestCase):
         base = unittest.mock.Mock()
         base.avatar1 = unittest.mock.Mock(
             spec=aioxmpp.avatar.service.AbstractAvatarDescriptor)
-        base.avatar1.mime_type = "image/jpeg"
-        base.avatar1.nbytes = 4096
         base.avatar1.get_image_bytes = CoroutineMock()
 
         base.avatar2 = unittest.mock.Mock(
             spec=aioxmpp.avatar.service.AbstractAvatarDescriptor)
-        base.avatar2.mime_type = "image/png"
-        base.avatar2.nbytes = 4096
         base.avatar2.get_image_bytes = CoroutineMock()
-        base.avatar2.get_image_bytes.side_effect = RuntimeError()
+        base.avatar2.get_image_bytes.side_effect = \
+            RuntimeError()
 
         base.avatar3 = unittest.mock.Mock(
             spec=aioxmpp.avatar.service.AbstractAvatarDescriptor)
-        base.avatar3.mime_type = "image/png"
-        base.avatar3.nbytes = 4096
         base.avatar3.get_image_bytes = CoroutineMock()
         base.avatar3.get_image_bytes.return_value = \
             unittest.mock.sentinel.image_bytes
 
-        self.avatar.get_avatar_metadata.return_value = {
-            "image/png": [base.avatar2, base.avatar3],
-            "image/jpeg": [base.avatar1],
-        }
+        self.avatar.get_avatar_metadata.return_value = [
+            base.avatar2,
+            base.avatar3,
+            base.avatar1,
+        ]
 
-        result = run_coroutine(
-            self.ap._get_image_bytes(unittest.mock.sentinel.address)
-        )
+        with unittest.mock.patch("jabbercat.Qt.QImage") as QImage:
+            QImage.fromData.return_value.isNull.return_value = False
+
+            result = run_coroutine(
+                self.ap._get_image(unittest.mock.sentinel.address)
+            )
 
         self.avatar.get_avatar_metadata.assert_called_once_with(
             unittest.mock.sentinel.address,
@@ -322,9 +331,13 @@ class XMPPAvatarProvider(unittest.TestCase):
         base.avatar2.get_image_bytes.assert_called_once_with()
         base.avatar3.get_image_bytes.assert_called_once_with()
 
-        self.assertEqual(result, unittest.mock.sentinel.image_bytes)
+        QImage.fromData.assert_called_once_with(
+            unittest.mock.sentinel.image_bytes
+        )
 
-    def test__get_image_bytes_returns_none_if_all_fail(self):
+        self.assertEqual(result, QImage.fromData())
+
+    def test__get_image_returns_none_if_all_fail(self):
         client = self._prep_client()
 
         self.ap.prepare_client(client)
@@ -332,44 +345,44 @@ class XMPPAvatarProvider(unittest.TestCase):
         base = unittest.mock.Mock()
         base.avatar1 = unittest.mock.Mock(
             spec=aioxmpp.avatar.service.AbstractAvatarDescriptor)
-        base.avatar1.mime_type = "image/jpeg"
-        base.avatar1.nbytes = 4096
         base.avatar1.get_image_bytes = CoroutineMock()
+        base.avatar1.get_image_bytes.side_effect = \
+            aioxmpp.errors.XMPPCancelError(("foo", "bar"))
 
         base.avatar2 = unittest.mock.Mock(
             spec=aioxmpp.avatar.service.AbstractAvatarDescriptor)
-        base.avatar2.mime_type = "image/png"
-        base.avatar2.nbytes = 4096
         base.avatar2.get_image_bytes = CoroutineMock()
         base.avatar2.get_image_bytes.side_effect = RuntimeError()
 
         base.avatar3 = unittest.mock.Mock(
             spec=aioxmpp.avatar.service.AbstractAvatarDescriptor)
-        base.avatar3.mime_type = "image/png"
-        base.avatar3.nbytes = 4096
         base.avatar3.get_image_bytes = CoroutineMock()
         base.avatar3.get_image_bytes.side_effect = RuntimeError()
 
-        self.avatar.get_avatar_metadata.return_value = {
-            "image/png": [base.avatar2, base.avatar3],
-            "image/jpeg": [base.avatar1],
-        }
+        self.avatar.get_avatar_metadata.return_value = [
+            base.avatar1,
+            base.avatar2,
+            base.avatar3,
+        ]
 
-        result = run_coroutine(
-            self.ap._get_image_bytes(unittest.mock.sentinel.address)
-        )
+        with unittest.mock.patch("jabbercat.Qt.QImage") as QImage:
+            result = run_coroutine(
+                self.ap._get_image(unittest.mock.sentinel.address)
+            )
 
         self.avatar.get_avatar_metadata.assert_called_once_with(
             unittest.mock.sentinel.address,
         )
 
-        base.avatar1.get_image_bytes.assert_not_called()
+        base.avatar1.get_image_bytes.assert_called_once_with()
         base.avatar2.get_image_bytes.assert_called_once_with()
         base.avatar3.get_image_bytes.assert_called_once_with()
 
+        QImage.fromData.assert_not_called()
+
         self.assertIsNone(result)
 
-    def test__get_image_bytes_returns_if_no_image_png_in_result(self):
+    def test__get_image_tries_next_if_QImage_fails_to_load(self):
         client = self._prep_client()
 
         self.ap.prepare_client(client)
@@ -377,33 +390,73 @@ class XMPPAvatarProvider(unittest.TestCase):
         base = unittest.mock.Mock()
         base.avatar1 = unittest.mock.Mock(
             spec=aioxmpp.avatar.service.AbstractAvatarDescriptor)
-        base.avatar1.mime_type = "image/jpeg"
-        base.avatar1.nbytes = 4096
         base.avatar1.get_image_bytes = CoroutineMock()
+        base.avatar1.get_image_bytes.return_value = \
+            unittest.mock.sentinel.avatar1_bytes
 
-        self.avatar.get_avatar_metadata.return_value = {
-            "image/jpeg": [base.avatar1],
-        }
+        base.avatar2 = unittest.mock.Mock(
+            spec=aioxmpp.avatar.service.AbstractAvatarDescriptor)
+        base.avatar2.get_image_bytes = CoroutineMock()
+        base.avatar2.get_image_bytes.return_value = \
+            unittest.mock.sentinel.avatar2_bytes
 
-        result = run_coroutine(
-            self.ap._get_image_bytes(unittest.mock.sentinel.address)
-        )
+        base.avatar3 = unittest.mock.Mock(
+            spec=aioxmpp.avatar.service.AbstractAvatarDescriptor)
+        base.avatar3.get_image_bytes = CoroutineMock()
+        base.avatar3.get_image_bytes.return_value = \
+            unittest.mock.sentinel.avatar3_bytes
+
+        self.avatar.get_avatar_metadata.return_value = [
+            base.avatar1,
+            base.avatar2,
+            base.avatar3,
+        ]
+
+        def images():
+            for i in itertools.count():
+                yield getattr(base, "image{}".format(i))
+
+        base.image0.isNull.return_value = True
+        base.image1.isNull.return_value = True
+        base.image2.isNull.return_value = False
+
+        with unittest.mock.patch("jabbercat.Qt.QImage") as QImage:
+            QImage.fromData.side_effect = images()
+
+            result = run_coroutine(
+                self.ap._get_image(unittest.mock.sentinel.address)
+            )
 
         self.avatar.get_avatar_metadata.assert_called_once_with(
             unittest.mock.sentinel.address,
         )
 
-        base.avatar1.get_image_bytes.assert_not_called()
+        base.avatar1.get_image_bytes.assert_called_once_with()
+        base.avatar2.get_image_bytes.assert_called_once_with()
+        base.avatar3.get_image_bytes.assert_called_once_with()
 
-        self.assertIsNone(result)
+        self.assertSequenceEqual(
+            QImage.fromData.mock_calls,
+            [
+                unittest.mock.call(unittest.mock.sentinel.avatar1_bytes),
+                unittest.mock.call(unittest.mock.sentinel.avatar2_bytes),
+                unittest.mock.call(unittest.mock.sentinel.avatar3_bytes),
+            ]
+        )
 
-    def test_fetch_avatar_returns_None_if__get_image_bytes_returns_None(self):
+        base.image0.isNull.assert_called_once_with()
+        base.image1.isNull.assert_called_once_with()
+        base.image2.isNull.assert_called_once_with()
+
+        self.assertEqual(result, base.image2)
+
+    def test_fetch_avatar_returns_None_if__get_image_returns_None(self):
         with contextlib.ExitStack() as stack:
-            _get_image_bytes = stack.enter_context(unittest.mock.patch.object(
-                self.ap, "_get_image_bytes",
+            _get_image = stack.enter_context(unittest.mock.patch.object(
+                self.ap, "_get_image",
                 new=CoroutineMock()
             ))
-            _get_image_bytes.return_value = None
+            _get_image.return_value = None
 
             self.assertIsNone(
                 run_coroutine(self.ap.fetch_avatar(
@@ -411,21 +464,17 @@ class XMPPAvatarProvider(unittest.TestCase):
                 ))
             )
 
-        _get_image_bytes.assert_called_once_with(
+        _get_image.assert_called_once_with(
             unittest.mock.sentinel.address
         )
 
-    def test_fetch_avatar_uses__get_image_bytes_and_render_avatar_image(self):
+    def test_fetch_avatar_uses__get_image_and_render_avatar_image(self):
         with contextlib.ExitStack() as stack:
-            _get_image_bytes = stack.enter_context(unittest.mock.patch.object(
-                self.ap, "_get_image_bytes",
+            _get_image = stack.enter_context(unittest.mock.patch.object(
+                self.ap, "_get_image",
                 new=CoroutineMock()
             ))
-            _get_image_bytes.return_value = unittest.mock.sentinel.image_bytes
-
-            QImage = stack.enter_context(unittest.mock.patch(
-                "jabbercat.Qt.QImage"
-            ))
+            _get_image.return_value = unittest.mock.sentinel.image
 
             render_avatar_image = stack.enter_context(unittest.mock.patch(
                 "jabbercat.avatar.render_avatar_image"
@@ -435,16 +484,14 @@ class XMPPAvatarProvider(unittest.TestCase):
                 unittest.mock.sentinel.address
             ))
 
-        _get_image_bytes.assert_called_once_with(
+        _get_image.assert_called_once_with(
             unittest.mock.sentinel.address
         )
 
-        QImage.fromData.assert_called_once_with(
-            unittest.mock.sentinel.image_bytes,
-            "PNG",
+        render_avatar_image.assert_called_once_with(
+            unittest.mock.sentinel.image,
+            48
         )
-
-        render_avatar_image.assert_called_once_with(QImage.fromData(), 48)
 
         self.assertEqual(result, render_avatar_image())
 
@@ -464,15 +511,11 @@ class XMPPAvatarProvider(unittest.TestCase):
                 yield unittest.mock.sentinel.image_bytes
 
         with contextlib.ExitStack() as stack:
-            _get_image_bytes = stack.enter_context(unittest.mock.patch.object(
-                self.ap, "_get_image_bytes",
+            _get_image = stack.enter_context(unittest.mock.patch.object(
+                self.ap, "_get_image",
                 new=CoroutineMock()
             ))
-            _get_image_bytes.side_effect = generate_bytes()
-
-            QImage = stack.enter_context(unittest.mock.patch(
-                "jabbercat.Qt.QImage"
-            ))
+            _get_image.side_effect = generate_bytes()
 
             render_avatar_image = stack.enter_context(unittest.mock.patch(
                 "jabbercat.avatar.render_avatar_image"
