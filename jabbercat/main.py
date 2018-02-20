@@ -379,6 +379,7 @@ class MainWindow(Qt.QMainWindow):
     def _conversation_added(self, wrapper):
         page = conversation.ConversationView(
             wrapper,
+            self.main.avatar,
             self.main.web_profile,
         )
         self.__convmap[wrapper] = page

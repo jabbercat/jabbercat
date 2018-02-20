@@ -12,6 +12,7 @@ import aioxmpp.im.service
 import aioxmpp.structs
 
 import jclib.conversation
+import jclib.identity
 import jclib.utils
 
 from . import Qt, utils, models, avatar
@@ -43,6 +44,7 @@ class MessageViewPageChannelObject(Qt.QObject):
     on_ready = Qt.pyqtSignal([])
     on_message = Qt.pyqtSignal(['QVariantMap'])
     on_font_family_changed = Qt.pyqtSignal([str])
+    on_avatar_changed = Qt.pyqtSignal(['QVariantMap'])
 
     @Qt.pyqtProperty(str, notify=on_font_family_changed)
     def font_family(self):
@@ -162,9 +164,13 @@ class ConversationView(Qt.QWidget):
 
     def __init__(self,
                  conversation_node,
+                 avatars: avatar.AvatarManager,
                  web_profile: Qt.QWebEngineProfile,
                  parent=None):
         super().__init__(parent=parent)
+        self.logger = logging.getLogger(
+            ".".join([__name__, type(self).__name__])
+        )
         self.ui = p2p_conversation.Ui_P2PView()
         self.ui.setupUi(self)
 
@@ -204,6 +210,11 @@ class ConversationView(Qt.QWidget):
             self.__node_tokens,
             self.__node.on_message,
             self.handle_live_message,
+        )
+        _connect_and_store_token(
+            self.__node_tokens,
+            avatars.on_avatar_changed,
+            self.handle_avatar_change,
         )
         self.__conv_tokens = []
         self.__msgidmap = {}
@@ -345,6 +356,18 @@ class ConversationView(Qt.QWidget):
         self.logger.debug("sending data to JS: %r", data)
 
         self.history.channel.on_message.emit(data)
+
+    def handle_avatar_change(self,
+                             account: jclib.identity.Account,
+                             address: aioxmpp.JID):
+        if self.__node.account != account:
+            return
+
+        self.history.channel.on_avatar_changed.emit(
+            {
+                "address": str(address),
+            }
+        )
 
     def add_message(self, message, member, source, tracker=None, **kwargs):
         if not message.body:

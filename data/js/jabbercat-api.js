@@ -2,6 +2,7 @@ var api_object = null;
 var account_jid = null;
 var messages_parent = document.getElementById("messages");
 var messages = new Array();
+var avatar_addresses = {};
 
 var get_prev_message = function(insertion_timestamp) {
     if (messages.length == 0) {
@@ -17,11 +18,49 @@ var get_prev_message = function(insertion_timestamp) {
     return messages[messages.length-1];
 };
 
+var autoget_avatar_address = function(address, display_name) {
+    var data = avatar_addresses[address];
+    if (data === undefined) {
+        data = {};
+        avatar_addresses[address] = data;
+    }
+
+    var url = data[display_name];
+    if (url !== undefined) {
+        return url;
+    }
+
+    var params = new URLSearchParams();
+    params.set("peer", address);
+    params.set("nick", display_name);
+    params.set("account", account_jid);
+    url = "avatar:///?" + params.toString() + "#";
+    data[display_name] = url;
+
+    return url;
+};
+
+var inc_avatar_epoch = function(address) {
+    var data = avatar_addresses[address];
+    if (data === undefined) {
+        return false;
+    }
+
+    for (var key in data) {
+        if (data.hasOwnProperty(key)) {
+            data[key] = data[key] + "x";
+        }
+    }
+
+    return true;
+};
+
 var make_message_block = function(first_message) {
     var block_el = document.createElement("div");
     block_el.classList.add("message-block");
     block_el.dataset.from_jid = first_message.dataset.from_jid;
     block_el.dataset.from_self = first_message.dataset.from_self;
+    block_el.dataset.display_name = first_message.dataset.display_name;
     block_el.style.background = first_message.dataset.color_weak;
     if (block_el.dataset.from_self == "true") {
         block_el.classList.add("from-self");
@@ -31,11 +70,10 @@ var make_message_block = function(first_message) {
     avatar_el.classList.add("avatar");
 
     var img_el = document.createElement("img");
-    var params = new URLSearchParams();
-    params.set("peer", first_message.dataset.from_jid);
-    params.set("nick", first_message.dataset.display_name);
-    params.set("account", account_jid);
-    img_el.src = "avatar:///?" + params.toString();
+    img_el.src = autoget_avatar_address(
+        first_message.dataset.from_jid,
+        first_message.dataset.display_name
+    );
     avatar_el.appendChild(img_el);
     block_el.appendChild(avatar_el);
 
@@ -292,9 +330,36 @@ var add_message = function(info) {
     );
 }
 
+var avatar_changed = function(info) {
+    var address = info.address;
+    if (!inc_avatar_epoch(address)) {
+        console.log("avatars for "+address+" are not on this page!");
+        return;
+    }
+
+    console.log("avatar changed for "+address);
+    var avatars = document.getElementsByClassName("avatar");
+    for (var i = 0; i < avatars.length; i++) {
+        var avatar = avatars[i];
+        var block = avatar.parentNode;
+        var avatar_address = block.dataset.from_jid;
+        if (avatar_address !== address) {
+            console.log("mismatch: "+address+" !== "+avatar_address);
+            continue;
+        }
+
+        console.log("match!");
+        var display_name = block.dataset.display_name;
+        var img = avatar.children[0];
+        img.src = autoget_avatar_address(address, display_name);
+    }
+
+}
+
 var init = function() {
     account_jid = api_object.account_jid;
     api_object.on_message.connect(add_message);
+    api_object.on_avatar_changed.connect(avatar_changed);
     var body = document.body;
     body.style.fontFamily = api_object.font_family;
     body.style.fontSize = api_object.font_size;

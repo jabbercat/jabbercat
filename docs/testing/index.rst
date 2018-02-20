@@ -205,10 +205,6 @@ Known issues
 
 * Similarly, handling of highlighting/mentions in MUCs is not implemented yet.
 
-* Currently, we don’t update the message view when avatars are changed. This is
-  on the to-do list. (Note that the most common effect of this is that only
-  auto-generated avatars are shown in the message view.)
-
 * Setting avatars, account tags and account colors isn’t implemented yet,
   despite there being some UI for that (that UI is 100% functionless).
 
