@@ -200,6 +200,11 @@ class ConversationView(Qt.QWidget):
             self.__node.on_stale,
             self._stale,
         )
+        _connect_and_store_token(
+            self.__node_tokens,
+            self.__node.on_message,
+            self.handle_live_message,
+        )
         self.__conv_tokens = []
         self.__msgidmap = {}
 
@@ -218,11 +223,6 @@ class ConversationView(Qt.QWidget):
 
     def _ready(self):
         self.__conversation = self.__node.conversation
-        _connect_and_store_token(
-            self.__conv_tokens,
-            self.__conversation.on_message,
-            functools.partial(self.add_message),
-        )
 
     def _stale(self):
         for signal, token in self.__conv_tokens:
@@ -264,67 +264,7 @@ class ConversationView(Qt.QWidget):
             print("tracking not supported")
             yield from self.__conversation.send_message(msg)
 
-    def _message_frame_format(self):
-        fmt = Qt.QTextFrameFormat()
-        return fmt
-
-    def add_message(self, message, member, source, tracker=None, **kwargs):
-        if not message.body:
-            return
-
-        from_jid = None
-        is_self = False
-
-        if member is not None:
-            from_jid = member.conversation_jid
-            color_input = str(
-                (member.direct_jid or member.conversation_jid).bare()
-            )
-            if member is self.__conversation.me:
-                from_ = "me"
-                is_self = True
-            else:
-                from_ = str(
-                    (member.direct_jid or member.conversation_jid).bare()
-                )
-
-            if hasattr(member, "nick"):
-                from_ = member.nick
-                color_input = member.nick
-
-        else:
-            from_jid = None
-            from_ = str(message.from_)
-            color_input = None
-
-        if color_input is not None:
-            qtcolor = utils.text_to_qtcolor(
-                jclib.utils.normalise_text_for_hash(color_input)
-            )
-            color_full = "rgba({:d}, {:d}, {:d}, 1.0)".format(
-                round(qtcolor.red() * 0.8),
-                round(qtcolor.green() * 0.8),
-                round(qtcolor.blue() * 0.8),
-            )
-            light_factor = 0.1
-            inv_light_factor = 1 - light_factor
-            color_weak = "linear-gradient(135deg, rgba({:d}, {:d}, {:d}, {}), transparent 10em)".format(
-                # round(qtcolor.red() * light_factor + 255 * inv_light_factor),
-                # round(qtcolor.green() * light_factor + 255 * inv_light_factor),
-                # round(qtcolor.blue() * light_factor + 255 * inv_light_factor),
-                round(qtcolor.red()),
-                round(qtcolor.green()),
-                round(qtcolor.blue()),
-                light_factor,
-            )
-        else:
-            color_full = "inherit"
-            color_weak = color_full
-
-        body = message.body.lookup([
-            aioxmpp.structs.LanguageRange.fromstr("*")
-        ])
-
+    def htmlify_body(self, body):
         parts = []
         last = 0
         for match in self.URL_RE.finditer(body):
@@ -358,7 +298,86 @@ class ConversationView(Qt.QWidget):
 
         parts.append(html.escape(body[last:]))
 
-        body = "<br/>".join("".join(parts).split("\n"))
+        return "<br/>".join("".join(parts).split("\n"))
+
+    def handle_live_message(self, timestamp, is_self, from_jid,
+                            color_input, from_, body):
+        color_weak = "inherit"
+        color_full = "inherit"
+        body_html = self.htmlify_body(body)
+
+        if color_input is not None:
+            qtcolor = utils.text_to_qtcolor(
+                jclib.utils.normalise_text_for_hash(color_input)
+            )
+            color_full = "rgba({:d}, {:d}, {:d}, 1.0)".format(
+                round(qtcolor.red() * 0.8),
+                round(qtcolor.green() * 0.8),
+                round(qtcolor.blue() * 0.8),
+            )
+            light_factor = 0.1
+            inv_light_factor = 1 - light_factor
+            color_weak = "linear-gradient(135deg, rgba({:d}, {:d}, {:d}, {}), transparent 10em)".format(
+                # round(qtcolor.red() * light_factor + 255 * inv_light_factor),
+                # round(qtcolor.green() * light_factor + 255 * inv_light_factor),
+                # round(qtcolor.blue() * light_factor + 255 * inv_light_factor),
+                round(qtcolor.red()),
+                round(qtcolor.green()),
+                round(qtcolor.blue()),
+                light_factor,
+            )
+        else:
+            color_full = "inherit"
+            color_weak = color_full
+
+        data = {
+            "timestamp": str(
+                timestamp.isoformat() + "Z"
+            ),
+            "from_self": is_self,
+            "from_jid": str(from_jid or ""),
+            "display_name": from_,
+            "body": body_html,
+            "color_full": color_full,
+            "color_weak": color_weak,
+        }
+
+        self.logger.debug("sending data to JS: %r", data)
+
+        self.history.channel.on_message.emit(data)
+
+    def add_message(self, message, member, source, tracker=None, **kwargs):
+        if not message.body:
+            return
+
+        from_jid = None
+        is_self = False
+
+        if member is not None:
+            from_jid = member.conversation_jid
+            color_input = str(
+                (member.direct_jid or member.conversation_jid).bare()
+            )
+            if member is self.__conversation.me:
+                from_ = "me"
+                is_self = True
+            else:
+                from_ = str(
+                    (member.direct_jid or member.conversation_jid).bare()
+                )
+
+            if hasattr(member, "nick"):
+                from_ = member.nick
+                color_input = member.nick
+
+        else:
+            from_jid = None
+            from_ = str(message.from_)
+            color_input = None
+
+        body = message.body.lookup([
+            aioxmpp.structs.LanguageRange.fromstr("*")
+        ])
 
         self.history.channel.on_message.emit(
             {

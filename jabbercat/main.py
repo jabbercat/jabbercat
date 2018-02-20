@@ -7,6 +7,7 @@ import aioxmpp
 import aioxmpp.cache
 import aioxmpp.im.p2p
 
+import jclib.archive
 import jclib.conversation
 import jclib.main
 import jclib.roster
@@ -470,9 +471,14 @@ class QtMain(jclib.main.Main):
             self.client,
             self.writeman,
         )
+        self.archive = jclib.archive.MessageManager(
+            self.accounts,
+            self.client,
+        )
         self.conversations = jclib.conversation.ConversationManager(
             self.accounts,
             self.client,
+            self.archive,
         )
         self.avatar_urls = webintegration.AvatarURLSchemeHandler(
             self.accounts,
