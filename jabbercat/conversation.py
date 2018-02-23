@@ -3,6 +3,7 @@ import functools
 import html
 import logging
 import re
+import urllib.parse
 
 from datetime import datetime
 
@@ -10,6 +11,7 @@ import aioxmpp.im.conversation
 import aioxmpp.im.p2p
 import aioxmpp.im.service
 import aioxmpp.structs
+import aioxmpp.xso
 
 import jclib.conversation
 import jclib.identity
@@ -154,6 +156,59 @@ class MessageView(Qt.QWebEngineView):
         self._propagate_fonts()
 
 
+YOUTUBE_FULL_RE = re.compile(
+    r"https?://(www\.)?youtube(-nocookie)?\.com/watch\?"
+    r"(?P<query>[^#]+)(#(?P<frag>.+))?",
+    re.I
+)
+
+YOUTUBE_EMBED_RE = re.compile(
+    r"https?://(www\.)?youtube(-nocookie)?\.com/embed/(?P<video_id>[^?#]+)"
+    r"(\?(?P<query>[^#]+))?(#(?P<frag>.+))?",
+    re.I
+)
+
+
+def youtube_attachment(url):
+    match = YOUTUBE_FULL_RE.match(url)
+    if match is not None:
+        data = match.groupdict()
+        query_info = urllib.parse.parse_qs(data.get("query") or "")
+        try:
+            video_id = query_info.get("v", [])[0]
+        except IndexError:
+            return
+    else:
+        match = YOUTUBE_EMBED_RE.match(url)
+        if match is None:
+            return
+
+        data = match.groupdict()
+        video_id = data["video_id"]
+
+    return {
+        "type": "frame",
+        "frame": {
+            "url": (
+                "https://www.youtube-nocookie.com/"
+                "embed/{video_id}".format(
+                    video_id=video_id,
+                )
+            )
+        }
+    }
+
+def url_to_attachment(url):
+    return youtube_attachment(url) or None
+
+
+def urls_to_attachments(urls):
+    for url in urls:
+        attachment = url_to_attachment(url)
+        if attachment is not None:
+            yield attachment
+
+
 class ConversationView(Qt.QWidget):
     URL_RE = re.compile(
         r"([<\(\[\{{](?P<url_paren>{url})[>\)\]\}}]|(\W)(?P<url_nonword>{url})\3|\b(?P<url_name>{url})\b)".format(
@@ -277,6 +332,7 @@ class ConversationView(Qt.QWidget):
 
     def htmlify_body(self, body):
         parts = []
+        urls = []
         last = 0
         for match in self.URL_RE.finditer(body):
             prev = body[last:match.start()]
@@ -303,19 +359,20 @@ class ConversationView(Qt.QWidget):
                 html.escape(url),
                 html.escape(inner_prefix + url + inner_suffix),
             ))
+            urls.append(url)
             if suffix:
                 parts.append(html.escape(suffix))
             last = match.end()
 
         parts.append(html.escape(body[last:]))
 
-        return "<br/>".join("".join(parts).split("\n"))
+        return "<br/>".join("".join(parts).split("\n")), (urls,)
 
     def handle_live_message(self, timestamp, is_self, from_jid,
-                            color_input, from_, body):
+                            from_, color_input, message):
         color_weak = "inherit"
         color_full = "inherit"
-        body_html = self.htmlify_body(body)
+        body_html, (urls,) = self.htmlify_body(message.body.any())
 
         if color_input is not None:
             qtcolor = utils.text_to_qtcolor(
@@ -328,18 +385,33 @@ class ConversationView(Qt.QWidget):
             )
             light_factor = 0.1
             inv_light_factor = 1 - light_factor
-            color_weak = "linear-gradient(135deg, rgba({:d}, {:d}, {:d}, {}), transparent 10em)".format(
-                # round(qtcolor.red() * light_factor + 255 * inv_light_factor),
-                # round(qtcolor.green() * light_factor + 255 * inv_light_factor),
-                # round(qtcolor.blue() * light_factor + 255 * inv_light_factor),
-                round(qtcolor.red()),
-                round(qtcolor.green()),
-                round(qtcolor.blue()),
-                light_factor,
+            color_weak = (
+                "linear-gradient(135deg, "
+                "rgba({:d}, {:d}, {:d}, {}), "
+                "transparent 10em)".format(
+                    round(qtcolor.red()),
+                    round(qtcolor.green()),
+                    round(qtcolor.blue()),
+                    light_factor,
+                )
             )
         else:
             color_full = "inherit"
             color_weak = color_full
+
+        attachments = []
+
+        if message.xep0066_oob and message.xep0066_oob.url:
+            oob_url = message.xep0066_oob.url
+            if any(oob_url.endswith(x) for x in [".png", ".jpeg", ".jpg"]):
+                attachments.append(
+                    {
+                        "type": "image",
+                        "image": {"url": oob_url},
+                    }
+                )
+
+        attachments.extend(urls_to_attachments(urls))
 
         data = {
             "timestamp": str(
@@ -351,8 +423,10 @@ class ConversationView(Qt.QWidget):
             "body": body_html,
             "color_full": color_full,
             "color_weak": color_weak,
+            "attachments": attachments,
         }
 
+        self.logger.debug("detected URLs: %s", urls)
         self.logger.debug("sending data to JS: %r", data)
 
         self.history.channel.on_message.emit(data)

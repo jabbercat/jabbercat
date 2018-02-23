@@ -301,6 +301,53 @@ var update_timestamps = function(start_at) {
     }
 };
 
+var resize_frame = function(frame_wrap_el) {
+    var width = frame_wrap_el.clientWidth;
+    var height = width / 16 * 9;
+    frame_wrap_el.style.height = height + "px";
+};
+
+var add_frame_attachment = function(message_item, frame) {
+    var frame_wrap_el = document.createElement("div");
+    frame_wrap_el.classList.add("frame-wrapper");
+
+    var iframe_el = document.createElement("iframe");
+    iframe_el.src = frame.url;
+    frame_wrap_el.appendChild(iframe_el);
+
+    // FIXME: use ResizeObserver here once it’s available
+    // cf. https://stackoverflow.com/questions/6492683/
+
+    message_item.children[1].appendChild(frame_wrap_el);
+
+    return function() {
+        console.log("post-insert resize!");
+        resize_frame(frame_wrap_el);
+    };
+};
+
+var add_image_attachment = function(message_item, image) {
+    var img_el = document.createElement("img");
+    img_el.classList.add("attachment");
+    img_el.src = image.url;
+
+    message_item.children[1].appendChild(img_el);
+
+    return null;
+};
+
+var add_attachment = function(message_item, attachment) {
+    var type = attachment.type;
+    if (type === "frame") {
+        return add_frame_attachment(message_item, attachment.frame);
+    } else if (type === "image") {
+        return add_image_attachment(message_item, attachment.image);
+    } else {
+        console.log("unsupported attachment type: "+type);
+    }
+    return null;
+};
+
 var add_message = function(info) {
     var message_item = document.createElement("div");
     message_item.classList.add("message");
@@ -317,15 +364,35 @@ var add_message = function(info) {
     message_item.appendChild(timestamp_el);
 
     var body_el = document.createElement("div");
-    body_el.classList.add("body");
     body_el.innerHTML = info.body;
-    message_item.appendChild(body_el);
+
+    var body_wrap_el = document.createElement("div");
+    body_wrap_el.classList.add("body");
+    body_wrap_el.appendChild(body_el);
+    message_item.appendChild(body_wrap_el);
+
+    post_insert_callbacks = new Array();
+
+    for (var i = 0; i < info.attachments.length; ++i) {
+        var attachment = info.attachments[i];
+        var cb = add_attachment(message_item, attachment);
+        if (cb !== null) {
+            post_insert_callbacks.push(cb);
+        }
+    }
 
     insert_message_item(message_item);
 
+    for (var i = 0; i < post_insert_callbacks.length; ++i) {
+        var cb = post_insert_callbacks[i];
+        cb();
+    }
+
     // delay to ensure that the DOM has updated already
     setTimeout(
-        function(){window.scrollTo(0, document.body.scrollHeight);},
+        function(){
+            window.scrollTo(0, document.body.scrollHeight);
+        },
         50
     );
 }
@@ -356,10 +423,19 @@ var avatar_changed = function(info) {
 
 }
 
+var handle_resize = function(event) {
+    var frames = document.getElementsByClassName("frame-wrapper");
+    for (var i = 0; i < frames.length; ++i) {
+        var frame = frames[i];
+        resize_frame(frame);
+    }
+}
+
 var init = function() {
     account_jid = api_object.account_jid;
     api_object.on_message.connect(add_message);
     api_object.on_avatar_changed.connect(avatar_changed);
+    window.onresize = handle_resize;
     var body = document.body;
     body.style.fontFamily = api_object.font_family;
     body.style.fontSize = api_object.font_size;
