@@ -3,6 +3,8 @@ var account_jid = null;
 var messages_parent = document.getElementById("messages");
 var messages = new Array();
 var avatar_addresses = {};
+var message_uid_index = {};
+var marker_owner_index = {};
 
 var get_prev_message = function(insertion_timestamp) {
     if (messages.length == 0) {
@@ -55,6 +57,12 @@ var inc_avatar_epoch = function(address) {
     return true;
 };
 
+var create_avatar_img = function(from_jid, display_name) {
+    var img_el = document.createElement("img");
+    img_el.src = autoget_avatar_address(from_jid, display_name);
+    return img_el;
+}
+
 var make_message_block = function(first_message) {
     var block_el = document.createElement("div");
     block_el.classList.add("message-block");
@@ -62,19 +70,17 @@ var make_message_block = function(first_message) {
     block_el.dataset.from_self = first_message.dataset.from_self;
     block_el.dataset.display_name = first_message.dataset.display_name;
     block_el.style.background = first_message.dataset.color_weak;
+    block_el.dataset.element_type = "message-block";
     if (block_el.dataset.from_self == "true") {
         block_el.classList.add("from-self");
     }
 
     var avatar_el = document.createElement("div");
     avatar_el.classList.add("avatar");
-
-    var img_el = document.createElement("img");
-    img_el.src = autoget_avatar_address(
+    avatar_el.appendChild(create_avatar_img(
         first_message.dataset.from_jid,
         first_message.dataset.display_name
-    );
-    avatar_el.appendChild(img_el);
+    ));
     block_el.appendChild(avatar_el);
 
     var from_el = document.createElement("div");
@@ -118,12 +124,32 @@ var block_get_last_message = function(block) {
     return messages_el.children[messages_el.children.length - 1];
 };
 
+var toplevel_get_next = function(toplevel) {
+    return toplevel.nextSibling || null;
+}
+
+var toplevel_get_prev = function(toplevel) {
+    return toplevel.prevSibling || null;
+}
+
+var toplevel_is_block = function(toplevel) {
+    return toplevel.dataset.element_type == "message-block";
+}
+
 var block_get_next = function(block) {
-    return block.nextSibling;
+    var next = block.nextSibling;
+    while (next !== null && toplevel_is_block(block)) {
+        next = next.nextSibling;
+    }
+    return next;
 };
 
 var block_get_prev = function(block) {
-    return block.previousSibling;
+    var prev = block.previousSibling;
+    while (prev !== null && toplevel_is_block(block)) {
+        prev = prev.previousSibling;
+    }
+    return prev;
 }
 
 var message_get_next = function(msg) {
@@ -185,11 +211,14 @@ var insert_message_item = function(message_item) {
     }
 
     if (prev_msg !== null &&
-        prev_msg.dataset.from_jid == message_item.dataset.from_jid)
+        prev_msg.dataset.from_jid == message_item.dataset.from_jid &&
+        (toplevel_get_next(message_get_block(prev_msg)) === null ||
+         toplevel_is_block(toplevel_get_next(message_get_block(prev_msg)))))
     {
         var prev_block = message_get_block(prev_msg);
         block_append_message(prev_block, message_item);
-    } else if (next_msg !== null &&
+    } else if (
+        next_msg !== null &&
         next_msg.dataset.from_jid == message_item.dataset.from_jid)
     {
         var next_block = message_get_block(next_msg);
@@ -357,6 +386,7 @@ var add_message = function(info) {
     message_item.dataset.display_name = info.display_name;
     message_item.dataset.color_full = info.color_full;
     message_item.dataset.color_weak = info.color_weak;
+    message_item.dataset.message_uid = info.message_uid;
 
     var timestamp_el = document.createElement("div");
     timestamp_el.classList.add("timestamp");
@@ -370,6 +400,8 @@ var add_message = function(info) {
     body_wrap_el.classList.add("body");
     body_wrap_el.appendChild(body_el);
     message_item.appendChild(body_wrap_el);
+
+    message_uid_index[info.message_uid] = message_item;
 
     post_insert_callbacks = new Array();
 
@@ -431,11 +463,53 @@ var handle_resize = function(event) {
     }
 }
 
+var make_marker = function(event) {
+    var marker_el = document.createElement("div");
+    marker_el.classList.add("marker");
+    marker_el.appendChild(create_avatar_img(event.from_jid, event.display_name));
+
+    var text_el = document.createElement("span");
+    // FIXME: l10n/i18n
+    text_el.innerText = event.display_name + " has read up to here.";
+    marker_el.appendChild(text_el);
+
+    return marker_el;
+}
+
+var put_marker = function(event) {
+    console.log("marker for uid "+event.marked_message_uid+" from "+
+                event.from_jid);
+
+    var message_item = message_uid_index[event.marked_message_uid];
+    if (message_item === undefined) {
+        console.log("marker for unknown uid "+event.marked_message_uid);
+    }
+
+    var marker = marker_owner_index[event.from_jid];
+    if (marker === undefined) {
+        marker = make_marker(event);
+        marker_owner_index[event.from_jid] = marker;
+    }
+
+    var block = message_get_block(message_item);
+
+    // FIXME: join source block if possible
+    // FIXME: split dest block if needed
+    console.log("block for marked message: "+block);
+
+    if (block.nextSibling !== null) {
+        block.parentNode.insertBefore(marker, block.nextSibling);
+    } else {
+        block.parentNode.appendChild(marker);
+    }
+}
+
 var init = function() {
     account_jid = api_object.account_jid;
     window.document.title = api_object.conversation_jid;
     api_object.on_message.connect(add_message);
     api_object.on_avatar_changed.connect(avatar_changed);
+    api_object.on_marker.connect(put_marker);
     window.onresize = handle_resize;
     var body = document.body;
     body.style.fontFamily = api_object.font_family;

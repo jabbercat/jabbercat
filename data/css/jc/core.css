@@ -108,3 +108,18 @@ img.attachment {
     max-height: 40em;
     border: 1px solid black;
 }
+
+div.marker {
+    opacity: 0.8;
+    margin-bottom: 0.5em;
+}
+
+div.marker > img {
+    width: 32px;
+    vertical-align: middle;
+    margin-right: 0.5em;
+}
+
+div.marker > span {
+    font-style: italic;
+}

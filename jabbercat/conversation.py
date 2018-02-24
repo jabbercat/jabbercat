@@ -49,6 +49,7 @@ class MessageViewPageChannelObject(Qt.QObject):
     on_message = Qt.pyqtSignal(['QVariantMap'])
     on_font_family_changed = Qt.pyqtSignal([str])
     on_avatar_changed = Qt.pyqtSignal(['QVariantMap'])
+    on_marker = Qt.pyqtSignal(['QVariantMap'])
 
     @Qt.pyqtProperty(str, notify=on_font_family_changed)
     def font_family(self):
@@ -186,6 +187,11 @@ YOUTUBE_EMBED_RE = re.compile(
     re.I
 )
 
+YOUTU_BE_RE = re.compile(
+    r"https?://(www\.)?youtu\.be/(?P<video_id>[^?#]+)",
+    re.I
+)
+
 
 def youtube_attachment(url):
     match = YOUTUBE_FULL_RE.match(url)
@@ -197,7 +203,9 @@ def youtube_attachment(url):
         except IndexError:
             return
     else:
-        match = YOUTUBE_EMBED_RE.match(url)
+        match = \
+            YOUTUBE_EMBED_RE.match(url) or \
+            YOUTU_BE_RE.match(url)
         if match is None:
             return
 
@@ -292,6 +300,11 @@ class ConversationView(Qt.QWidget):
         )
         _connect_and_store_token(
             self.__node_tokens,
+            self.__node.on_marker,
+            self.handle_live_marker,
+        )
+        _connect_and_store_token(
+            self.__node_tokens,
             avatars.on_avatar_changed,
             self.handle_avatar_change,
         )
@@ -353,6 +366,8 @@ class ConversationView(Qt.QWidget):
         body = self.ui.message_input.toPlainText()
         msg = aioxmpp.Message(type_="chat")
         msg.body[None] = body
+        msg.xep0333_markable = True
+        print(msg.xep0333_markable)
         self.ui.message_input.clear()
         if (aioxmpp.im.conversation.ConversationFeature.SEND_MESSAGE_TRACKED
                 in self.__conversation.features):
@@ -430,7 +445,27 @@ class ConversationView(Qt.QWidget):
 
         return color_full, color_weak
 
-    def handle_live_message(self, timestamp, is_self, from_jid,
+    def handle_live_marker(self, timestamp, is_self, from_jid,
+                           display_name, color_input, marked_message_uid):
+        if not self._page_ready:
+            self.logger.debug("dropping marker since page isn’t ready")
+            return
+
+        color_full, color_weak = self.make_css_colors(color_input)
+
+        self.history.channel.on_marker.emit({
+            "timestamp": str(
+                timestamp.isoformat() + "Z"
+            ),
+            "from_self": is_self,
+            "from_jid": str(from_jid or ""),
+            "display_name": display_name,
+            "marked_message_uid": str(marked_message_uid),
+            "color_full": color_full,
+            "color_weak": color_weak,
+        })
+
+    def handle_live_message(self, timestamp, message_uid, is_self, from_jid,
                             from_, color_input, message):
         if not self._page_ready:
             self.logger.debug("dropping message since page isn’t ready")
@@ -464,6 +499,7 @@ class ConversationView(Qt.QWidget):
             "color_full": color_full,
             "color_weak": color_weak,
             "attachments": attachments,
+            "message_uid": str(message_uid),
         }
 
         self.logger.debug("detected URLs: %s", urls)
