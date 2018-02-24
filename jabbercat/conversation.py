@@ -386,12 +386,7 @@ class ConversationView(Qt.QWidget):
 
         return "<br/>".join("".join(parts).split("\n")), (urls,)
 
-    def handle_live_message(self, timestamp, is_self, from_jid,
-                            from_, color_input, message):
-        color_weak = "inherit"
-        color_full = "inherit"
-        body_html, (urls,) = self.htmlify_body(message.body.any())
-
+    def make_css_colors(self, color_input):
         if color_input is not None:
             qtcolor = utils.text_to_qtcolor(
                 jclib.utils.normalise_text_for_hash(color_input)
@@ -416,6 +411,17 @@ class ConversationView(Qt.QWidget):
         else:
             color_full = "inherit"
             color_weak = color_full
+
+        return color_full, color_weak
+
+    def handle_live_message(self, timestamp, is_self, from_jid,
+                            from_, color_input, message):
+        if not self._page_ready:
+            self.logger.debug("dropping message since page isn’t ready")
+            return
+
+        body_html, (urls,) = self.htmlify_body(message.body.any())
+        color_full, color_weak = self.make_css_colors(color_input)
 
         attachments = []
 
@@ -458,53 +464,6 @@ class ConversationView(Qt.QWidget):
         self.history.channel.on_avatar_changed.emit(
             {
                 "address": str(address),
-            }
-        )
-
-    def add_message(self, message, member, source, tracker=None, **kwargs):
-        if not message.body:
-            return
-
-        from_jid = None
-        is_self = False
-
-        if member is not None:
-            from_jid = member.conversation_jid
-            color_input = str(
-                (member.direct_jid or member.conversation_jid).bare()
-            )
-            if member is self.__conversation.me:
-                from_ = "me"
-                is_self = True
-            else:
-                from_ = str(
-                    (member.direct_jid or member.conversation_jid).bare()
-                )
-
-            if hasattr(member, "nick"):
-                from_ = member.nick
-                color_input = member.nick
-
-        else:
-            from_jid = None
-            from_ = str(message.from_)
-            color_input = None
-
-        body = message.body.lookup([
-            aioxmpp.structs.LanguageRange.fromstr("*")
-        ])
-
-        self.history.channel.on_message.emit(
-            {
-                "timestamp": str(
-                    datetime.utcnow().isoformat() + "Z"
-                ),
-                "from_self": is_self,
-                "from_jid": str(from_jid or ""),
-                "display_name": from_,
-                "body": body,
-                "color_full": color_full,
-                "color_weak": color_weak,
             }
         )
 
