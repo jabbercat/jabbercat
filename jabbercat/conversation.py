@@ -5,7 +5,7 @@ import logging
 import re
 import urllib.parse
 
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import aioxmpp.im.conversation
 import aioxmpp.im.p2p
@@ -13,6 +13,7 @@ import aioxmpp.im.service
 import aioxmpp.structs
 import aioxmpp.xso
 
+import jclib.archive
 import jclib.conversation
 import jclib.identity
 import jclib.utils
@@ -267,6 +268,11 @@ class ConversationView(Qt.QWidget):
 
         # self.ui.history.setMaximumBlockCount(100)
 
+        self.history.channel.on_ready.connect(
+            self.handle_page_ready,
+        )
+        self._page_ready = False
+
         self.__node = conversation_node
         self.__node_tokens = []
         _connect_and_store_token(
@@ -297,6 +303,16 @@ class ConversationView(Qt.QWidget):
 
     def _update_zoom_factor(self):
         self.history.setZoomFactor(1./self.devicePixelRatioF())
+
+    def handle_page_ready(self):
+        self._page_ready = True
+        self.logger.debug("page called in ready, loading logs")
+        start_at = datetime.utcnow() - timedelta(hours=2)
+        max_count = 100
+        for argv in self.__node.get_last_messages(max_count=max_count,
+                                                  max_age=start_at):
+            print(argv)
+            self.handle_live_message(*argv)
 
     def showEvent(self, event: Qt.QShowEvent):
         self._update_zoom_factor()
