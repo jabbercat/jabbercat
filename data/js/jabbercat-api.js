@@ -433,6 +433,7 @@ var handle_resize = function(event) {
 
 var init = function() {
     account_jid = api_object.account_jid;
+    window.document.title = api_object.conversation_jid;
     api_object.on_message.connect(add_message);
     api_object.on_avatar_changed.connect(avatar_changed);
     window.onresize = handle_resize;

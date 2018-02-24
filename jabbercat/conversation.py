@@ -36,12 +36,13 @@ class MessageInfo(Qt.QTextBlockUserData):
 
 
 class MessageViewPageChannelObject(Qt.QObject):
-    def __init__(self, logger, account_jid, parent=None):
+    def __init__(self, logger, account_jid, conversation_jid, parent=None):
         super().__init__(parent)
         self.logger = logger
         self._font_family = ""
         self._font_size = ""
         self._account_jid = str(account_jid)
+        self._conversation_jid = str(conversation_jid)
 
     on_ready = Qt.pyqtSignal([])
     on_message = Qt.pyqtSignal(['QVariantMap'])
@@ -79,6 +80,17 @@ class MessageViewPageChannelObject(Qt.QObject):
         self._account_jid = value
         self.on_account_jid_changed.emit(value)
 
+    on_conversation_jid_changed = Qt.pyqtSignal([str])
+
+    @Qt.pyqtProperty(str, notify=on_conversation_jid_changed)
+    def conversation_jid(self):
+        return self._conversation_jid
+
+    @conversation_jid.setter
+    def conversation_jid(self, value):
+        self._conversation_jid = value
+        self.on_conversation_jid_changed.emit(value)
+
     @Qt.pyqtSlot()
     def ready(self):
         self.logger.debug("web page called in ready!")
@@ -88,10 +100,15 @@ class MessageViewPageChannelObject(Qt.QObject):
 class MessageViewPage(Qt.QWebEnginePage):
     URL = Qt.QUrl("qrc:/html/conversation-template.html")
 
-    def __init__(self, web_profile, logger, account_jid, parent=None):
+    def __init__(self, web_profile, logger, account_jid,
+                 conversation_jid, parent=None):
         super().__init__(web_profile, parent)
         self.logger = logger
-        self.channel = MessageViewPageChannelObject(self.logger, account_jid)
+        self.channel = MessageViewPageChannelObject(
+            self.logger,
+            account_jid,
+            conversation_jid,
+        )
         self._web_channel = Qt.QWebChannel()
         self._web_channel.registerObject("channel", self.channel)
         self.setWebChannel(self._web_channel,
@@ -239,6 +256,7 @@ class ConversationView(Qt.QWidget):
         self.history = MessageViewPage(web_profile,
                                        logging.getLogger(__name__),
                                        conversation_node.account.jid,
+                                       conversation_node.conversation_address,
                                        self.history_view)
         self._update_zoom_factor()
         self.history_view.setPage(self.history)
