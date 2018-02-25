@@ -19,6 +19,45 @@ from . import Qt
 
 BASE_SIZE = 48
 
+AVATAR_DUMMY_PATH = Qt.QPainterPath()
+AVATAR_DUMMY_PATH.moveTo(2.4732999999999947, 0.006839999999982638)
+AVATAR_DUMMY_PATH.cubicTo(2.3338799999999935, 0.00283999999999196,
+                          2.233701999999994, 0.04673999999997136,
+                          2.177060999999995, 0.1424599999999714)
+AVATAR_DUMMY_PATH.cubicTo(0.6549399999999963, 2.7271699999999726,
+                          0.9932499999999891, 9.385779999999983,
+                          1.1465279999999893, 15.88594999999998)
+AVATAR_DUMMY_PATH.cubicTo(1.1697879999999827, 23.37239999999997,
+                          1.0994979999999828, 29.341819999999984,
+                          1.1149579999999872, 36.18838999999997)
+AVATAR_DUMMY_PATH.cubicTo(1.1149579999999872, 42.72858999999997,
+                          6.906902999999986, 47.99357999999998,
+                          13.447076999999993, 47.99357999999998)
+AVATAR_DUMMY_PATH.lineTo(34.58242899999999, 47.99357999999998)
+AVATAR_DUMMY_PATH.cubicTo(41.122601999999986, 47.99357999999998,
+                          46.885001999999986, 42.63612999999998,
+                          46.885001999999986, 36.09595999999999)
+AVATAR_DUMMY_PATH.cubicTo(46.88100199999998, 28.669249999999977,
+                          46.79650199999999, 20.914739999999995,
+                          46.885001999999986, 15.854379999999992)
+AVATAR_DUMMY_PATH.cubicTo(47.038291999999984, 9.354209999999995,
+                          47.34507199999999, 2.727170000000001,
+                          45.82295199999999, 0.1424599999999998)
+AVATAR_DUMMY_PATH.cubicTo(45.36948199999999, -0.6277300000000139,
+                          42.12955199999999, 1.9487900000000025,
+                          38.332261999999986, 5.934439999999995)
+AVATAR_DUMMY_PATH.cubicTo(35.55393199999999, 8.850580000000008,
+                          33.74174799999999, 8.788520000000005,
+                          31.673985999999985, 8.788520000000005)
+AVATAR_DUMMY_PATH.lineTo(16.325825999999992, 8.788520000000005)
+AVATAR_DUMMY_PATH.cubicTo(14.634642999999997, 8.788520000000005,
+                          12.423642999999998, 8.690519999999992,
+                          9.667546999999999, 5.934439999999995)
+AVATAR_DUMMY_PATH.cubicTo(6.261529999999993, 2.528419999999983,
+                          3.4491940000000056, 0.038639999999986685,
+                          2.4733719999999977, 0.006959999999992306)
+AVATAR_DUMMY_PATH.lineTo(2.4732999999999947, 0.006839999999982638)
+
 
 def _connect(tokens, signal, cb):
     tokens.append((signal, signal.connect(cb)))
@@ -45,22 +84,16 @@ def first_grapheme(s):
 def render_dummy_avatar_base(painter: Qt.QPainter,
                              colour: Qt.QColor,
                              size: float):
-    pen_colour = Qt.QColor(colour)
-    pen_colour.setAlpha(127)
-    painter.setPen(Qt.QPen(pen_colour))
+    painter.setRenderHint(Qt.QPainter.Antialiasing, True)
     painter.setBrush(colour)
-    painter.drawRect(
-        Qt.QRectF(
-            0, 0,
-            size, size,
-        )
-    )
+    painter.fillPath(AVATAR_DUMMY_PATH, colour)
 
 
 def render_dummy_avatar_grapheme(painter: Qt.QPainter,
                                  grapheme: str,
                                  base_font: Qt.QFont,
                                  size: float):
+    PADDING_TOP = 4
     PADDING = 2
 
     painter.setRenderHint(Qt.QPainter.Antialiasing, True)
@@ -68,15 +101,15 @@ def render_dummy_avatar_grapheme(painter: Qt.QPainter,
     painter.setBrush(Qt.QBrush())
 
     font = Qt.QFont(base_font)
-    font.setPixelSize(size * 0.85 - 2 * PADDING)
+    font.setPixelSize(size * 0.85 - PADDING - PADDING_TOP)
     font.setWeight(Qt.QFont.Thin)
 
     painter.setFont(font)
     painter.drawText(
         Qt.QRectF(
-            PADDING, PADDING,
+            PADDING, PADDING_TOP,
             size - PADDING * 2,
-            size - PADDING * 2,
+            size - PADDING - PADDING_TOP,
         ),
         Qt.Qt.AlignHCenter | Qt.Qt.AlignVCenter | Qt.Qt.TextSingleLine,
         grapheme,
