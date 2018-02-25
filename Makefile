@@ -27,8 +27,11 @@ resources.rcc: data/resources.qrc $(RESOURCE_SOURCES)
 docs-html:
 	cd docs; make html
 
-run-debug: logfile_name=jabbercat-$(shell date '+%Y-%m-%dT%H-%M-%S').log
-run-debug: all
+debug-logs:
+	mkdir -p debug-logs
+
+run-debug: logfile_name=debug-logs/jabbercat-$(shell date '+%Y-%m-%dT%H-%M-%S').log
+run-debug: all debug-logs
 	@echo
 	@echo "=== logs will also be in $(logfile_name) ==="
 	@echo "open http://localhost:1234 in a Chromium-like browser to debug message view issues"
@@ -39,4 +42,4 @@ run-debug: all
 	@echo "=== logs have been written to $(logfile_name) ==="
 	@echo
 
-.PHONY: lupdate docs-html run-debug
+.PHONY: lupdate docs-html run-debug debug-logs
