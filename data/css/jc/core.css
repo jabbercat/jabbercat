@@ -123,3 +123,7 @@ div.marker > img {
 div.marker > span {
     font-style: italic;
 }
+
+span.emoji-hugify {
+    font-size: 300%;
+}

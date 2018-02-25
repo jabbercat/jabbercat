@@ -18,7 +18,7 @@ import jclib.conversation
 import jclib.identity
 import jclib.utils
 
-from . import Qt, utils, models, avatar
+from . import Qt, utils, models, avatar, emoji
 
 from .ui import p2p_conversation
 
@@ -224,6 +224,7 @@ def youtube_attachment(url):
         }
     }
 
+
 def url_to_attachment(url):
     return youtube_attachment(url) or None
 
@@ -380,42 +381,53 @@ class ConversationView(Qt.QWidget):
             yield from self.__conversation.send_message(msg)
 
     def htmlify_body(self, body):
-        parts = []
+        out_lines = []
+        lines = body.split("\n")
         urls = []
-        last = 0
-        for match in self.URL_RE.finditer(body):
-            prev = body[last:match.start()]
-            if prev:
-                parts.append(html.escape(prev))
+        for i, line in enumerate(lines):
+            if (i == len(lines)-1 and
+                    emoji.DATABASE.emoji_or_space_multi_re.fullmatch(line)):
+                out_lines.append("<span class='emoji-hugify'>{}</span>".format(
+                    line
+                ))
+                continue
 
-            info = match.groupdict()
-            match_s = match.group(0)
-            inner_prefix, prefix, inner_suffix, suffix = "", "", "", ""
-            url = None
-            if info["url_paren"]:
-                inner_prefix = match_s[0]
-                inner_suffix = match_s[-1]
-                url = match_s[1:-1]
-            elif info["url_nonword"]:
-                prefix = match_s[0]
-                suffix = match_s[-1]
-                url = match_s[1:-1]
-            elif info["url_name"]:
-                url = match_s
-            if prefix:
-                parts.append(html.escape(prefix))
-            parts.append("<a href='{0}'>{1}</a>".format(
-                html.escape(url),
-                html.escape(inner_prefix + url + inner_suffix),
-            ))
-            urls.append(url)
-            if suffix:
-                parts.append(html.escape(suffix))
-            last = match.end()
+            parts = []
+            last = 0
+            for match in self.URL_RE.finditer(line):
+                prev = line[last:match.start()]
+                if prev:
+                    parts.append(html.escape(prev))
 
-        parts.append(html.escape(body[last:]))
+                info = match.groupdict()
+                match_s = match.group(0)
+                inner_prefix, prefix, inner_suffix, suffix = "", "", "", ""
+                url = None
+                if info["url_paren"]:
+                    inner_prefix = match_s[0]
+                    inner_suffix = match_s[-1]
+                    url = match_s[1:-1]
+                elif info["url_nonword"]:
+                    prefix = match_s[0]
+                    suffix = match_s[-1]
+                    url = match_s[1:-1]
+                elif info["url_name"]:
+                    url = match_s
+                if prefix:
+                    parts.append(html.escape(prefix))
+                parts.append("<a href='{0}'>{1}</a>".format(
+                    html.escape(url),
+                    html.escape(inner_prefix + url + inner_suffix),
+                ))
+                urls.append(url)
+                if suffix:
+                    parts.append(html.escape(suffix))
+                last = match.end()
 
-        return "<br/>".join("".join(parts).split("\n")), (urls,)
+            parts.append(html.escape(line[last:]))
+            out_lines.append("".join(parts))
+
+        return "<br/>".join(out_lines), (urls,)
 
     def make_css_colors(self, color_input):
         if color_input is not None:

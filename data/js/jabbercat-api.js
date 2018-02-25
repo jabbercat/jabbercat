@@ -504,6 +504,10 @@ var put_marker = function(event) {
     }
 }
 
+var set_font_family = function(new_family) {
+    body.style.fontFamily = "\""+api_object.new_family+"\", \"Noto Color Emoji\"";
+}
+
 var init = function() {
     account_jid = api_object.account_jid;
     window.document.title = api_object.conversation_jid;
@@ -512,12 +516,12 @@ var init = function() {
     api_object.on_marker.connect(put_marker);
     window.onresize = handle_resize;
     var body = document.body;
-    body.style.fontFamily = api_object.font_family;
+    set_font_family(api_object.font_family);
     body.style.fontSize = api_object.font_size;
 
     api_object.on_font_family_changed.connect(function(new_family){
         console.log("font family changed");
-        body.style.fontFamily = new_family;
+        set_font_family(new_family);
     });
 
     api_object.on_font_size_changed.connect(function(new_size){
