@@ -1,5 +1,5 @@
 #messages {
-
+    color: #222;
 }
 
 #messages > .message-block {
@@ -22,7 +22,7 @@
 }
 
 #messages > .message-block > .from {
-
+    font-weight: 500;
 }
 
 #messages.separate-self > .message-block.from-self > .from {
