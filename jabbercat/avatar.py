@@ -84,7 +84,6 @@ def first_grapheme(s):
 def render_dummy_avatar_base(painter: Qt.QPainter,
                              colour: Qt.QColor,
                              size: float):
-    painter.setRenderHint(Qt.QPainter.Antialiasing, True)
     painter.setBrush(colour)
     painter.fillPath(AVATAR_DUMMY_PATH, colour)
 
@@ -96,7 +95,6 @@ def render_dummy_avatar_grapheme(painter: Qt.QPainter,
     PADDING_TOP = 4
     PADDING = 2
 
-    painter.setRenderHint(Qt.QPainter.Antialiasing, True)
     painter.setPen(Qt.QPen(Qt.QColor(255, 255, 255, 255)))
     painter.setBrush(Qt.QBrush())
 
@@ -126,6 +124,7 @@ def render_dummy_avatar(font: Qt.QFont,
     grapheme = first_grapheme(name)
     picture = Qt.QPicture()
     painter = Qt.QPainter(picture)
+    painter.setRenderHint(Qt.QPainter.Antialiasing, True)
     render_dummy_avatar_base(painter, colour, size)
     render_dummy_avatar_grapheme(painter, grapheme, font, size)
     return picture

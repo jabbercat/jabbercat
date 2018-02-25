@@ -601,44 +601,24 @@ class Testfirst_grapheme(unittest.TestCase):
 
 
 class Testrender_dummy_avatar_base(unittest.TestCase):
-    def test_renders_rect_with_proper_pen(self):
+    def test_renders_fancy_path(self):
         painter = unittest.mock.Mock(spec=Qt.QPainter)
 
         with contextlib.ExitStack() as stack:
-            QPen = stack.enter_context(unittest.mock.patch(
-                "jabbercat.Qt.QPen"
-            ))
-
-            QColor = stack.enter_context(unittest.mock.patch(
-                "jabbercat.Qt.QColor"
-            ))
-
-            QRectF = stack.enter_context(unittest.mock.patch(
-                "jabbercat.Qt.QRectF"
-            ))
-
             avatar.render_dummy_avatar_base(
                 painter,
                 unittest.mock.sentinel.colour,
                 unittest.mock.sentinel.size,
             )
 
-        QColor.assert_called_once_with(unittest.mock.sentinel.colour)
-        QColor().setAlpha.assert_called_once_with(127)
-
-        QPen.assert_called_once_with(QColor())
-        painter.setPen.assert_called_once_with(QPen())
         painter.setBrush.assert_called_once_with(
             unittest.mock.sentinel.colour,
         )
 
-        QRectF.assert_called_once_with(
-            0, 0,
-            unittest.mock.sentinel.size,
-            unittest.mock.sentinel.size,
+        painter.fillPath.assert_called_once_with(
+            avatar.AVATAR_DUMMY_PATH,
+            unittest.mock.sentinel.colour,
         )
-
-        painter.drawRect.assert_called_once_with(QRectF())
 
 
 class Testrender_dummy_avatar_grapheme(unittest.TestCase):
@@ -674,10 +654,6 @@ class Testrender_dummy_avatar_grapheme(unittest.TestCase):
                 size,
             )
 
-        painter.setRenderHint.assert_called_once_with(
-            Qt.QPainter.Antialiasing, True,
-        )
-
         QColor.assert_called_once_with(255, 255, 255, 255)
         QPen.assert_called_once_with(QColor())
         QBrush.assert_called_once_with()
@@ -686,16 +662,16 @@ class Testrender_dummy_avatar_grapheme(unittest.TestCase):
 
         QFont.assert_called_once_with(unittest.mock.sentinel.base_font)
         QFont().setPixelSize.assert_called_once_with(
-            size * 0.85 - 4
+            size * 0.85 - 6
         )
         QFont().setWeight.assert_called_once_with(QFont.Thin)
 
         painter.setFont.assert_called_once_with(QFont())
 
         QRectF.assert_called_once_with(
-            2, 2,
+            2, 4,
             size - 4,
-            size - 4,
+            size - 6,
         )
 
         painter.drawText.assert_called_once_with(
@@ -753,6 +729,7 @@ class Testrender_dummy_avatar(unittest.TestCase):
 
         QPicture.assert_called_once_with()
         QPainter.assert_called_once_with(QPicture())
+        QPainter().setRenderHint(Qt.QPainter.Antialiasing, True)
 
         render_dummy_avatar_base.assert_called_once_with(
             QPainter(),
