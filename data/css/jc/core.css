@@ -94,19 +94,22 @@ body {
     max-width: 60em;
 }
 
+.frame-wrapper, img.attachment {
+    box-shadow: 0 0 4px #aaa;
+}
+
+
 .frame-wrapper > iframe {
     position: absolute;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    border: 1px solid black;
 }
 
 img.attachment {
     max-width: 60em;
     max-height: 40em;
-    border: 1px solid black;
 }
 
 div.marker {
