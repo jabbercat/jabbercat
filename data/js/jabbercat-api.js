@@ -505,7 +505,8 @@ var put_marker = function(event) {
 }
 
 var set_font_family = function(new_family) {
-    body.style.fontFamily = "\""+api_object.new_family+"\", \"Noto Color Emoji\"";
+    document.body.style.fontFamily =
+        "\""+new_family+"\", \"Noto Color Emoji\"";
 }
 
 var init = function() {
