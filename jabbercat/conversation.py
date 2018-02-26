@@ -282,6 +282,9 @@ class ConversationView(Qt.QWidget):
         )
         self._page_ready = False
 
+        self.__most_recent_message_ts = None
+        self.__most_recent_message_uid = None
+
         self.__node = conversation_node
         self.__node_tokens = []
         _connect_and_store_token(
@@ -518,6 +521,23 @@ class ConversationView(Qt.QWidget):
         self.logger.debug("sending data to JS: %r", data)
 
         self.history.channel.on_message.emit(data)
+
+        if (self.__most_recent_message_ts is None or
+                timestamp >= self.__most_recent_message_ts):
+            self.__most_recent_message_uid = message_uid
+            self.__most_recent_message_ts = timestamp
+
+            if self.isVisible() and self.window().isActiveWindow():
+                self.__node.set_read_up_to(self.__most_recent_message_uid)
+
+    def showEvent(self, event: Qt.QShowEvent):
+        self.__node.set_read_up_to(self.__most_recent_message_uid)
+        return super().showEvent(event)
+
+    def event(self, event: Qt.QEvent):
+        if event.type() == Qt.QEvent.WindowActivate:
+            self.__node.set_read_up_to(self.__most_recent_message_uid)
+        return super().event(event)
 
     def handle_avatar_change(self,
                              account: jclib.identity.Account,
