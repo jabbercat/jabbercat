@@ -7,7 +7,7 @@ RESOURCE_SOURCES=$(addprefix data/,$(shell xpath -e 'RCC/qresource/file/text()' 
 
 TS_FILES=$(wildcard translations/*.ts)
 
-all: $(UIC_PYTHON_FILES) resources.rcc
+all: $(UIC_PYTHON_FILES) resources.rcc data/js/emoji.json
 
 clean:
 	rm -rf $(UIC_PYTHON_FILES)

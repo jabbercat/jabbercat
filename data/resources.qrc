@@ -5,6 +5,5 @@
     <file>html/conversation-template.html</file>
     <file>css/jc/core.css</file>
     <file>js/jabbercat-api.js</file>
-    <file>js/emoji.json</file>
   </qresource>
 </RCC>
