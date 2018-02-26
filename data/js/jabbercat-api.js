@@ -138,7 +138,7 @@ var toplevel_is_block = function(toplevel) {
 
 var block_get_next = function(block) {
     var next = block.nextSibling;
-    while (next !== null && toplevel_is_block(block)) {
+    while (next !== null && !toplevel_is_block(block)) {
         next = next.nextSibling;
     }
     return next;
@@ -146,7 +146,7 @@ var block_get_next = function(block) {
 
 var block_get_prev = function(block) {
     var prev = block.previousSibling;
-    while (prev !== null && toplevel_is_block(block)) {
+    while (prev !== null && !toplevel_is_block(block)) {
         prev = prev.previousSibling;
     }
     return prev;
