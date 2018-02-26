@@ -134,10 +134,21 @@ def render_avatar_image(image: Qt.QImage, size: float):
     if image.isNull():
         return None
 
+    aspect_ratio = image.width() / image.height()
+    if aspect_ratio > 1:
+        width = size
+        height = size / aspect_ratio
+    else:
+        width = size * aspect_ratio
+        height = size
+
+    x0 = (size - width) / 2
+    y0 = (size - height) / 2
+
     picture = Qt.QPicture()
     painter = Qt.QPainter(picture)
     painter.drawImage(
-        Qt.QRectF(0, 0, size, size),
+        Qt.QRectF(x0, y0, width, height),
         image,
     )
     painter.end()
