@@ -130,3 +130,8 @@ div.marker > span {
 span.emoji-hugify {
     font-size: 300%;
 }
+
+span.action {
+    font-weight: bold;
+    font-style: italic;
+}

@@ -383,7 +383,7 @@ class ConversationView(Qt.QWidget):
             print("tracking not supported")
             yield from self.__conversation.send_message(msg)
 
-    def htmlify_body(self, body):
+    def htmlify_body(self, body, display_name):
         out_lines = []
         lines = body.split("\n")
         urls = []
@@ -396,6 +396,12 @@ class ConversationView(Qt.QWidget):
                 continue
 
             parts = []
+            if line.startswith("/me "):
+                parts.append("<span class='action'>* {}</span> ".format(
+                    html.escape(display_name)
+                ))
+                line = line[3:]
+
             last = 0
             for match in self.URL_RE.finditer(line):
                 prev = line[last:match.start()]
@@ -486,7 +492,8 @@ class ConversationView(Qt.QWidget):
             self.logger.debug("dropping message since page isn’t ready")
             return
 
-        body_html, (urls,) = self.htmlify_body(message.body.any())
+        body_html, (urls,) = self.htmlify_body(message.body.any(),
+                                               from_)
         color_full, color_weak = self.make_css_colors(color_input)
 
         attachments = []
