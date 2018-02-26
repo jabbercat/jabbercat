@@ -31,6 +31,7 @@ from .dialogs import (
 )
 
 from .widgets import (
+    conversations_view,
     roster_view,
     tagsmenu,
 )
@@ -86,9 +87,13 @@ class MainWindow(Qt.QMainWindow):
         self.sorted_roster.setDynamicSortFilter(True)
         self.sorted_roster.sort(0, Qt.Qt.AscendingOrder)
 
-        self._delegate = roster_view.RosterItemDelegate(main.avatar)
-        self._delegate.on_tag_clicked.connect(self._roster_tag_activated)
-        self.ui.roster_view.setItemDelegate(self._delegate)
+        self._roster_item_delegate = roster_view.RosterItemDelegate(
+            main.avatar
+        )
+        self._roster_item_delegate.on_tag_clicked.connect(
+            self._roster_tag_activated
+        )
+        self.ui.roster_view.setItemDelegate(self._roster_item_delegate)
         self.ui.roster_view.setMouseTracking(True)
         self.ui.roster_view.setModel(self.sorted_roster)
         self.ui.roster_view.setContextMenuPolicy(Qt.Qt.CustomContextMenu)
@@ -145,10 +150,15 @@ class MainWindow(Qt.QMainWindow):
 
         self.__convmap = {}
         self.__conversation_model = models.ConversationsModel(
-            self.main.conversations
+            self.main.conversations,
         )
         self.ui.conversations_view.setModel(
             self.__conversation_model
+        )
+        self._conversation_item_delegate = \
+            conversations_view.ConversationItemDelegate()
+        self.ui.conversations_view.setItemDelegate(
+            self._conversation_item_delegate
         )
         self.ui.conversations_view.activated.connect(
             self._conversation_item_activated

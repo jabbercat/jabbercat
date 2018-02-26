@@ -362,12 +362,15 @@ class TestAccountsModel(unittest.TestCase):
 class TestConversationsModel(unittest.TestCase):
     def setUp(self):
         def make_mock():
-            return unittest.mock.Mock(["label"])
+            return unittest.mock.Mock([
+                "label"
+            ])
 
         self.cs = jclib.instrumentable_list.ModelList()
         self.cs.append(make_mock())
         self.cs.append(make_mock())
         self.cs.append(make_mock())
+        self.cs.on_unread_count_changed = aioxmpp.callbacks.AdHocSignal()
 
         self.m = models.ConversationsModel(self.cs)
 
@@ -442,6 +445,16 @@ class TestConversationsModel(unittest.TestCase):
                 conv.label,
             )
 
+    def test_data_label_column_object_role(self):
+        for i, conv in enumerate(self.cs):
+            self.assertIs(
+                self.m.data(
+                    self.m.index(i, self.m.COLUMN_LABEL),
+                    models.ROLE_OBJECT,
+                ),
+                conv,
+            )
+
     def test_data_label_column_other_role(self):
         for i, _ in enumerate(self.cs):
             self.assertIsNone(
@@ -457,6 +470,21 @@ class TestConversationsModel(unittest.TestCase):
                 Qt.QModelIndex(),
                 Qt.Qt.DisplayRole
             ),
+        )
+
+    def test_emits_dataChanged_on_unread_counter_change(self):
+        cb = unittest.mock.Mock()
+        self.m.dataChanged.connect(cb)
+
+        self.cs.on_unread_count_changed(
+            self.cs[1],
+            12,
+        )
+
+        cb.assert_called_once_with(
+            self.m.index(1, 0, Qt.QModelIndex()),
+            self.m.index(1, 0, Qt.QModelIndex()),
+            [Qt.Qt.DisplayRole],
         )
 
 

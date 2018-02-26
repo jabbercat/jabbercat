@@ -123,6 +123,10 @@ class ConversationsModel(Qt.QAbstractTableModel):
                  conversations: jclib.conversation.ConversationManager):
         super().__init__()
         self.__conversations = conversations
+        self.__conversations.on_unread_count_changed.connect(
+            self._handle_unread_count_changed,
+            self.__conversations.on_unread_count_changed.WEAK,
+        )
         self.__adaptor = model_adaptor.ModelListAdaptor(
             self.__conversations, self
         )
@@ -135,6 +139,15 @@ class ConversationsModel(Qt.QAbstractTableModel):
             return 0
         return len(self.__conversations)
 
+    def _handle_unread_count_changed(
+            self,
+            conversation_node: jclib.conversation.ConversationNode,
+            new_counter: int):
+        index = self.index(self.__conversations.index(conversation_node),
+                           0,
+                           Qt.QModelIndex())
+        self.dataChanged.emit(index, index, [])  # Qt.Qt.DisplayRole
+
     def data(self,
              index: Qt.QModelIndex,
              role: Qt.Qt.ItemDataRole=Qt.Qt.DisplayRole):
@@ -143,6 +156,8 @@ class ConversationsModel(Qt.QAbstractTableModel):
 
         if role == Qt.Qt.DisplayRole:
             return self.__conversations[index.row()].label
+        elif role == ROLE_OBJECT:
+            return self.__conversations[index.row()]
 
 
 class RosterTagsModel(Qt.QAbstractListModel):
@@ -582,6 +597,7 @@ class RosterModel(Qt.QAbstractListModel):
                 continue
             index = self.index(i, 0)
             self.dataChanged.emit(index, index, [Qt.Qt.DecorationRole])
+            return
 
 
 class RosterFilterModel(Qt.QSortFilterProxyModel):
