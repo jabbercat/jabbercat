@@ -135,15 +135,17 @@ class ConversationItemDelegate(Qt.QItemDelegate):
 
         if (option.state & Qt.QStyle.State_Selected and
                 option.state & Qt.QStyle.State_Active):
-            painter.setPen(option.palette.highlightedText().color())
+            textcolor = option.palette.highlightedText().color()
         else:
-            painter.setPen(option.palette.text().color())
+            textcolor = option.palette.text().color()
+        painter.setPen(textcolor)
 
+        name_height = name_metrics.ascent() + name_metrics.descent()
         name_rect = Qt.QRect(
             top_left,
             Qt.QPoint(
                 name_right_x,
-                top_left.y() + name_metrics.ascent() + name_metrics.descent()
+                top_left.y() + name_height,
             )
         )
 
@@ -155,3 +157,44 @@ class ConversationItemDelegate(Qt.QItemDelegate):
         )
 
         painter.drawText(name_rect, Qt.Qt.TextSingleLine, name)
+
+        top_left += Qt.QPoint(
+            0,
+            name_height,
+        )
+
+        try:
+            last_message, = item.get_last_messages(
+                max_count=1,
+            )
+        except ValueError:
+            pass
+        else:
+            _, _, is_self, _, display_name, _, message = last_message
+            body = message.body.any()
+
+            preview_height = (preview_metrics.ascent() +
+                              preview_metrics.descent())
+
+            preview_rect = Qt.QRect(
+                top_left,
+                Qt.QPoint(
+                    option.rect.right() - self.PADDING,
+                    top_left.y() + preview_height,
+                )
+            )
+
+            body = preview_metrics.elidedText(
+                "{}: {}".format(
+                    display_name,
+                    body.replace("\n", " ")
+                ),
+                Qt.Qt.ElideRight,
+                preview_rect.width()
+            )
+
+            preview_color = Qt.QColor(textcolor)
+            preview_color.setAlphaF(preview_color.alphaF() * 0.8)
+            painter.setPen(preview_color)
+            painter.setFont(preview_font)
+            painter.drawText(preview_rect, Qt.Qt.TextSingleLine, body)
