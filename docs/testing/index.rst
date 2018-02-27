@@ -82,7 +82,8 @@ Debian/Ubuntu
 
     # apt install python3-pyqt5 python3-pyqt5.qtwebchannel \
         python3-pyqt5.qtwebengine python3-sqlalchemy virtualenv \
-        qtbase5-dev-tools python3-keyring python3-xdg
+        qtbase5-dev-tools python3-keyring python3-xdg python3-pyasn1 \
+        python3-pyasn1-modules
 
 (If you encounter issues when running ``make`` later, try installing
 ``qt5-default``, too.)
@@ -112,8 +113,23 @@ Setting up a virtual environment
     familiar with Python and PyQt5 development.
 
 The virtual environment is created and activated using the following
-commands. Make sure to select a Python interperter allowing
-Python 3.5 fatures.
+commands. Make sure to select a Python interpreter with at least Python 3.5
+support.
+
+.. note::
+
+    Please check which version of Python 3 is installed on your system with
+    ``python3 --version`` and use the minor version of that. E.g. if the output
+    is ``Python 3.6.4``, use ``python3.6`` in the command line below.
+
+.. note::
+
+    If you experience issues down the road and are re-using a virtual
+    environment from a previous test (e.g. a few weeks old), try re-creating
+    the environment.
+
+    If a module is supposedly missing, definitely do try re-creating the
+    environment and pay attention to the version of python.
 
 .. code-block:: console
 
