@@ -175,6 +175,17 @@ Now, let’s build the files needed for JabberCat to run (assuming you are in th
 If ``make`` fails with an error related to an invocation of ``rcc`` and you are
 running debian, try installing ``qt5-default``.
 
+.. note::
+
+    You need to have a UTF-8 locale set.
+
+.. note::
+
+    Make may print "failed to load emoji database" as the last line; this is
+    a warning which can safely be ignored (because it comes from the process
+    which builds the very emoji database; it foolishly tries to load it before
+    building, non-fatally).
+
 With that finished, you can start JabberCat with the following command:
 
 .. code-block:: console
