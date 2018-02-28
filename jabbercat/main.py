@@ -45,12 +45,19 @@ logger = logging.getLogger(__name__)
 class MainWindow(Qt.QMainWindow):
     def __init__(self, main, parent=None):
         super().__init__(parent=parent)
+
+        self._old_roster_size = None
+
         self.ui = Ui_Main()
         self.ui.setupUi(self)
         self.main = main
         self.account_manager = account_manager.DlgAccountManager(
             main.client,
             main.accounts,
+        )
+
+        Qt.QApplication.instance().focusChanged.connect(
+            self.applicationFocusChanged
         )
 
         self.tags_model = models.TagsModel(main.roster.tags)
@@ -212,6 +219,37 @@ class MainWindow(Qt.QMainWindow):
         self.ui.magic_bar.selectAll()
         self.ui.magic_bar.setFocus()
 
+    def _hide_roster(self):
+        if self.ui.magic_bar.text().strip():
+            return
+        if len(self.main.conversations) == 0:
+            return
+
+        sizes = self.ui.splitter.sizes()
+        self._old_roster_size = sizes[0]
+        sizes[0] = 0
+        self.ui.splitter.setSizes(sizes)
+
+    def _show_roster(self):
+        sizes = self.ui.splitter.sizes()
+        if sizes[0]:
+            return  # already visible
+        if self._old_roster_size is None:
+            self._old_roster_size = 100  # bandaid
+        sizes[0] = self._old_roster_size
+        self.ui.splitter.setSizes(sizes)
+
+    def showEvent(self, event: Qt.QEvent):
+        self._hide_roster()
+
+    def applicationFocusChanged(self, old: Qt.QWidget, new: Qt.QWidget):
+        if old == self.ui.roster_view and new != self.ui.magic_bar:
+            self._hide_roster()
+        elif old == self.ui.magic_bar and new != self.ui.roster_view:
+            self._hide_roster()
+        elif new == self.ui.magic_bar:
+            self._show_roster()
+
     def eventFilter(self, obj: Qt.QObject, event: Qt.QEvent) -> bool:
         if obj is self.ui.magic_bar:
             if event.type() == Qt.QEvent.KeyPress:
@@ -317,11 +355,13 @@ class MainWindow(Qt.QMainWindow):
         conv = item.create_conversation(client)
         wrapper = self.main.conversations.adopt_conversation(account, conv)
         page = self.__convmap[wrapper]
-        self.ui.conversation_pages.setCurrentWidget(page)
-        page.set_focus_to_message_input()
 
+        # we need to clear first so that the roster is hidden
         if self.filtered_roster.rowCount() == 1:
             self.ui.magic_bar.clear()
+
+        self.ui.conversation_pages.setCurrentWidget(page)
+        page.set_focus_to_message_input()
 
     def _roster_context_menu_requested(self, pos):
         self._roster_item_menu.popup(self.ui.roster_view.mapToGlobal(pos))
