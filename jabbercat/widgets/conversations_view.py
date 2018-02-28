@@ -56,6 +56,52 @@ class ConversationItemDelegate(Qt.QItemDelegate):
 
         return Qt.QSize(min_width, total_height)
 
+    def _draw_preview_text(self,
+                           painter: Qt.QPainter,
+                           option,
+                           textcolor: Qt.QColor,
+                           top_left: Qt.QPoint,
+                           preview_font: Qt.QFont,
+                           preview_metrics: Qt.QFontMetrics,
+                           item):
+        try:
+            last_message, = item.get_last_messages(
+                max_count=1,
+            )
+        except ValueError:
+            return
+
+        _, _, is_self, _, display_name, _, message = last_message
+        body = message.body.any()
+
+        preview_height = (preview_metrics.ascent() +
+                          preview_metrics.descent())
+
+        preview_rect = Qt.QRect(
+            top_left,
+            Qt.QPoint(
+                option.rect.right() - self.PADDING,
+                top_left.y() + preview_height,
+            )
+        )
+
+        body = preview_metrics.elidedText(
+            "{}: {}".format(
+                display_name,
+                body.strip().replace("\n", " ")
+            ),
+            Qt.Qt.ElideRight,
+            preview_rect.width()
+        )
+
+        preview_color = Qt.QColor(textcolor)
+        preview_color.setAlphaF(preview_color.alphaF() * 0.8)
+        painter.setPen(preview_color)
+        painter.setFont(preview_font)
+        painter.drawText(preview_rect, Qt.Qt.TextSingleLine, body)
+
+        return preview_rect.bottomLeft()
+
     def paint(self, painter, option, index):
         item = index.data(models.ROLE_OBJECT)
         name_font, preview_font, unread_counter_font = self._get_fonts(
@@ -163,38 +209,12 @@ class ConversationItemDelegate(Qt.QItemDelegate):
             name_height,
         )
 
-        try:
-            last_message, = item.get_last_messages(
-                max_count=1,
-            )
-        except ValueError:
-            pass
-        else:
-            _, _, is_self, _, display_name, _, message = last_message
-            body = message.body.any()
-
-            preview_height = (preview_metrics.ascent() +
-                              preview_metrics.descent())
-
-            preview_rect = Qt.QRect(
-                top_left,
-                Qt.QPoint(
-                    option.rect.right() - self.PADDING,
-                    top_left.y() + preview_height,
-                )
-            )
-
-            body = preview_metrics.elidedText(
-                "{}: {}".format(
-                    display_name,
-                    body.replace("\n", " ")
-                ),
-                Qt.Qt.ElideRight,
-                preview_rect.width()
-            )
-
-            preview_color = Qt.QColor(textcolor)
-            preview_color.setAlphaF(preview_color.alphaF() * 0.8)
-            painter.setPen(preview_color)
-            painter.setFont(preview_font)
-            painter.drawText(preview_rect, Qt.Qt.TextSingleLine, body)
+        top_left = self._draw_preview_text(
+            painter,
+            option,
+            textcolor,
+            top_left,
+            preview_font,
+            preview_metrics,
+            item,
+        )
