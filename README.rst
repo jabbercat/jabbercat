@@ -1,7 +1,7 @@
 JabberCat
 #########
 
-The Jabber® client of the future!
+The Jabber® client of the future! 🎉
 
 If you are intrigued by the User Experience provided by modern, non-XMPP and/or
 non-free chat applications, this is for you. We aim to provide
@@ -20,10 +20,9 @@ report and how to report them.
 Get in touch
 ============
 
-To get in touch with us, the best way is to `join the MUC at
-jabbercat@conference.zombofant.net
-<xmpp:jabbercat@conference.zombofant.net?join>`_. Of course, issue reports are
-also somewhat a way to get in touch, but much more formal ☺.
+To get in touch with us, the best way is to `join the MUC at jabbercat@conference.zombofant.net <xmpp:jabbercat@conference.zombofant.net?join>`_.
+Of course, issue reports are also somewhat a way to get in touch, but much more
+formal 😺.
 
 
 Note: JABBER® is a registered trademark and its use is granted under a
