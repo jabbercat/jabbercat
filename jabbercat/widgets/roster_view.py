@@ -257,7 +257,8 @@ class RosterItemDelegate(Qt.QItemDelegate):
         )
         painter.drawPicture(avatar_origin, pic)
 
-        if option.state & Qt.QStyle.State_Selected:
+        if (option.state & Qt.QStyle.State_Selected and
+                option.state & Qt.QStyle.State_Active):
             painter.setPen(option.palette.highlightedText().color())
         else:
             painter.setPen(option.palette.text().color())
