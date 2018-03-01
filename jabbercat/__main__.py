@@ -113,6 +113,7 @@ def main():
     icon.addFile(":/icons/24x24/trayicon.png")
     icon.addFile(":/icons/32x32/trayicon.png")
 
+    app.setApplicationName("jabbercat")
     app.setApplicationDisplayName("JabberCat")
     app.setWindowIcon(icon)
     app.setQuitOnLastWindowClosed(False)
