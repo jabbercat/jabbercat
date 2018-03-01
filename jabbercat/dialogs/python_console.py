@@ -1,6 +1,7 @@
 import asyncio
 import code
 import contextlib
+import logging
 import math
 import pprint
 import sys
@@ -14,6 +15,9 @@ import jabbercat
 from ..ui import dlg_python_console
 
 from .. import Qt
+
+
+logger = logging.getLogger(__name__)
 
 
 @contextlib.contextmanager
@@ -100,6 +104,10 @@ class PythonConsole(Qt.QDialog):
 
         self.addAction(self.ui.action_execute)
         self.addAction(self.ui.action_cancel)
+
+    def showEvent(self, event: Qt.QEvent):
+        logger.warning("Python Console invoked!")
+        return super().showEvent(event)
 
     def _restore_from_history(self, new_index: int):
         if new_index == self._history_index:
