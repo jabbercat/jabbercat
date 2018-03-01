@@ -176,9 +176,31 @@ class MainWindow(Qt.QMainWindow):
         self.ui.conversations_view.clicked.connect(
             self._conversation_item_clicked,
         )
+        self.ui.conversations_view.selectionModel().currentChanged.connect(
+            self._conversation_item_current_changed
+        )
+        self.ui.conversations_view.customContextMenuRequested.connect(
+            self._conversations_view_context_menu_requested,
+        )
+
+        self._conversation_item_menu = Qt.QMenu()
+        self._conversation_item_menu.addAction(
+            self.ui.action_muc_join
+        )
+        self._conversation_item_menu.addSeparator()
+        self._conversation_item_menu.addAction(
+            self.ui.action_close_conversation
+        )
+
+        self.ui.conversation_pages.currentChanged.connect(
+            self._current_conversation_page_changed
+        )
 
         self.main.conversations.on_conversation_added.connect(
             self._conversation_added
+        )
+        self.main.conversations.on_conversation_removed.connect(
+            self._conversation_removed
         )
 
         self.ui.action_muc_join.triggered.connect(
@@ -187,6 +209,10 @@ class MainWindow(Qt.QMainWindow):
 
         self.ui.action_add_contact.triggered.connect(
             self._add_contact,
+        )
+
+        self.ui.action_close_conversation.triggered.connect(
+            self._close_conversation_triggered,
         )
 
         self.ui.action_join_support_muc.triggered.connect(
@@ -446,6 +472,10 @@ class MainWindow(Qt.QMainWindow):
         if self.ui.conversation_pages.currentWidget() is None:
             self.ui.conversation_pages.setCurrentWidget(page)
 
+    def _conversation_removed(self, wrapper):
+        page = self.__convmap[wrapper]
+        self.ui.conversation_pages.removeWidget(page)
+
     def _select_conversation(self, conversation,
                              transfer_focus=True,
                              force_focus=False):
@@ -493,6 +523,39 @@ class MainWindow(Qt.QMainWindow):
         index = indexes[0]
         conversation = self.main.conversations[index.row()]
         self._select_conversation(conversation)
+
+    def _conversation_item_current_changed(self, current: Qt.QModelIndex):
+        self.ui.action_close_conversation.setEnabled(
+            current.isValid()
+        )
+
+    def _close_conversation_triggered(self, *args):
+        index = self.ui.conversations_view.selectionModel().currentIndex()
+        if not index.isValid():
+            return
+
+        conversation = self.main.conversations[index.row()]
+        jclib.tasks.manager.start(self.main.conversations.close_conversation(
+            conversation.account,
+            conversation.conversation_address,
+        ))
+
+    def _conversations_view_context_menu_requested(self, pos):
+        self._conversation_item_menu.popup(
+            self.ui.conversations_view.mapToGlobal(pos)
+        )
+
+    def _current_conversation_page_changed(self, new_index: int):
+        model_index = self.ui.conversations_view.model().index(
+            new_index,
+            0,
+            Qt.QModelIndex()
+        )
+        self.ui.conversations_view.selectionModel().select(
+            model_index,
+            Qt.QItemSelectionModel.ClearAndSelect |
+            Qt.QItemSelectionModel.Current,
+        )
 
     @asyncio.coroutine
     def _join_muc_dialogue(self, muc_jid=None):

@@ -42,6 +42,9 @@
        </property>
       </widget>
       <widget class="ConversationsView" name="conversations_view">
+       <property name="contextMenuPolicy">
+        <enum>Qt::CustomContextMenu</enum>
+       </property>
        <property name="autoFillBackground">
         <bool>false</bool>
        </property>
@@ -245,6 +248,14 @@
    </property>
    <property name="toolTip">
     <string>Join a MUC where you can get JabberCat support right from the developers.</string>
+   </property>
+  </action>
+  <action name="action_close_conversation">
+   <property name="text">
+    <string>Leave</string>
+   </property>
+   <property name="toolTip">
+    <string>Leave the selected conversation</string>
    </property>
   </action>
  </widget>
