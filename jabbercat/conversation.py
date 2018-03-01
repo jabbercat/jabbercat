@@ -536,6 +536,7 @@ class ConversationView(Qt.QWidget):
 
             if self.isVisible() and self.window().isActiveWindow():
                 self.__node.set_read_up_to(self.__most_recent_message_uid)
+            Qt.QApplication.alert(self.window())
 
     def showEvent(self, event: Qt.QShowEvent):
         self.__node.set_read_up_to(self.__most_recent_message_uid)
