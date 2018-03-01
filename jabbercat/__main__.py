@@ -104,8 +104,17 @@ def main():
         print_version()
         sys.exit(0)
 
-
     app = Qt.QApplication(sys.argv)
+
+    Qt.QResource.registerResource("resources.rcc")
+
+    icon = Qt.QIcon()
+    icon.addFile(":/icons/16x16/trayicon.png")
+    icon.addFile(":/icons/24x24/trayicon.png")
+    icon.addFile(":/icons/32x32/trayicon.png")
+
+    app.setApplicationDisplayName("JabberCat")
+    app.setWindowIcon(icon)
     app.setQuitOnLastWindowClosed(False)
 
     import jabbercat.main
@@ -132,8 +141,6 @@ def main():
         logging.warning("failed to load JabberCat translations for %s", locale)
     else:
         app.installTranslator(qttr)
-
-    Qt.QResource.registerResource("resources.rcc")
 
     asyncio.set_event_loop(quamash.QEventLoop(app=app))
     loop = asyncio.get_event_loop()

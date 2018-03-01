@@ -56,6 +56,10 @@ class MainWindow(Qt.QMainWindow):
             main.accounts,
         )
 
+        self._trayicon = Qt.QSystemTrayIcon()
+        self._trayicon.setIcon(Qt.QApplication.windowIcon())
+        self._trayicon.show()
+
         Qt.QApplication.instance().focusChanged.connect(
             self.applicationFocusChanged
         )

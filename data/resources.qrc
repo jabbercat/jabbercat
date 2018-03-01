@@ -5,5 +5,8 @@
     <file>html/conversation-template.html</file>
     <file>css/jc/core.css</file>
     <file>js/jabbercat-api.js</file>
+    <file>icons/16x16/trayicon.png</file>
+    <file>icons/24x24/trayicon.png</file>
+    <file>icons/32x32/trayicon.png</file>
   </qresource>
 </RCC>
