@@ -234,6 +234,6 @@ class ConversationsView(Qt.QListView):
             index: Qt.QModelIndex,
             event: typing.Optional[Qt.QEvent]
             ) -> Qt.QItemSelectionModel.SelectionFlags:
-        if event.type() == Qt.QEvent.MouseButtonPress:
+        if event is not None and event.type() == Qt.QEvent.MouseButtonPress:
             return Qt.QItemSelectionModel.Select
         return Qt.QItemSelectionModel.NoUpdate
