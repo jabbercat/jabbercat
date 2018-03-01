@@ -189,6 +189,10 @@ class MainWindow(Qt.QMainWindow):
             self._add_contact,
         )
 
+        self.ui.action_join_support_muc.triggered.connect(
+            self._join_support_muc,
+        )
+
         self.ui.action_focus_search_bar.triggered.connect(
             self._select_magic_bar
         )
@@ -490,11 +494,10 @@ class MainWindow(Qt.QMainWindow):
         conversation = self.main.conversations[index.row()]
         self._select_conversation(conversation)
 
-    @utils.asyncify
     @asyncio.coroutine
-    def _join_muc(self, *args):
+    def _join_muc_dialogue(self, muc_jid=None):
         dlg = join_muc.JoinMuc(self.main.accounts)
-        join_info = yield from dlg.run()
+        join_info = yield from dlg.run(muc_jid)
         if join_info is not None:
             account, mucjid, nick = join_info
             self.main.conversations.open_muc_conversation(
@@ -502,6 +505,18 @@ class MainWindow(Qt.QMainWindow):
                 mucjid,
                 nick,
             )
+
+    @utils.asyncify
+    @asyncio.coroutine
+    def _join_muc(self, *args):
+        yield from self._join_muc_dialogue()
+
+    @utils.asyncify
+    @asyncio.coroutine
+    def _join_support_muc(self, *args):
+        yield from self._join_muc_dialogue(
+            muc_jid=aioxmpp.JID.fromstr("jabbercat@conference.zombofant.net")
+        )
 
     @utils.asyncify
     @asyncio.coroutine

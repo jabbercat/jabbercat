@@ -63,7 +63,11 @@ class JoinMuc(Qt.QDialog):
         return super().done(r)
 
     @asyncio.coroutine
-    def run(self):
+    def run(self, muc_jid=None):
+        self.ui.mucjid.clear()
+        if muc_jid is not None:
+            self.ui.mucjid.setText(str(muc_jid))
+
         result = yield from utils.exec_async(self)
         if result != Qt.QDialog.Accepted:
             return None

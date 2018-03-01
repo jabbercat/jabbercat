@@ -94,6 +94,8 @@
     <property name="title">
      <string>He&amp;lp</string>
     </property>
+    <addaction name="action_join_support_muc"/>
+    <addaction name="separator"/>
     <addaction name="action_about_qt"/>
     <addaction name="separator"/>
     <addaction name="action_open_python_console"/>
@@ -235,6 +237,14 @@
   <action name="action_about_qt">
    <property name="text">
     <string>&amp;About Qt …</string>
+   </property>
+  </action>
+  <action name="action_join_support_muc">
+   <property name="text">
+    <string>Join JabberCat support MUC …</string>
+   </property>
+   <property name="toolTip">
+    <string>Join a MUC where you can get JabberCat support right from the developers.</string>
    </property>
   </action>
  </widget>
