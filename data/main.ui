@@ -41,7 +41,7 @@
         <enum>QAbstractItemView::SelectRows</enum>
        </property>
       </widget>
-      <widget class="QListView" name="conversations_view">
+      <widget class="ConversationsView" name="conversations_view">
        <property name="autoFillBackground">
         <bool>false</bool>
        </property>
@@ -243,6 +243,11 @@
    <class>TagsInput</class>
    <extends>QLineEdit</extends>
    <header>jabbercat.widgets.tagsinput</header>
+  </customwidget>
+  <customwidget>
+   <class>ConversationsView</class>
+   <extends>QListView</extends>
+   <header>jabbercat.widgets.conversations_view</header>
   </customwidget>
  </customwidgets>
  <resources/>

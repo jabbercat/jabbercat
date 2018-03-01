@@ -167,8 +167,14 @@ class MainWindow(Qt.QMainWindow):
         self.ui.conversations_view.setItemDelegate(
             self._conversation_item_delegate
         )
+        self.ui.conversations_view.selectionModel().selectionChanged.connect(
+            self._conversation_selected,
+        )
         self.ui.conversations_view.activated.connect(
-            self._conversation_item_activated
+            self._conversation_item_activated,
+        )
+        self.ui.conversations_view.clicked.connect(
+            self._conversation_item_clicked,
         )
 
         self.main.conversations.on_conversation_added.connect(
@@ -360,8 +366,7 @@ class MainWindow(Qt.QMainWindow):
         if self.filtered_roster.rowCount() == 1:
             self.ui.magic_bar.clear()
 
-        self.ui.conversation_pages.setCurrentWidget(page)
-        page.set_focus_to_message_input()
+        self._select_conversation(wrapper)
 
     def _roster_context_menu_requested(self, pos):
         self._roster_item_menu.popup(self.ui.roster_view.mapToGlobal(pos))
@@ -437,12 +442,53 @@ class MainWindow(Qt.QMainWindow):
         if self.ui.conversation_pages.currentWidget() is None:
             self.ui.conversation_pages.setCurrentWidget(page)
 
-    def _conversation_item_activated(self, index):
-        conversation = self.main.conversations[index.row()]
+    def _select_conversation(self, conversation,
+                             transfer_focus=True,
+                             force_focus=False):
         page = self.__convmap[conversation]
-        self.main.conversations.start_soon(conversation)
-        self.ui.conversation_pages.setCurrentWidget(page)
-        page.set_focus_to_message_input()
+        index = self.main.conversations.index(conversation)
+        is_already_active = self.ui.conversation_pages.currentWidget() == page
+        if not is_already_active:
+            self.ui.conversation_pages.setCurrentWidget(page)
+        if transfer_focus and (not is_already_active or force_focus):
+            page.set_focus_to_message_input()
+        self.ui.conversations_view.selectionModel().select(
+            self.ui.conversations_view.model().index(index, 0,
+                                                     Qt.QModelIndex()),
+            Qt.QItemSelectionModel.ClearAndSelect |
+            Qt.QItemSelectionModel.Current
+        )
+
+    def _conversation_item_activated(self, index: Qt.QModelIndex):
+        if not index.isValid():
+            return
+
+        conversation = self.main.conversations[index.row()]
+        self._select_conversation(conversation, force_focus=True)
+
+    def _conversation_item_clicked(self, index: Qt.QModelIndex):
+        if not index.isValid():
+            return
+
+        conversation = self.main.conversations[index.row()]
+        self._select_conversation(conversation, transfer_focus=False)
+
+    def _conversation_selected(self,
+                               selected: Qt.QItemSelection,
+                               deselected: Qt.QItemSelection):
+        if len(self.main.conversations) == 0:
+            return
+
+        indexes = self.ui.conversations_view.selectionModel().selectedIndexes()
+        if not len(indexes):
+            logger.warning(
+                "congrats, you managed to deselect all conversations. are you"
+                " happy now? IS THIS WHAT YOU WANTED?")
+            return
+
+        index = indexes[0]
+        conversation = self.main.conversations[index.row()]
+        self._select_conversation(conversation)
 
     @utils.asyncify
     @asyncio.coroutine

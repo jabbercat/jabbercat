@@ -1,3 +1,5 @@
+import typing
+
 from .. import Qt, models
 
 
@@ -113,6 +115,12 @@ class ConversationItemDelegate(Qt.QItemDelegate):
         style = option.widget.style() or Qt.QApplication.style()
         style.drawControl(Qt.QStyle.CE_ItemViewItem, option, painter,
                           option.widget)
+        padding_point = Qt.QPoint(self.PADDING, self.PADDING)
+        self.drawFocus(
+            painter, option,
+            Qt.QRect(option.rect.topLeft() + padding_point,
+                     option.rect.bottomRight() - padding_point)
+        )
 
         name_metrics = Qt.QFontMetrics(name_font)
         preview_metrics = Qt.QFontMetrics(preview_font)
@@ -218,3 +226,14 @@ class ConversationItemDelegate(Qt.QItemDelegate):
             preview_metrics,
             item,
         )
+
+
+class ConversationsView(Qt.QListView):
+    def selectionCommand(
+            self,
+            index: Qt.QModelIndex,
+            event: typing.Optional[Qt.QEvent]
+            ) -> Qt.QItemSelectionModel.SelectionFlags:
+        if event.type() == Qt.QEvent.MouseButtonPress:
+            return Qt.QItemSelectionModel.Select
+        return Qt.QItemSelectionModel.NoUpdate

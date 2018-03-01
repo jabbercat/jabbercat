@@ -227,6 +227,12 @@ class RosterItemDelegate(Qt.QItemDelegate):
         style = option.widget.style() or Qt.QApplication.style()
         style.drawControl(Qt.QStyle.CE_ItemViewItem, option, painter,
                           option.widget)
+        padding_point = Qt.QPoint(self.PADDING, self.PADDING)
+        self.drawFocus(
+            painter, option,
+            Qt.QRect(option.rect.topLeft() + padding_point,
+                     option.rect.bottomRight() - padding_point)
+        )
 
         cursor_pos = option.widget.mapFromGlobal(Qt.QCursor.pos())
 
