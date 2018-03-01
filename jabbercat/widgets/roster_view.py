@@ -242,16 +242,6 @@ class RosterItemDelegate(Qt.QItemDelegate):
             name,
         )
 
-        # painter.drawRect(
-        #     Qt.QRect(
-        #         option.rect.topLeft(),
-        #         option.rect.topLeft() + Qt.QPoint(
-        #             self.LEFT_PADDING - self.PADDING,
-        #             option.rect.height()-1,
-        #         )
-        #     )
-        # )
-
         avatar_size = min(option.rect.height() - self.PADDING * 2,
                           self.MAX_AVATAR_SIZE)
 
@@ -266,43 +256,6 @@ class RosterItemDelegate(Qt.QItemDelegate):
             item.address,
         )
         painter.drawPicture(avatar_origin, pic)
-
-        # pen_colour = Qt.QColor(colour)
-        # pen_colour.setAlpha(127)
-        # painter.setPen(Qt.QPen(pen_colour))
-        # painter.setBrush(colour)
-
-        # avatar_rect = Qt.QRectF(
-        #     avatar_origin,
-        #     avatar_origin + Qt.QPoint(avatar_size, avatar_size)
-        # )
-
-        # # painter.drawRoundedRect(
-        # #     avatar_rect,
-        # #     avatar_size / 24, avatar_size / 24,
-        # # )
-
-        # painter.drawRect(
-        #     avatar_rect,
-        # )
-
-        # painter.setRenderHint(Qt.QPainter.Antialiasing, True)
-
-        # painter.setPen(Qt.QPen(Qt.QColor(255, 255, 255, 255)))
-        # painter.setBrush(Qt.QBrush())
-        # avatar_font = Qt.QFont(name_font)
-        # avatar_font.setPixelSize(avatar_size*0.85-2*self.PADDING)
-        # avatar_font.setWeight(Qt.QFont.Thin)
-        # painter.setFont(avatar_font)
-        # painter.drawText(
-        #     Qt.QRectF(
-        #         avatar_origin + Qt.QPoint(self.PADDING, self.PADDING),
-        #         avatar_origin + Qt.QPoint(avatar_size-self.PADDING*2,
-        #                                   avatar_size-self.PADDING*2),
-        #     ),
-        #     Qt.Qt.AlignHCenter | Qt.Qt.AlignVCenter | Qt.Qt.TextSingleLine,
-        #     name[0].upper(),
-        # )
 
         if option.state & Qt.QStyle.State_Selected:
             painter.setPen(option.palette.highlightedText().color())
@@ -326,11 +279,6 @@ class RosterItemDelegate(Qt.QItemDelegate):
                 top_left.y() + name_metrics.ascent() + name_metrics.descent(),
             )
         )
-
-        # import hashlib
-        # hash_ = hashlib.sha1()
-        # hash_.update(name.encode("utf-8") + _PEPPER)
-        # name = hash_.hexdigest()
 
         name = name_metrics.elidedText(
             name,
