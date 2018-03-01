@@ -11,7 +11,7 @@ releases. This document is **not** for you, if you are not comfortable to file
 bug reports on GitHub or directly to the author.
 
 Throughout this document, terminal commands will be suggested. Those prefixed
-with ``$`` shall be executed by a normal, unprivilegued user. Those prefixed
+with ``$`` shall be executed by a normal, unprivileged user. Those prefixed
 with ``#`` (usually) need root privilegues to work correctly.
 
 .. code-block:: console
