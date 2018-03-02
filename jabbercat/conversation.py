@@ -105,6 +105,7 @@ class MessageViewPage(Qt.QWebEnginePage):
     def __init__(self, web_profile, logger, account_jid,
                  conversation_jid, parent=None):
         super().__init__(web_profile, parent)
+        self._loaded = False
         self.logger = logger
         self.channel = MessageViewPageChannelObject(
             self.logger,
@@ -144,6 +145,14 @@ class MessageViewPage(Qt.QWebEnginePage):
         f.close()
 
     def _load_finished(self, ok: bool):
+        if self._loaded:
+            if ok:
+                self.logger.warning(
+                    "it appears the page has navigated away."
+                    " this is highly suspicious!"
+                )
+            return
+        self._loaded = True
         # self._load_script(":/js/jquery.min.js")
         self._load_script(":/qtwebchannel/qwebchannel.js")
         self._load_script(":/js/jabbercat-api.js")
