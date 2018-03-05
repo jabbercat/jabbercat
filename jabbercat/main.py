@@ -163,6 +163,7 @@ class MainWindow(Qt.QMainWindow):
         )
 
         self.__convmap = {}
+        self.__pagemap = {}
         self.__conversation_model = models.ConversationsModel(
             self.main.conversations,
         )
@@ -398,6 +399,7 @@ class MainWindow(Qt.QMainWindow):
         conv = item.create_conversation(client)
         wrapper = self.main.conversations.adopt_conversation(account, conv)
         page = self.__convmap[wrapper]
+        self.__pagemap[page] = wrapper
 
         # we need to clear first so that the roster is hidden
         if self.filtered_roster.rowCount() == 1:
@@ -475,24 +477,28 @@ class MainWindow(Qt.QMainWindow):
             self.main.web_profile,
         )
         self.__convmap[wrapper] = page
+        self.__pagemap[page] = wrapper
         self.ui.conversation_pages.addWidget(page)
         if self.ui.conversation_pages.currentWidget() == self.ui.watermark:
             self.ui.conversation_pages.setCurrentWidget(page)
 
     def _conversation_removed(self, wrapper):
-        page = self.__convmap[wrapper]
+        page = self.__convmap.pop(wrapper)
         self.ui.conversation_pages.removeWidget(page)
+        del self.__pagemap[page]
 
-    def _select_conversation(self, conversation,
-                             transfer_focus=True,
-                             force_focus=False):
-        page = self.__convmap[conversation]
-        index = self.main.conversations.index(conversation)
+    def _activate_conversation_page(
+            self, page,
+            transfer_focus=True,
+            force_focus=False):
         is_already_active = self.ui.conversation_pages.currentWidget() == page
         if not is_already_active:
             self.ui.conversation_pages.setCurrentWidget(page)
         if transfer_focus and (not is_already_active or force_focus):
             page.set_focus_to_message_input()
+
+    def _select_conversation(self, conversation):
+        index = self.main.conversations.index(conversation)
         self.ui.conversations_view.selectionModel().select(
             self.ui.conversations_view.model().index(index, 0,
                                                      Qt.QModelIndex()),
@@ -505,14 +511,18 @@ class MainWindow(Qt.QMainWindow):
             return
 
         conversation = self.main.conversations[index.row()]
-        self._select_conversation(conversation, force_focus=True)
+        page = self.__convmap[conversation]
+        self._activate_conversation_page(page, force_focus=True)
+        self._select_conversation(conversation)
 
     def _conversation_item_clicked(self, index: Qt.QModelIndex):
         if not index.isValid():
             return
 
         conversation = self.main.conversations[index.row()]
-        self._select_conversation(conversation, transfer_focus=False)
+        page = self.__convmap[conversation]
+        self._activate_conversation_page(page, transfer_focus=False)
+        self._select_conversation(conversation)
 
     def _conversation_selected(self,
                                selected: Qt.QItemSelection,
@@ -529,7 +539,26 @@ class MainWindow(Qt.QMainWindow):
 
         index = indexes[0]
         conversation = self.main.conversations[index.row()]
-        self._select_conversation(conversation)
+        page = self.__convmap[conversation]
+        self._activate_conversation_page(page)
+
+    def _current_conversation_page_changed(self, new_index: int):
+        page = self.ui.conversations_view.children()[new_index]
+        try:
+            conversation = self.__pagemap[page]
+        except KeyError:
+            return
+        conv_index = self.main.conversations.index(conversation)
+        model_index = self.ui.conversations_view.model().index(
+            conv_index,
+            0,
+            Qt.QModelIndex()
+        )
+        self.ui.conversations_view.selectionModel().select(
+            model_index,
+            Qt.QItemSelectionModel.ClearAndSelect |
+            Qt.QItemSelectionModel.Current,
+        )
 
     def _conversation_item_current_changed(self, current: Qt.QModelIndex):
         self.ui.action_close_conversation.setEnabled(
@@ -550,18 +579,6 @@ class MainWindow(Qt.QMainWindow):
     def _conversations_view_context_menu_requested(self, pos):
         self._conversation_item_menu.popup(
             self.ui.conversations_view.mapToGlobal(pos)
-        )
-
-    def _current_conversation_page_changed(self, new_index: int):
-        model_index = self.ui.conversations_view.model().index(
-            new_index,
-            0,
-            Qt.QModelIndex()
-        )
-        self.ui.conversations_view.selectionModel().select(
-            model_index,
-            Qt.QItemSelectionModel.ClearAndSelect |
-            Qt.QItemSelectionModel.Current,
         )
 
     @asyncio.coroutine
