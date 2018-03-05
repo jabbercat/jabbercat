@@ -240,6 +240,14 @@
     <string>Leave the selected conversation</string>
    </property>
   </action>
+  <action name="action_pin_conversation">
+   <property name="text">
+    <string>Pin</string>
+   </property>
+   <property name="toolTip">
+    <string>Always open this conversation on start. For group chats, this syncs to other devices.</string>
+   </property>
+  </action>
  </widget>
  <customwidgets>
   <customwidget>
