@@ -65,6 +65,7 @@
        <property name="autoFillBackground">
         <bool>false</bool>
        </property>
+       <widget class="WatermarkWidget" name="watermark"/>
       </widget>
      </widget>
     </item>
@@ -269,6 +270,12 @@
    <class>ConversationsView</class>
    <extends>QListView</extends>
    <header>jabbercat.widgets.conversations_view</header>
+  </customwidget>
+  <customwidget>
+   <class>WatermarkWidget</class>
+   <extends>QWidget</extends>
+   <header>jabbercat.widgets.watermark_widget</header>
+   <container>1</container>
   </customwidget>
  </customwidgets>
  <resources/>

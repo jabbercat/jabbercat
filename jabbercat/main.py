@@ -56,6 +56,9 @@ class MainWindow(Qt.QMainWindow):
             main.accounts,
         )
 
+        watermark = Qt.QImage(":/img/jabbercat-contour-only.png")
+        self.ui.watermark.watermark = watermark
+
         self._trayicon = Qt.QSystemTrayIcon()
         self._trayicon.setIcon(Qt.QApplication.windowIcon())
         self._trayicon.show()
@@ -473,7 +476,7 @@ class MainWindow(Qt.QMainWindow):
         )
         self.__convmap[wrapper] = page
         self.ui.conversation_pages.addWidget(page)
-        if self.ui.conversation_pages.currentWidget() is None:
+        if self.ui.conversation_pages.currentWidget() == self.ui.watermark:
             self.ui.conversation_pages.setCurrentWidget(page)
 
     def _conversation_removed(self, wrapper):

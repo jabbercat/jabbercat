@@ -8,5 +8,6 @@
     <file>icons/16x16/trayicon.png</file>
     <file>icons/24x24/trayicon.png</file>
     <file>icons/32x32/trayicon.png</file>
+    <file>img/jabbercat-contour-only.png</file>
   </qresource>
 </RCC>
