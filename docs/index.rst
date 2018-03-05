@@ -3,8 +3,22 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to JabberCat's documentation!
-=====================================
+Welcome to JabberCat!
+=====================
+
+.. image:: img/jabbercat.svg
+   :width: 75%
+
+JabberCat is an instant messenger which uses the long-established Jabber
+(based on XMPP) network. It is written in Python using Qt 5.
+
+This page will at some point become a nice entry page. However, at the current
+state of development, we prefer to invest manpower into actual features and
+polishing the app itself. We hope you understand 😺.
+
+(If you want to help out with that though, feel free to get in touch.)
+
+We suggest that you head over to the :ref:`testing-guide` now.
 
 .. toctree::
    :maxdepth: 2
