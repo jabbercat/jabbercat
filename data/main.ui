@@ -211,25 +211,6 @@
     <string>Allows the contacts to see your online status, avatar and other public information.</string>
    </property>
   </action>
-  <action name="action_add_contact_2">
-   <property name="text">
-    <string>Add contact…</string>
-   </property>
-   <property name="toolTip">
-    <string>Add a new contact by entering their Jabber Address.</string>
-   </property>
-  </action>
-  <action name="action_invite_contact_2">
-   <property name="enabled">
-    <bool>false</bool>
-   </property>
-   <property name="text">
-    <string>Invite contact…</string>
-   </property>
-   <property name="toolTip">
-    <string>Invite a contact by generating an invitation link.</string>
-   </property>
-  </action>
   <action name="action_open_python_console">
    <property name="text">
     <string>&amp;Open Python console…</string>
