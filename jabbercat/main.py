@@ -483,16 +483,24 @@ class MainWindow(Qt.QMainWindow):
         page = self.__convmap[wrapper]
         self.ui.conversation_pages.removeWidget(page)
 
-    def _select_conversation(self, conversation,
-                             transfer_focus=True,
-                             force_focus=False):
-        page = self.__convmap[conversation]
-        index = self.main.conversations.index(conversation)
+    def _activate_conversation_page(
+            self, page,
+            transfer_focus=True,
+            force_focus=False):
         is_already_active = self.ui.conversation_pages.currentWidget() == page
         if not is_already_active:
             self.ui.conversation_pages.setCurrentWidget(page)
         if transfer_focus and (not is_already_active or force_focus):
             page.set_focus_to_message_input()
+
+    def _select_conversation(self, conversation,
+                             transfer_focus=True,
+                             force_focus=False):
+        page = self.__convmap[conversation]
+        index = self.main.conversations.index(conversation)
+        self._activate_conversation_page(page,
+                                         transfer_focus=transfer_focus,
+                                         force_focus=force_focus)
         self.ui.conversations_view.selectionModel().select(
             self.ui.conversations_view.model().index(index, 0,
                                                      Qt.QModelIndex()),
@@ -529,7 +537,8 @@ class MainWindow(Qt.QMainWindow):
 
         index = indexes[0]
         conversation = self.main.conversations[index.row()]
-        self._select_conversation(conversation)
+        page = self.__convmap[conversation]
+        self._activate_conversation_page(conversation)
 
     def _conversation_item_current_changed(self, current: Qt.QModelIndex):
         self.ui.action_close_conversation.setEnabled(
