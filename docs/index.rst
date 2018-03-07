@@ -10,7 +10,7 @@ Welcome to JabberCat!
    :width: 75%
 
 JabberCat is an instant messenger which uses the long-established Jabber
-(based on XMPP) network. It is written in Python using Qt 5.
+network (based on XMPP). It is written in Python using Qt 5.
 
 This page will at some point become a nice entry page. However, at the current
 state of development, we prefer to invest manpower into actual features and
