@@ -218,6 +218,9 @@ class MainWindow(Qt.QMainWindow):
         self.ui.action_add_contact.triggered.connect(
             self._add_contact,
         )
+        self.ui.action_remove_contact.triggered.connect(
+            self._remove_contact,
+        )
 
         self.ui.action_close_conversation.triggered.connect(
             self._close_conversation_triggered,
@@ -620,6 +623,24 @@ class MainWindow(Qt.QMainWindow):
             display_name,
             tags,
         ))
+
+    @utils.asyncify
+    @asyncio.coroutine
+    def _remove_contact(self, *args):
+        item = self.roster_model.data(
+            self.ui.roster_view.model().mapToSource(
+                self.ui.roster_view.currentIndex()
+            ),
+            models.ROLE_OBJECT,
+        )
+        if item is None:
+            return
+        jclib.tasks.manager.start(self.remove_contact(item))
+
+    @asyncio.coroutine
+    def remove_contact(self, item):
+        jclib.tasks.manager.update_text("removing {!r}".format(item.address))
+        yield from item.owner.remove(item)
 
     @asyncio.coroutine
     def add_contact(self, account, peer_jid, display_name, tags):
