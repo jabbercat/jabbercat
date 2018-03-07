@@ -635,11 +635,27 @@ class MainWindow(Qt.QMainWindow):
         )
         if item is None:
             return
+        dlg = Qt.QMessageBox(
+            Qt.QMessageBox.Warning,
+            "Remove contact",
+            "This will remove {} ({}) from your contact list. Re-adding will "
+            "require approval. Do you want to continue?".format(
+                item.address,
+                item.label,
+            ),
+            Qt.QMessageBox.Yes | Qt.QMessageBox.No,
+            self,
+        )
+
+        result = yield from utils.exec_async(dlg)
+        if result != Qt.QMessageBox.Yes:
+            return
+
         jclib.tasks.manager.start(self.remove_contact(item))
 
     @asyncio.coroutine
     def remove_contact(self, item):
-        jclib.tasks.manager.update_text("removing {!r}".format(item.address))
+        jclib.tasks.manager.update_text("removing {}".format(item.address))
         yield from item.owner.remove(item)
 
     @asyncio.coroutine
