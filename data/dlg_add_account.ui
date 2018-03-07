@@ -26,53 +26,6 @@
     <string>Connecting…</string>
    </property>
   </widget>
-  <widget class="QWizardPage" name="page_avatar">
-   <property name="title">
-    <string>Avatar</string>
-   </property>
-   <property name="subTitle">
-    <string>You can set an avatar for your account.</string>
-   </property>
-   <layout class="QVBoxLayout" name="verticalLayout_3">
-    <item>
-     <widget class="QLabel" name="label_5">
-      <property name="text">
-       <string>The Avatar is visible to your contacts. It is also visible to people you send messages to who are not in your contact list. Choose wisely.</string>
-      </property>
-      <property name="wordWrap">
-       <bool>true</bool>
-      </property>
-     </widget>
-    </item>
-    <item>
-     <layout class="QHBoxLayout" name="horizontalLayout">
-      <item>
-       <widget class="QWidget" name="widget" native="true"/>
-      </item>
-      <item>
-       <widget class="QPushButton" name="avatar_change">
-        <property name="text">
-         <string>Select avatar …</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <spacer name="horizontalSpacer">
-        <property name="orientation">
-         <enum>Qt::Horizontal</enum>
-        </property>
-        <property name="sizeHint" stdset="0">
-         <size>
-          <width>40</width>
-          <height>20</height>
-         </size>
-        </property>
-       </spacer>
-      </item>
-     </layout>
-    </item>
-   </layout>
-  </widget>
   <widget class="QWizardPage" name="page_done">
    <property name="title">
     <string>Finished!</string>
@@ -80,32 +33,7 @@
    <property name="subTitle">
     <string>Congratulations! Your account has been configured successfully!</string>
    </property>
-   <layout class="QVBoxLayout" name="verticalLayout_4">
-    <item>
-     <widget class="QLabel" name="label_6">
-      <property name="text">
-       <string>I have picked a colour for your account. This colour is used within JabberCat to show that something is related to this account. You can change this colour to anything you like or leave it as it is. This colour is not shown to any contacts.</string>
-      </property>
-      <property name="wordWrap">
-       <bool>true</bool>
-      </property>
-     </widget>
-    </item>
-    <item>
-     <layout class="QHBoxLayout" name="horizontalLayout_2">
-      <item>
-       <widget class="QWidget" name="widget_2" native="true"/>
-      </item>
-      <item>
-       <widget class="QPushButton" name="pushButton">
-        <property name="text">
-         <string>PushButton</string>
-        </property>
-       </widget>
-      </item>
-     </layout>
-    </item>
-   </layout>
+   <layout class="QVBoxLayout" name="verticalLayout_4"/>
   </widget>
   <action name="action_add_source">
    <property name="text">

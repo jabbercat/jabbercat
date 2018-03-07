@@ -234,8 +234,7 @@ Known issues
 
 * Similarly, handling of highlighting/mentions in MUCs is not implemented yet.
 
-* Setting avatars, account tags and account colors isn’t implemented yet,
-  despite there being some UI for that (that UI is 100% functionless).
+* Setting avatars, account tags and account colors isn’t implemented yet.
 
 * The text input will be sized more reasonably at some point.
 
