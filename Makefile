@@ -60,7 +60,7 @@ run-debug: all debug-logs
 	@echo
 
 test: all
-	QTWEBENGINE_REMOTE_DEBUGGING=1234 nosetests3 $(TESTS)
+	QTWEBENGINE_REMOTE_DEBUGGING=1234 LANG=C.UTF-8 LANGUAGE=C.UTF-8 LC_DATE=C.UTF-8 LC_TIME=C.UTF-8 TZ=Etc/UTC nosetests3 $(TESTS)
 
 
 .PHONY: lupdate docs-html run-debug debug-logs data/emoji-java data/gemoji
