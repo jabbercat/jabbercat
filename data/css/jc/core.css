@@ -13,6 +13,10 @@
     padding-right: 0.5em;
 }
 
+#messages > .message-block > .avatar > img {
+    width: 48px;
+}
+
 #messages.separate-self > .message-block {
     max-width: 90%;
 }
@@ -31,6 +35,8 @@
 }
 
 #messages > .message-block > .message-block-messages {
+    margin-left: 48px;
+    padding-left: 0.5em;
 }
 
 #messages > .message-block > .message-block-messages > .message {
