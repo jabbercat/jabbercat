@@ -6,6 +6,19 @@ var avatar_addresses = {};
 var message_uid_index = {};
 var marker_owner_index = {};
 
+var insertAfter = function(parent, node_to_insert, target) {
+    if (target === null) {
+        parent.insertBefore(node_to_insert, parent.firstChild);
+    } else {
+        var next_sibling = target.nextSibling;
+        if (next_sibling === null) {
+            parent.appendChild(node_to_insert);
+        } else {
+            parent.insertBefore(node_to_insert, next_sibling);
+        }
+    }
+}
+
 var get_prev_message = function(insertion_timestamp) {
     if (messages.length == 0) {
         return null;
@@ -63,6 +76,18 @@ var create_avatar_img = function(from_jid, display_name) {
     return img_el;
 }
 
+var make_message_container = function() {
+    var messages_el = document.createElement("div");
+    messages_el.classList.add("message-block-messages");
+    return messages_el;
+}
+
+var make_clearfix = function() {
+    var clearfix = document.createElement("div");
+    clearfix.classList.add("clearfix");
+    return clearfix;
+}
+
 var make_message_block = function(first_message) {
     var block_el = document.createElement("div");
     block_el.classList.add("message-block");
@@ -89,14 +114,11 @@ var make_message_block = function(first_message) {
     from_el.textContent = first_message.dataset.display_name;
     block_el.appendChild(from_el);
 
-    var messages_el = document.createElement("div");
-    messages_el.classList.add("message-block-messages");
+    var messages_el = make_message_container();
     messages_el.appendChild(first_message);
     block_el.appendChild(messages_el);
 
-    var clearfix = document.createElement("div");
-    clearfix.classList.add("clearfix");
-    block_el.appendChild(clearfix);
+    block_el.appendChild(make_clearfix());
     return block_el;
 };
 
@@ -125,15 +147,25 @@ var block_get_last_message = function(block) {
 };
 
 var toplevel_get_next = function(toplevel) {
-    return toplevel.nextSibling || null;
+    return toplevel.nextSibling;
 }
 
 var toplevel_get_prev = function(toplevel) {
-    return toplevel.prevSibling || null;
+    return toplevel.previousSibling;
 }
 
 var toplevel_is_block = function(toplevel) {
     return toplevel.dataset.element_type == "message-block";
+}
+
+var toplevel_to_string = function(toplevel) {
+    if (toplevel === null) {
+        return "null";
+    }
+    if (toplevel_is_block(toplevel)) {
+        return block_to_string(toplevel);
+    }
+    return "<toplevel type="+toplevel.dataset.element_type+">";
 }
 
 var block_get_next = function(block) {
@@ -152,8 +184,22 @@ var block_get_prev = function(block) {
     return prev;
 }
 
+var block_to_string = function(block) {
+    var first_msg = block_get_first_message(block);
+    var first_uid = first_msg && first_msg.dataset.message_uid;
+    return "<block from_jid=\""+block.dataset.from_jid+"\" first_uid=\""+first_uid+"\">";
+}
+
+var message_get_next_in_block = function(msg) {
+    return msg.nextSibling;
+};
+
+var message_get_prev_in_block = function(msg) {
+    return msg.previousSibling;
+};
+
 var message_get_next = function(msg) {
-    var next_msg = msg.nextSibling;
+    var next_msg = message_get_next_in_block(msg);
     if (next_msg !== null) {
         return next_msg;
     }
@@ -168,7 +214,7 @@ var message_get_next = function(msg) {
 
 var message_get_prev = function(msg) {
     console.log("searching for prev of "+msg.dataset.body);
-    var prev_msg = msg.previousSibling;
+    var prev_msg = message_get_prev_in_block(msg);
     if (prev_msg !== null && prev_msg.classList.contains("message")) {
         return prev_msg;
     }
@@ -277,9 +323,59 @@ var date_parse = function(s) {
     return new Date(Date.parse(s));
 };
 
+var update_timestamp_at = function(message) {
+    var prev_ts;
+    var prev = message_get_prev(message);
+    if (prev !== null) {
+        prev_ts = date_parse(prev.dataset.timestamp);
+    } else {
+        console.log("prev is null");
+    }
+    var message_ts = date_parse(message.dataset.timestamp);
+    var ts_el = message_get_timestamp_el(message);
+    console.log("looking at "+message_ts+" and prev_ts="+prev_ts);
+
+    if (prev === null || !date_same_day(prev_ts, message_ts)) {
+        // full timestamp
+        ts_el.textContent = message_ts.toLocaleString().replace(" ", " ");
+    } else {
+        var prev_block = message_get_block(prev);
+        var block = message_get_block(message);
+        var time_string = message_ts.toTimeString().slice(0, 8);
+        var shown = "", hidden = "";
+        if (prev_block !== block) {
+            shown = time_string;
+        } else if (date_same_minute(prev_ts, message_ts)) {
+            hidden = time_string.slice(0, 5);
+            shown = time_string.slice(5);
+        } else if (date_same_hour(prev_ts, message_ts)) {
+            hidden = time_string.slice(0, 2);
+            shown = time_string.slice(2);
+        } else {
+            shown = time_string;
+        }
+
+        ts_el.textContent = "";
+
+        var el = document.createElement("span");
+        el.classList.add("visual-hidden");
+        el.textContent = hidden;
+        ts_el.appendChild(el);
+
+        var el = document.createElement("span");
+        el.textContent = shown;
+        ts_el.appendChild(el);
+    }
+}
+
 var update_timestamps = function(start_at) {
     console.log("updating timestamps starting at "+start_at);
-    var message = start_at;
+    update_timestamp_at(start_at);
+    var next = message_get_next(start_at);
+    if (next !== null) {
+        update_timestamp_at(next);
+    }
+    /* var message = start_at;
     var message_ts, prev_ts;
     var prev = message_get_prev(message);
     if (prev !== null) {
@@ -327,7 +423,7 @@ var update_timestamps = function(start_at) {
         prev = message;
         prev_ts = message_ts;
         message = message_get_next(message);
-    }
+    } */
 };
 
 var resize_frame = function(frame_wrap_el) {
@@ -476,6 +572,81 @@ var make_marker = function(event) {
     return marker_el;
 }
 
+var block_split_at = function(message_item) {
+    var block = message_get_block(message_item);
+    console.log("request to split block "+block);
+    var next_message_in_block = message_get_next_in_block(message_item);
+    if (next_message_in_block === null) {
+        console.log("no next message -> no-op");
+        // this is already the last message; split is a no-op
+        // returning block, because the contract is that we return the block
+        // containing the pointed-at message
+        return block;
+    }
+
+    var new_block = block.cloneNode(false);
+    // copy over the header
+    var msg_container = block_get_messages_container(block);
+    var child = block.firstChild;
+    while (child !== null && child !== msg_container) {
+        new_block.appendChild(child.cloneNode(true));
+        child = child.nextSibling;
+    }
+
+    var messages_el = make_message_container();
+    new_block.appendChild(messages_el);
+    var child = next_message_in_block;
+    while (child !== null) {
+        var next = message_get_next_in_block(child);
+        messages_el.appendChild(child);
+        child = next;
+    }
+
+    new_block.appendChild(make_clearfix());
+
+    insertAfter(block.parentNode, new_block, block);
+
+    return block;
+}
+
+/**
+ * Try to join the block to the previous one.
+ *
+ * This is only done if the from_jid is equal, and there are no markers
+ * inbetween.
+ */
+var block_try_join = function(block) {
+    var prev = toplevel_get_prev(block);
+    if (prev === null || !toplevel_is_block(prev)) {
+        console.log(
+            "block_try_join: prev is not a block (prev=" +
+            toplevel_to_string(prev) + ")");
+        return null;
+    }
+
+    if (prev.dataset.from_jid !== block.dataset.from_jid) {
+        console.log(
+            "block_try_join: won’t join blocks with different from_jid"
+        );
+        return null;
+    }
+
+    var my_container = block_get_messages_container(block);
+    var their_container = block_get_messages_container(prev);
+
+    var msg = my_container.firstChild;
+    while (msg !== null) {
+        var next = msg.nextSibling;
+        their_container.appendChild(msg);
+        update_timestamp_at(msg);
+        msg = next;
+    }
+
+    block.parentNode.removeChild(block);
+
+    return prev;
+}
+
 var put_marker = function(event) {
     console.log("marker for uid "+event.marked_message_uid+" from "+
                 event.from_jid);
@@ -492,15 +663,23 @@ var put_marker = function(event) {
     }
 
     var block = message_get_block(message_item);
+    var after_block = block_split_at(message_item);
+    var former_next_toplevel = toplevel_get_next(marker);
 
-    // FIXME: join source block if possible
-    // FIXME: split dest block if needed
     console.log("block for marked message: "+block);
 
-    if (block.nextSibling !== null) {
-        block.parentNode.insertBefore(marker, block.nextSibling);
-    } else {
-        block.parentNode.appendChild(marker);
+    insertAfter(after_block.parentNode, marker, after_block);
+
+    if (former_next_toplevel !== null &&
+            toplevel_is_block(former_next_toplevel))
+    {
+        console.log("former next is block: "+block_to_string(former_next_toplevel));
+        block_try_join(former_next_toplevel);
+    }
+
+    var next_block = block_get_next(after_block);
+    if (next_block !== null) {
+        update_timestamp_at(block_get_first_message(next_block));
     }
 }
 
