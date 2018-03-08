@@ -144,11 +144,15 @@ span.action {
 
 div.presence-block {
     display: flex;
+    flex-flow: row wrap;
     justify-content: center;
+    padding-left: 4.5em;
+    padding-right: 4.5em;
 }
 
 div.presence-block > div.presence {
     position: relative;
+    margin: 0.1em;
 }
 
 div.presence-block > div.presence > img {
@@ -160,6 +164,7 @@ div.presence-block > div.presence > img {
 
 div.presence-block > div.presence.part > img {
     opacity: 0.5;
+    z-index: -1;
 }
 
 div.presence-block > div.presence > span {
@@ -173,6 +178,7 @@ div.presence-block > div.presence > span {
     border-radius: 0.25em;
     margin-top: 0.5em;
     text-align: center;
+    z-index: 1;
 }
 
 div.presence-block:last-child > div.presence > span {
