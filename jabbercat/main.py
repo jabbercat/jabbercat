@@ -546,7 +546,12 @@ class MainWindow(Qt.QMainWindow):
         self._activate_conversation_page(page)
 
     def _current_conversation_page_changed(self, new_index: int):
-        page = self.ui.conversations_view.children()[new_index]
+        page = self.ui.conversations_view.widget(new_index)
+        if not page:
+            logger.warning("page changed to nonexistant widget: %d",
+                           new_index)
+            return
+
         try:
             conversation = self.__pagemap[page]
         except KeyError:
