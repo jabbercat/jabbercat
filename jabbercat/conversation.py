@@ -418,6 +418,14 @@ class ConversationView(Qt.QWidget):
         }
 
     def _conv_join(self, member, **kwargs):
+        state = getattr(
+            self.__conversation,
+            "muc_state",
+            aioxmpp.muc.RoomState.ACTIVE
+        )
+        if state == aioxmpp.muc.RoomState.JOIN_PRESENCE:
+            # we don’t show join presence in the message view
+            return
         self.history.channel.on_join.emit(
             self._member_to_event(member)
         )
