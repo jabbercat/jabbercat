@@ -44,12 +44,14 @@ class MessageViewPageChannelObject(Qt.QObject):
         self._font_size = ""
         self._account_jid = str(account_jid)
         self._conversation_jid = str(conversation_jid)
+        self._html_fut = None
 
     on_ready = Qt.pyqtSignal([])
     on_message = Qt.pyqtSignal(['QVariantMap'])
     on_font_family_changed = Qt.pyqtSignal([str])
     on_avatar_changed = Qt.pyqtSignal(['QVariantMap'])
     on_marker = Qt.pyqtSignal(['QVariantMap'])
+    on_request_html = Qt.pyqtSignal([])
 
     @Qt.pyqtProperty(str, notify=on_font_family_changed)
     def font_family(self):
@@ -98,6 +100,38 @@ class MessageViewPageChannelObject(Qt.QObject):
         self.logger.debug("web page called in ready!")
         self.on_ready.emit()
 
+    @Qt.pyqtSlot(str)
+    def push_html(self, html_str: str):
+        self.logger.debug("push_html received")
+        fut = self._html_fut
+        if fut is None:
+            self.logger.debug("unsolicited html push")
+            return
+
+        if fut.done():
+            self.logger.debug("future already done")
+            self._html_fut = None
+            return
+
+        fut.set_result(html_str)
+
+    @asyncio.coroutine
+    def request_html(self) -> str:
+        if self._html_fut is not None:
+            raise RuntimeError(
+                "only one html request may be running at any time"
+            )
+        fut = asyncio.Future()
+        self._html_fut = fut
+        self.logger.debug("emitting HTML request")
+        self.on_request_html.emit()
+        try:
+            return (yield from fut)
+        except asyncio.CancelledError:
+            if not fut.done():
+                fut.cancel()
+            raise
+
 
 class MessageViewPage(Qt.QWebEnginePage):
     URL = Qt.QUrl("qrc:/html/conversation-template.html")
@@ -120,6 +154,8 @@ class MessageViewPage(Qt.QWebEnginePage):
         self.loadFinished.connect(self._load_finished)
         self.fullScreenRequested.connect(self._full_screen_requested)
         self.logger.debug("page initialised")
+        self.ready_event = asyncio.Event()
+        self.channel.on_ready.connect(self.ready_event.set)
 
     def acceptNavigationRequest(
             self,

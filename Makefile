@@ -7,6 +7,8 @@ RESOURCE_SOURCES=$(addprefix data/,$(shell xpath -e 'RCC/qresource/file/text()' 
 
 TS_FILES=$(wildcard translations/*.ts)
 
+TESTS?=tests/
+
 all: $(UIC_PYTHON_FILES) resources.rcc data/js/emoji.json
 
 clean:
@@ -56,5 +58,9 @@ run-debug: all debug-logs
 	@echo
 	@echo "=== logs have been written to $(logfile_name) ==="
 	@echo
+
+test: all
+	QTWEBENGINE_REMOTE_DEBUGGING=1234 nosetests3 $(TESTS)
+
 
 .PHONY: lupdate docs-html run-debug debug-logs data/emoji-java data/gemoji

@@ -530,6 +530,13 @@ var init = function() {
         body.style.fontSize = new_size;
     });
 
+    api_object.on_request_html.connect(function() {
+        console.log("received HTML request");
+        api_object.push_html(body.innerHTML);
+    });
+
+    console.log("initialized successfully.");
+
     api_object.ready();
 };
 
