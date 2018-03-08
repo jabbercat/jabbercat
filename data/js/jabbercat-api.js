@@ -6,15 +6,28 @@ var avatar_addresses = {};
 var message_uid_index = {};
 var marker_owner_index = {};
 
+var scroll_to_bottom = function() {
+    // delay to ensure that the DOM has updated already
+    setTimeout(
+        function(){
+            window.scrollTo(0, document.body.scrollHeight);
+        },
+        50
+    );
+}
+
 var insertAfter = function(parent, node_to_insert, target) {
     if (target === null) {
         parent.insertBefore(node_to_insert, parent.firstChild);
+        return false;
     } else {
         var next_sibling = target.nextSibling;
         if (next_sibling === null) {
             parent.appendChild(node_to_insert);
+            return true;
         } else {
             parent.insertBefore(node_to_insert, next_sibling);
+            return false;
         }
     }
 }
@@ -156,6 +169,10 @@ var toplevel_get_prev = function(toplevel) {
 
 var toplevel_is_block = function(toplevel) {
     return toplevel.dataset.element_type == "message-block";
+}
+
+var toplevel_is_presence_block = function(toplevel) {
+    return toplevel.dataset.element_type == "presence-block";
 }
 
 var toplevel_to_string = function(toplevel) {
@@ -516,13 +533,7 @@ var add_message = function(info) {
         cb();
     }
 
-    // delay to ensure that the DOM has updated already
-    setTimeout(
-        function(){
-            window.scrollTo(0, document.body.scrollHeight);
-        },
-        50
-    );
+    scroll_to_bottom();
 }
 
 var avatar_changed = function(info) {
@@ -668,7 +679,9 @@ var put_marker = function(event) {
 
     console.log("block for marked message: "+block);
 
-    insertAfter(after_block.parentNode, marker, after_block);
+    if (insertAfter(after_block.parentNode, marker, after_block)) {
+        scroll_to_bottom();
+    }
 
     if (former_next_toplevel !== null &&
             toplevel_is_block(former_next_toplevel))
@@ -688,12 +701,100 @@ var set_font_family = function(new_family) {
         "\""+new_family+"\", \"Noto Color Emoji\"";
 }
 
+var make_presence_item = function(event, is_join) {
+    var presence_el = document.createElement("div");
+    presence_el.classList.add("presence");
+    presence_el.dataset.from_jid = event.from_jid;
+    presence_el.dataset.display_name = event.display_name;
+    presence_el.dataset.timestamp = event.timestamp;
+    if (is_join) {
+        presence_el.dataset.is_join = "is_join";
+        presence_el.classList.add("join");
+    } else {
+        presence_el.classList.add("part");
+    }
+    presence_el.appendChild(create_avatar_img(
+        event.from_jid,
+        event.display_name
+    ));
+
+    // FIXME: i18n
+    var text_el = document.createElement("span");
+    text_el.innerText =
+        event.display_name + (is_join ? " has joined." : " has left.");
+    presence_el.appendChild(text_el);
+
+    return presence_el;
+}
+
+var remove_presence_item = function(presence_item) {
+    var block = presence_item.parentNode;
+    block.removeChild(presence_item);
+    if (block.firstChild === null) {
+        block.parentNode.removeChild(block);
+    }
+}
+
+var join = function(event) {
+    // FIXME: should probably insert based on timestamp instead of blind
+    // appending
+
+    var presence_block_el = messages_parent.lastChild;
+    if (presence_block_el === null ||
+            !toplevel_is_presence_block(presence_block_el))
+    {
+        var presence_block_el = document.createElement("div");
+        presence_block_el.dataset.element_type = "presence-block";
+        presence_block_el.classList.add("presence-block");
+    }
+
+    var child = presence_block_el.lastChild;
+    while (child !== null && child.dataset.from_jid !== event.from_jid) {
+        child = child.previousSibling;
+    }
+    if (child !== null && !child.dataset.is_join) {
+        // annihilate
+        remove_presence_item(child);
+        return;
+    }
+
+    var presence_el = make_presence_item(event, true);
+    presence_block_el.appendChild(presence_el);
+
+    messages_parent.appendChild(presence_block_el);
+
+    scroll_to_bottom();
+}
+
+var part = function(event) {
+    // FIXME: should probably insert based on timestamp instead of blind
+    // appending
+
+    var presence_block_el = messages_parent.lastChild;
+    if (presence_block_el === null ||
+            !toplevel_is_presence_block(presence_block_el))
+    {
+        var presence_block_el = document.createElement("div");
+        presence_block_el.dataset.element_type = "presence-block";
+        presence_block_el.classList.add("presence-block");
+    }
+
+    var presence_el = make_presence_item(event, false);
+    presence_block_el.appendChild(presence_el);
+
+    messages_parent.appendChild(presence_block_el);
+
+    scroll_to_bottom();
+}
+
 var init = function() {
     account_jid = api_object.account_jid;
     window.document.title = api_object.conversation_jid;
     api_object.on_message.connect(add_message);
     api_object.on_avatar_changed.connect(avatar_changed);
     api_object.on_marker.connect(put_marker);
+    api_object.on_join.connect(join);
+    api_object.on_part.connect(part);
     window.onresize = handle_resize;
     var body = document.body;
     set_font_family(api_object.font_family);

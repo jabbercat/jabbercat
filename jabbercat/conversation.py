@@ -51,6 +51,8 @@ class MessageViewPageChannelObject(Qt.QObject):
     on_font_family_changed = Qt.pyqtSignal([str])
     on_avatar_changed = Qt.pyqtSignal(['QVariantMap'])
     on_marker = Qt.pyqtSignal(['QVariantMap'])
+    on_join = Qt.pyqtSignal(['QVariantMap'])
+    on_part = Qt.pyqtSignal(['QVariantMap'])
     on_request_html = Qt.pyqtSignal([])
 
     @Qt.pyqtProperty(str, notify=on_font_family_changed)
@@ -385,12 +387,45 @@ class ConversationView(Qt.QWidget):
 
     def _ready(self):
         self.__conversation = self.__node.conversation
+        _connect_and_store_token(
+            self.__conv_tokens,
+            self.__conversation.on_join,
+            self._conv_join,
+        )
+        _connect_and_store_token(
+            self.__conv_tokens,
+            self.__conversation.on_leave,
+            self._conv_leave,
+        )
 
     def _stale(self):
         for signal, token in self.__conv_tokens:
             signal.disconnect(token)
         self.__conv_tokens.clear()
         self.__conversation = None
+
+    def _member_to_event(self, member, **kwargs):
+        color_full, color_weak = self.make_css_colors(
+            jclib.archive.get_member_colour_input(member),
+        )
+        return {
+            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "from_self": member.is_self,
+            "from_jid": str(jclib.archive.get_member_from_jid(member)),
+            "display_name": jclib.archive.get_member_display_name(member),
+            "color_full": color_full,
+            "color_weak": color_weak,
+        }
+
+    def _conv_join(self, member, **kwargs):
+        self.history.channel.on_join.emit(
+            self._member_to_event(member)
+        )
+
+    def _conv_leave(self, member, **kwargs):
+        self.history.channel.on_part.emit(
+            self._member_to_event(member)
+        )
 
     def eventFilter(self, obj, ev):
         if obj is not self.ui.message_input:

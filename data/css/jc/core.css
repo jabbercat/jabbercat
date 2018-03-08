@@ -141,3 +141,49 @@ span.action {
     font-weight: bold;
     font-style: italic;
 }
+
+div.presence-block {
+    display: flex;
+    justify-content: center;
+}
+
+div.presence-block > div.presence {
+    position: relative;
+}
+
+div.presence-block > div.presence > img {
+    width: 32px;
+    vertical-align: middle;
+    margin-right: 0.5em;
+    opacity: 0.8;
+}
+
+div.presence-block > div.presence.part > img {
+    opacity: 0.5;
+}
+
+div.presence-block > div.presence > span {
+    display: none;
+    position: absolute;
+    top: 100%;
+    width: 10em;
+    left: -5em;
+    margin-left: 16px;
+    padding: 0.5em;
+    border-radius: 0.25em;
+    margin-top: 0.5em;
+    text-align: center;
+}
+
+div.presence-block:last-child > div.presence > span {
+    top: initial;
+    bottom: 100%;
+    margin-top: 0;
+    margin-bottom: 0.5em;
+}
+
+div.presence-block > div.presence:hover > span {
+    display: block;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+}

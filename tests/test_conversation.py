@@ -441,3 +441,431 @@ class TestMessageViewPage(XMLTestCase):
             html,
             ignore_surplus_attr=True,
         )
+
+    @halt_for_debugging
+    def test_join_appends(self):
+        self.page.channel.on_join.emit(
+            {
+                "timestamp": datetime(2018, 3, 8, 11, 16, 10).isoformat() + "Z",
+                "from_self": False,
+                "from_jid": "romeo@montague.lit",
+                "display_name": "Romeo Montague",
+                "color_full": "#123456",
+                "color_weak": "#123"
+            }
+        )
+        self.assertSubtreeEqual(
+            etree.fromstring(
+                '<div xmlns="http://www.w3.org/1999/xhtml" id="messages">'
+                '<div class="presence-block">'
+                '<div class="presence">'
+                '<img/><span>Romeo Montague has joined.</span>'
+                '</div>'
+                '</div>'
+                '</div>'
+            ),
+            run_coroutine(self._obtain_html(), timeout=20),
+            ignore_surplus_attr=True,
+        )
+
+    @halt_for_debugging
+    def test_message_after_join(self):
+        # timestamp doesn’t matter for joins currently, so we aggressively set
+        # this to a later time than the message which follows afterwards
+        self.page.channel.on_join.emit(
+            {
+                "timestamp": datetime(2018, 3, 8, 11, 16, 13).isoformat() + "Z",
+                "from_self": False,
+                "from_jid": "romeo@montague.lit",
+                "display_name": "Romeo Montague",
+                "color_full": "#123456",
+                "color_weak": "#123"
+            }
+        )
+        self.page.channel.on_message.emit(
+            {
+                "timestamp": datetime(2018, 3, 8, 11, 16, 10).isoformat() + "Z",
+                "from_self": False,
+                "from_jid": "romeo@montague.lit",
+                "display_name": "Romeo Montague",
+                "color_full": "#123456",
+                "color_weak": "#123",
+                "attachments": [],
+                "body": "<em>test</em>",
+                "message_uid": "message-1"
+            }
+        )
+        self.assertSubtreeEqual(
+            etree.fromstring(
+                '<div xmlns="http://www.w3.org/1999/xhtml" id="messages">'
+                '<div class="presence-block">'
+                '<div class="presence">'
+                '<img/><span>Romeo Montague has joined.</span>'
+                '</div>'
+                '</div>'
+                '<div class="message-block">'
+                '<div class="avatar"><img/></div>'
+                '<div class="from">Romeo Montague</div>'
+                '<div class="message-block-messages">'
+                '<div class="message">'
+                '<div class="timestamp">3/8/2018, 11:16:10 AM</div>'
+                '<div class="body"><div><em>test</em></div></div>'
+                '</div>'
+                '</div>'
+                '<div class="clearfix"></div>'
+                '</div>'
+                '</div>'
+            ),
+            run_coroutine(self._obtain_html(), timeout=20),
+            ignore_surplus_attr=True,
+        )
+
+    @halt_for_debugging
+    def test_message_join_marker(self):
+        self.page.channel.on_message.emit(
+            {
+                "timestamp": datetime(2018, 3, 8, 11, 16, 10).isoformat() + "Z",
+                "from_self": False,
+                "from_jid": "romeo@montague.lit",
+                "display_name": "Romeo Montague",
+                "color_full": "#123456",
+                "color_weak": "#123",
+                "attachments": [],
+                "body": "<em>test</em>",
+                "message_uid": "message-1"
+            }
+        )
+        self.page.channel.on_join.emit(
+            {
+                "timestamp": datetime(2018, 3, 8, 11, 16, 13).isoformat() + "Z",
+                "from_self": False,
+                "from_jid": "romeo@montague.lit",
+                "display_name": "Romeo Montague",
+                "color_full": "#123456",
+                "color_weak": "#123"
+            }
+        )
+        self.page.channel.on_marker.emit(
+            {
+                "timestamp": datetime(2018, 3, 8, 11, 16, 13).isoformat() + "Z",
+                "from_self": False,
+                "from_jid": "juliet@capulet.lit",
+                "display_name": "Juliet Capulet",
+                "color_full": "#123456",
+                "color_weak": "#123",
+                "marked_message_uid": "message-1"
+            }
+        )
+        self.assertSubtreeEqual(
+            etree.fromstring(
+                '<div xmlns="http://www.w3.org/1999/xhtml" id="messages">'
+                '<div class="message-block">'
+                '<div class="avatar"><img/></div>'
+                '<div class="from">Romeo Montague</div>'
+                '<div class="message-block-messages">'
+                '<div class="message">'
+                '<div class="timestamp">3/8/2018, 11:16:10 AM</div>'
+                '<div class="body"><div><em>test</em></div></div>'
+                '</div>'
+                '</div>'
+                '<div class="clearfix"></div>'
+                '</div>'
+                '<div class="marker">'
+                '<img/>'
+                '<span>Juliet Capulet has read up to here.</span>'
+                '</div>'
+                '<div class="presence-block">'
+                '<div class="presence">'
+                '<img/><span>Romeo Montague has joined.</span>'
+                '</div>'
+                '</div>'
+                '</div>'
+            ),
+            run_coroutine(self._obtain_html(), timeout=20),
+            ignore_surplus_attr=True,
+        )
+
+    @halt_for_debugging
+    def test_message_marker_join(self):
+        self.page.channel.on_message.emit(
+            {
+                "timestamp": datetime(2018, 3, 8, 11, 16, 10).isoformat() + "Z",
+                "from_self": False,
+                "from_jid": "romeo@montague.lit",
+                "display_name": "Romeo Montague",
+                "color_full": "#123456",
+                "color_weak": "#123",
+                "attachments": [],
+                "body": "<em>test</em>",
+                "message_uid": "message-1"
+            }
+        )
+        self.page.channel.on_marker.emit(
+            {
+                "timestamp": datetime(2018, 3, 8, 11, 16, 13).isoformat() + "Z",
+                "from_self": False,
+                "from_jid": "juliet@capulet.lit",
+                "display_name": "Juliet Capulet",
+                "color_full": "#123456",
+                "color_weak": "#123",
+                "marked_message_uid": "message-1"
+            }
+        )
+        self.page.channel.on_join.emit(
+            {
+                "timestamp": datetime(2018, 3, 8, 11, 16, 13).isoformat() + "Z",
+                "from_self": False,
+                "from_jid": "romeo@montague.lit",
+                "display_name": "Romeo Montague",
+                "color_full": "#123456",
+                "color_weak": "#123"
+            }
+        )
+        self.assertSubtreeEqual(
+            etree.fromstring(
+                '<div xmlns="http://www.w3.org/1999/xhtml" id="messages">'
+                '<div class="message-block">'
+                '<div class="avatar"><img/></div>'
+                '<div class="from">Romeo Montague</div>'
+                '<div class="message-block-messages">'
+                '<div class="message">'
+                '<div class="timestamp">3/8/2018, 11:16:10 AM</div>'
+                '<div class="body"><div><em>test</em></div></div>'
+                '</div>'
+                '</div>'
+                '<div class="clearfix"></div>'
+                '</div>'
+                '<div class="marker">'
+                '<img/>'
+                '<span>Juliet Capulet has read up to here.</span>'
+                '</div>'
+                '<div class="presence-block">'
+                '<div class="presence">'
+                '<img/><span>Romeo Montague has joined.</span>'
+                '</div>'
+                '</div>'
+                '</div>'
+            ),
+            run_coroutine(self._obtain_html(), timeout=20),
+            ignore_surplus_attr=True,
+        )
+
+    @halt_for_debugging
+    def test_multiple_joins_aggregate(self):
+        self.page.channel.on_join.emit(
+            {
+                "timestamp": datetime(2018, 3, 8, 11, 16, 10).isoformat() + "Z",
+                "from_self": False,
+                "from_jid": "romeo@montague.lit",
+                "display_name": "Romeo Montague",
+                "color_full": "#123456",
+                "color_weak": "#123"
+            }
+        )
+        self.page.channel.on_join.emit(
+            {
+                "timestamp": datetime(2018, 3, 8, 11, 16, 10).isoformat() + "Z",
+                "from_self": False,
+                "from_jid": "juliet@capulet.lit",
+                "display_name": "Juliet Capulet",
+                "color_full": "#123456",
+                "color_weak": "#123"
+            }
+        )
+        self.assertSubtreeEqual(
+            etree.fromstring(
+                '<div xmlns="http://www.w3.org/1999/xhtml" id="messages">'
+                '<div class="presence-block">'
+                '<div class="presence">'
+                '<img/><span>Romeo Montague has joined.</span>'
+                '</div>'
+                '<div class="presence">'
+                '<img/><span>Juliet Capulet has joined.</span>'
+                '</div>'
+                '</div>'
+                '</div>'
+            ),
+            run_coroutine(self._obtain_html(), timeout=20),
+            ignore_surplus_attr=True,
+        )
+
+    @halt_for_debugging
+    def test_part_appends(self):
+        self.page.channel.on_part.emit(
+            {
+                "timestamp": datetime(2018, 3, 8, 11, 16, 10).isoformat() + "Z",
+                "from_self": False,
+                "from_jid": "romeo@montague.lit",
+                "display_name": "Romeo Montague",
+                "color_full": "#123456",
+                "color_weak": "#123"
+            }
+        )
+        self.assertSubtreeEqual(
+            etree.fromstring(
+                '<div xmlns="http://www.w3.org/1999/xhtml" id="messages">'
+                '<div class="presence-block">'
+                '<div class="presence">'
+                '<img/><span>Romeo Montague has left.</span>'
+                '</div>'
+                '</div>'
+                '</div>'
+            ),
+            run_coroutine(self._obtain_html(), timeout=20),
+            ignore_surplus_attr=True,
+        )
+
+    @halt_for_debugging
+    def test_part_annihilates_with_join(self):
+        self.page.channel.on_part.emit(
+            {
+                "timestamp": datetime(2018, 3, 8, 11, 16, 10).isoformat() + "Z",
+                "from_self": False,
+                "from_jid": "romeo@montague.lit",
+                "display_name": "Romeo Montague",
+                "color_full": "#123456",
+                "color_weak": "#123"
+            }
+        )
+        self.page.channel.on_join.emit(
+            {
+                "timestamp": datetime(2018, 3, 8, 11, 16, 10).isoformat() + "Z",
+                "from_self": False,
+                "from_jid": "romeo@montague.lit",
+                "display_name": "Romeo Montague",
+                "color_full": "#123456",
+                "color_weak": "#123"
+            }
+        )
+        self.assertSubtreeEqual(
+            etree.fromstring(
+                '<div xmlns="http://www.w3.org/1999/xhtml" id="messages">'
+                '</div>'
+            ),
+            run_coroutine(self._obtain_html(), timeout=20),
+            ignore_surplus_attr=True,
+        )
+
+    @halt_for_debugging
+    def test_part_does_not_annihilate_with_join_of_other_entity(self):
+        self.page.channel.on_part.emit(
+            {
+                "timestamp": datetime(2018, 3, 8, 11, 16, 10).isoformat() + "Z",
+                "from_self": False,
+                "from_jid": "juliet@capulet.lit",
+                "display_name": "Juliet Capulet",
+                "color_full": "#123456",
+                "color_weak": "#123"
+            }
+        )
+        self.page.channel.on_join.emit(
+            {
+                "timestamp": datetime(2018, 3, 8, 11, 16, 10).isoformat() + "Z",
+                "from_self": False,
+                "from_jid": "romeo@montague.lit",
+                "display_name": "Romeo Montague",
+                "color_full": "#123456",
+                "color_weak": "#123"
+            }
+        )
+        self.assertSubtreeEqual(
+            etree.fromstring(
+                '<div xmlns="http://www.w3.org/1999/xhtml" id="messages">'
+                '<div class="presence-block">'
+                '<div class="presence">'
+                '<img/><span>Juliet Capulet has left.</span>'
+                '</div>'
+                '<div class="presence">'
+                '<img/><span>Romeo Montague has joined.</span>'
+                '</div>'
+                '</div>'
+                '</div>'
+            ),
+            run_coroutine(self._obtain_html(), timeout=20),
+            ignore_surplus_attr=True,
+        )
+
+    @halt_for_debugging
+    def test_part_annihilates_across_other_joins(self):
+        self.page.channel.on_part.emit(
+            {
+                "timestamp": datetime(2018, 3, 8, 11, 16, 10).isoformat() + "Z",
+                "from_self": False,
+                "from_jid": "romeo@montague.lit",
+                "display_name": "Romeo Montague",
+                "color_full": "#123456",
+                "color_weak": "#123"
+            }
+        )
+        self.page.channel.on_join.emit(
+            {
+                "timestamp": datetime(2018, 3, 8, 11, 16, 10).isoformat() + "Z",
+                "from_self": False,
+                "from_jid": "juliet@capulet.lit",
+                "display_name": "Juliet Capulet",
+                "color_full": "#123456",
+                "color_weak": "#123"
+            }
+        )
+        self.page.channel.on_join.emit(
+            {
+                "timestamp": datetime(2018, 3, 8, 11, 16, 10).isoformat() + "Z",
+                "from_self": False,
+                "from_jid": "romeo@montague.lit",
+                "display_name": "Romeo Montague",
+                "color_full": "#123456",
+                "color_weak": "#123"
+            }
+        )
+        self.assertSubtreeEqual(
+            etree.fromstring(
+                '<div xmlns="http://www.w3.org/1999/xhtml" id="messages">'
+                '<div class="presence-block">'
+                '<div class="presence">'
+                '<img/><span>Juliet Capulet has joined.</span>'
+                '</div>'
+                '</div>'
+                '</div>'
+            ),
+            run_coroutine(self._obtain_html(), timeout=20),
+            ignore_surplus_attr=True,
+        )
+
+    @halt_for_debugging
+    def test_join_does_not_annihilate_with_part(self):
+        self.page.channel.on_join.emit(
+            {
+                "timestamp": datetime(2018, 3, 8, 11, 16, 10).isoformat() + "Z",
+                "from_self": False,
+                "from_jid": "romeo@montague.lit",
+                "display_name": "Romeo Montague",
+                "color_full": "#123456",
+                "color_weak": "#123"
+            }
+        )
+        self.page.channel.on_part.emit(
+            {
+                "timestamp": datetime(2018, 3, 8, 11, 16, 10).isoformat() + "Z",
+                "from_self": False,
+                "from_jid": "romeo@montague.lit",
+                "display_name": "Romeo Montague",
+                "color_full": "#123456",
+                "color_weak": "#123"
+            }
+        )
+        self.assertSubtreeEqual(
+            etree.fromstring(
+                '<div xmlns="http://www.w3.org/1999/xhtml" id="messages">'
+                '<div class="presence-block">'
+                '<div class="presence">'
+                '<img/><span>Romeo Montague has joined.</span>'
+                '</div>'
+                '<div class="presence">'
+                '<img/><span>Romeo Montague has left.</span>'
+                '</div>'
+                '</div>'
+                '</div>'
+            ),
+            run_coroutine(self._obtain_html(), timeout=20),
+            ignore_surplus_attr=True,
+        )
