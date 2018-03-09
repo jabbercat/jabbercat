@@ -7,7 +7,11 @@ Welcome to JabberCat!
 =====================
 
 .. image:: img/jabbercat.svg
-   :width: 75%
+   :width: 45%
+
+.. image:: screenshots/2018-03.png
+   :width: 45%
+
 
 JabberCat is an instant messenger which uses the long-established Jabber
 network (based on XMPP). It is written in Python using Qt 5.
