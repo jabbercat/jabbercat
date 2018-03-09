@@ -9,8 +9,8 @@ About this Document
 ===================
 
 This document is intended to give a quick guide for testing early JabberCat
-releases. This document is **not** for you, if you are not comfortable to file
-bug reports on GitHub or directly to the author.
+releases. If you are not comfortable with filing bugreports on GitHub or
+directly to the developers, this document is **not** for you.
 
 Throughout this document, terminal commands will be suggested. Those prefixed
 with ``$`` shall be executed by a normal, unprivileged user. Those prefixed
@@ -223,16 +223,9 @@ Testing notes
 Known issues
 ------------
 
-* Sometimes, no messages are shown after joining a MUC, despite the join
-  succeeding. Sometimes, not even messages sent after the join will show up.
-  Please report this to a developer **while it is happening**. They will guide
-  you through steps to take to debug this situation.
-
-* There is no way to know if a conversation has received new messages while
-  it’s not open; we’ll add notifications and unread-message counters to the
-  list of conversations at some point.
-
-* Similarly, handling of highlighting/mentions in MUCs is not implemented yet.
+* Handling of highlighting/mentions in MUCs is not implemented yet; we notify
+  on all messages. This will be fixed at some point
+  (`#56 <https://github.com/jabbercat/jabbercat/issues/56>`_).
 
 * Setting avatars, account tags and account colors isn’t implemented yet.
 
@@ -253,9 +246,8 @@ Focus areas
 
 For the early testing, there’s not really a focus. Report each and every thing
 which you feel is off with the UX. If you think it may simply be a missing
-feature, you can either report it (if there’s a chance we might miss it
-otherwise), ask a dev in the MUC or directly (see below) or simply report it.
-Issues are cheap.
+feature, you can either ask a dev in the MUC or directly (see below), or simply
+report it (see below). Issues are cheap.
 
 Reporting issues
 ----------------
@@ -270,12 +262,19 @@ To get in touch, you can:
 * join our MUC at `jabbercat@conference.zombofant.net
   <xmpp:jabbercat@conference.zombofant.net?join>`_,
 * directly send Jabber IMs to `jonas@wielicki.name <xmpp:jonas@wielicki.name>`_
-  (adding them to the roster before sending a message is recommended, but not
-  needed as long as your message is not multi-line).
+  (adding them to the roster before sending a message is recommended; there
+  are some anti-spam measures in place which may catch you otherwise.).
 * send an e-mail to `jonas@wielicki.name <mailto:jonas@wielicki.name>`_.
 
 Of course, if you feel confident with reporting issues, feel free to `open one
 at GitHub <https://github.com/jabbercat/jabbercat/issues/new>`_ right away.
+
+.. warning::
+
+    The Python Console inside JabberCat **DANGEROUS**. This is also mentioned
+    above the console itself: it can be used to steal or delete all your
+    personal data, even outside of JabberCat, just like any other program can.
+    Do not enter untrusted code in there.
 
 
 Information to include in issue reports
@@ -291,3 +290,5 @@ This will print the JabberCat version, as well as the versions of a few key
 dependencies and basic information about your OS. This helps with debugging.
 If you don’t feel comfortable sharing any of the included information, feel
 free to redact.
+
+This information is also at the top of the log files.
