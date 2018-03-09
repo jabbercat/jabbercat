@@ -167,11 +167,21 @@ class MainWindow(Qt.QMainWindow):
         self.__conversation_model = models.ConversationsModel(
             self.main.conversations,
         )
+
+        self.sorted_conversations = Qt.QSortFilterProxyModel()
+        self.sorted_conversations.setSourceModel(self.__conversation_model)
+        self.sorted_conversations.setSortRole(Qt.Qt.DisplayRole)
+        self.sorted_conversations.setSortLocaleAware(True)
+        self.sorted_conversations.setSortCaseSensitivity(False)
+        self.sorted_conversations.setDynamicSortFilter(True)
+        self.sorted_conversations.sort(0, Qt.Qt.AscendingOrder)
+
         self.ui.conversations_view.setModel(
-            self.__conversation_model
+            self.sorted_conversations
         )
         self._conversation_item_delegate = \
             conversations_view.ConversationItemDelegate()
+
         self.ui.conversations_view.setItemDelegate(
             self._conversation_item_delegate
         )
@@ -503,8 +513,10 @@ class MainWindow(Qt.QMainWindow):
     def _select_conversation(self, conversation):
         index = self.main.conversations.index(conversation)
         self.ui.conversations_view.selectionModel().select(
-            self.ui.conversations_view.model().index(index, 0,
-                                                     Qt.QModelIndex()),
+            self.sorted_conversations.mapFromSource(
+                self.__conversation_model.index(index, 0,
+                                                Qt.QModelIndex())
+            ),
             Qt.QItemSelectionModel.ClearAndSelect |
             Qt.QItemSelectionModel.Current
         )
@@ -513,7 +525,8 @@ class MainWindow(Qt.QMainWindow):
         if not index.isValid():
             return
 
-        conversation = self.main.conversations[index.row()]
+        mapped_index = self.sorted_conversations.mapToSource(index)
+        conversation = self.main.conversations[mapped_index.row()]
         page = self.__convmap[conversation]
         self._activate_conversation_page(page, force_focus=True)
         self._select_conversation(conversation)
@@ -522,7 +535,8 @@ class MainWindow(Qt.QMainWindow):
         if not index.isValid():
             return
 
-        conversation = self.main.conversations[index.row()]
+        mapped_index = self.sorted_conversations.mapToSource(index)
+        conversation = self.main.conversations[mapped_index.row()]
         page = self.__convmap[conversation]
         self._activate_conversation_page(page, transfer_focus=False)
         self._select_conversation(conversation)
@@ -540,7 +554,7 @@ class MainWindow(Qt.QMainWindow):
                 " happy now? IS THIS WHAT YOU WANTED?")
             return
 
-        index = indexes[0]
+        index = self.sorted_conversations.mapToSource(indexes[0])
         conversation = self.main.conversations[index.row()]
         page = self.__convmap[conversation]
         self._activate_conversation_page(page)
@@ -557,10 +571,13 @@ class MainWindow(Qt.QMainWindow):
         except KeyError:
             return
         conv_index = self.main.conversations.index(conversation)
-        model_index = self.ui.conversations_view.model().index(
-            conv_index,
-            0,
-            Qt.QModelIndex()
+
+        model_index = self.sorted_conversations.mapFromSource(
+            self.__conversation_model.index(
+                conv_index,
+                0,
+                Qt.QModelIndex()
+            )
         )
         self.ui.conversations_view.selectionModel().select(
             model_index,
@@ -578,7 +595,9 @@ class MainWindow(Qt.QMainWindow):
         if not index.isValid():
             return
 
-        conversation = self.main.conversations[index.row()]
+        mapped_index = self.sorted_conversations.mapToSource(index)
+
+        conversation = self.main.conversations[mapped_index.row()]
         jclib.tasks.manager.start(self.main.conversations.close_conversation(
             conversation.account,
             conversation.conversation_address,
