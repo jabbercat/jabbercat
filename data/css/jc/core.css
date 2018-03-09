@@ -80,8 +80,8 @@
     opacity: 0.8;
 }
 
-.message.failed {
-    text-decoration: line-through;
+.message.failed > .content > .payload > .body {
+    opacity: 0.5;
 }
 
 .screenreader-hidden {
