@@ -58,6 +58,62 @@ class ConversationItemDelegate(Qt.QItemDelegate):
 
         return Qt.QSize(min_width, total_height)
 
+    def _draw_unread_counter(self,
+                             painter: Qt.QPainter,
+                             option,
+                             top_left: Qt.QPoint,
+                             value: int,
+                             font: Qt.QFont,
+                             metrics: Qt.QFontMetrics,
+                             name_ascent: float,
+                             name_descent: float):
+        if value > self.UNREAD_COUNTER_MAX:
+            text = "{}+".format(value)
+        else:
+            text = str(value)
+
+        # TODO: set this to bold again if a highlight/mention happened
+        font.setWeight(Qt.QFont.Normal)
+
+        painter.setFont(font)
+        width = metrics.width(text)
+
+        full_width = self.UNREAD_COUNTER_HORIZ_PADDING * 2 + width
+
+        pos = Qt.QPoint(
+            option.rect.right() - self.PADDING -
+            width - self.UNREAD_COUNTER_HORIZ_PADDING,
+            top_left.y() + name_ascent,
+        )
+
+        painter.setPen(Qt.Qt.NoPen)
+        painter.setBrush(Qt.QBrush(option.palette.dark()))
+        painter.drawRoundedRect(
+            Qt.QRect(
+                pos - Qt.QPoint(
+                    self.UNREAD_COUNTER_HORIZ_PADDING,
+                    self.UNREAD_COUNTER_VERT_PADDING +
+                    name_ascent,
+                ),
+                pos + Qt.QPoint(
+                    width +
+                    self.UNREAD_COUNTER_HORIZ_PADDING,
+                    name_descent +
+                    self.UNREAD_COUNTER_VERT_PADDING
+                ),
+            ),
+            self.UNREAD_COUNTER_HORIZ_PADDING,
+            self.UNREAD_COUNTER_HORIZ_PADDING,
+        )
+
+        painter.setPen(option.palette.brightText().color())
+        painter.drawText(
+            pos,
+            text,
+        )
+
+        return full_width + self.SPACING
+
     def _draw_preview_text(self,
                            painter: Qt.QPainter,
                            option,
@@ -137,55 +193,16 @@ class ConversationItemDelegate(Qt.QItemDelegate):
         painter.setRenderHint(Qt.QPainter.Antialiasing, True)
 
         if unread_counter_value > 0:
-            if unread_counter_value > self.UNREAD_COUNTER_MAX:
-                unread_counter_text = "{}+".format(unread_counter_value)
-            else:
-                unread_counter_text = str(unread_counter_value)
-
-            # TODO: set this to bold again if a highlight/mention happened
-            unread_counter_font.setWeight(Qt.QFont.Normal)
-
-            painter.setFont(preview_font)
-            unread_counter_width = unread_counter_metrics.width(
-                unread_counter_text
+            name_right_x -= self._draw_unread_counter(
+                painter,
+                option,
+                top_left,
+                unread_counter_value,
+                unread_counter_font,
+                unread_counter_metrics,
+                name_metrics.ascent(),
+                name_metrics.descent(),
             )
-
-            unread_counter_full_width = \
-                self.UNREAD_COUNTER_HORIZ_PADDING * 2 + unread_counter_width
-
-            unread_counter_pos = Qt.QPoint(
-                option.rect.right() - self.PADDING -
-                unread_counter_width - self.UNREAD_COUNTER_HORIZ_PADDING,
-                top_left.y() + name_metrics.ascent(),
-            )
-
-            painter.setPen(Qt.Qt.NoPen)
-            painter.setBrush(Qt.QBrush(option.palette.dark()))
-            painter.drawRoundedRect(
-                Qt.QRect(
-                    unread_counter_pos - Qt.QPoint(
-                        self.UNREAD_COUNTER_HORIZ_PADDING,
-                        self.UNREAD_COUNTER_VERT_PADDING +
-                        name_metrics.ascent(),
-                    ),
-                    unread_counter_pos + Qt.QPoint(
-                        unread_counter_width +
-                        self.UNREAD_COUNTER_HORIZ_PADDING,
-                        name_metrics.descent() +
-                        self.UNREAD_COUNTER_VERT_PADDING
-                    ),
-                ),
-                self.UNREAD_COUNTER_HORIZ_PADDING,
-                self.UNREAD_COUNTER_HORIZ_PADDING,
-            )
-
-            painter.setPen(option.palette.brightText().color())
-            painter.drawText(
-                unread_counter_pos,
-                unread_counter_text,
-            )
-
-            name_right_x -= unread_counter_full_width + self.SPACING
 
         if (option.state & Qt.QStyle.State_Selected and
                 option.state & Qt.QStyle.State_Active):
