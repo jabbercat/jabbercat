@@ -84,8 +84,21 @@ def first_grapheme(s):
 def render_dummy_avatar_base(painter: Qt.QPainter,
                              colour: Qt.QColor,
                              size: float):
+    pen_colour = Qt.QColor(colour)
+    pen_colour.setAlpha(127)
+    painter.setPen(Qt.QPen(pen_colour))
     painter.setBrush(colour)
-    painter.fillPath(AVATAR_DUMMY_PATH, colour)
+    painter.drawRect(Qt.QRectF(0, 0, size, size))
+
+    white_transparent = Qt.QColor(Qt.Qt.white)
+    white_transparent.setAlpha(63)
+    painter.setBrush(Qt.QBrush(white_transparent))
+    painter.setPen(Qt.QPen(Qt.Qt.white, 2))
+
+    painter.translate(2, 2)
+    painter.scale(44/48, 44/48)
+    painter.fillPath(AVATAR_DUMMY_PATH, white_transparent)
+    painter.resetTransform()
 
 
 def render_dummy_avatar_grapheme(painter: Qt.QPainter,
