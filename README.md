@@ -7,7 +7,9 @@ If you are intrigued by the User Experience provided by modern, non-XMPP and/or
 non-free chat applications, this is for you. We aim to provide
 Conversations-like chat experience based on XMPP on the Desktop!
 
-![A screenshot](docs/screenshots/new-message-view.png)
+![A screenshot](docs/screenshots/2018-03.png)
+
+(The screenshot features content licensed under [CC-BY-2.0](https://creativecommons.org/licenses/by/2.0/deed.en): [Romeo & Juliet](https://commons.wikimedia.org/wiki/File:Romeo_%26_Juliet_(3640665883).jpg).)
 
 How to test
 ===========
