@@ -698,7 +698,7 @@ var put_marker = function(event) {
 
 var set_font_family = function(new_family) {
     document.body.style.fontFamily =
-        "\""+new_family+"\", \"Noto Color Emoji\"";
+        "\""+new_family+"\", \"JabberCat Emoji\", \"Noto Color Emoji\"";
 }
 
 var make_presence_item = function(event, is_join) {

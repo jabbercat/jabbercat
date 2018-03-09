@@ -1,3 +1,8 @@
+@font-face {
+    font-family: "JabberCat Emoji";
+    src: url("qrc:/fonts/cat-emoji.ttf");
+}
+
 #messages {
     color: #222;
 }
