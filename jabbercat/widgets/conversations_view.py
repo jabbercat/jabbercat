@@ -1,6 +1,6 @@
 import typing
 
-from .. import Qt, models
+from .. import Qt, models, avatar
 
 
 class ConversationItemDelegate(Qt.QItemDelegate):
@@ -12,6 +12,11 @@ class ConversationItemDelegate(Qt.QItemDelegate):
     UNREAD_COUNTER_HORIZ_PADDING = 4
     UNREAD_COUNTER_VERT_PADDING = 2
     UNREAD_COUNTER_FONT_SIZE = 0.9
+    AVATAR_PADDING = SPACING
+
+    def __init__(self, avatar_manager, parent=None):
+        super().__init__(parent)
+        self.avatar_manager = avatar_manager
 
     def _get_fonts(self, base_font):
         name_font = Qt.QFont(base_font)
@@ -30,27 +35,47 @@ class ConversationItemDelegate(Qt.QItemDelegate):
 
         return name_font, preview_font, unread_counter_font
 
+    def _get_additional_metrics(self,
+                                name_metrics: Qt.QFontMetrics,
+                                preview_metrics: Qt.QFontMetrics):
+        name_text_height = (
+            name_metrics.ascent() +
+            name_metrics.descent()
+        )
+        preview_text_height = (
+            preview_metrics.ascent() +
+            preview_metrics.descent()
+        )
+
+        avatar_size = (
+            name_text_height +
+            self.SPACING +
+            preview_text_height
+        )
+        return name_text_height, preview_text_height, avatar_size
+
     def sizeHint(self, option, index):
         name_font, preview_font, unread_counter_font = self._get_fonts(
             option.font
         )
         name_metrics = Qt.QFontMetrics(name_font)
-        name_height = name_metrics.ascent() + name_metrics.descent()
 
         preview_metrics = Qt.QFontMetrics(preview_font)
-        preview_text_height = (preview_metrics.ascent() +
-                               preview_metrics.descent())
 
         unread_counter_metrics = Qt.QFontMetrics(unread_counter_font)
 
+        name_text_height, preview_text_height, avatar_size = \
+            self._get_additional_metrics(name_metrics, preview_metrics)
+
         total_height = (self.PADDING * 2 +
                         self.UNREAD_COUNTER_VERT_PADDING * 2 +
-                        name_height +
+                        name_text_height +
                         self.SPACING +
                         preview_text_height)
 
         min_width = (
             self.PADDING * 2 +
+            avatar_size + self.AVATAR_PADDING +
             name_metrics.width('…') +
             self.UNREAD_COUNTER_HORIZ_PADDING * 2 +
             unread_counter_metrics.width('{}+'.format(self.UNREAD_COUNTER_MAX))
@@ -181,10 +206,28 @@ class ConversationItemDelegate(Qt.QItemDelegate):
         name_metrics = Qt.QFontMetrics(name_font)
         preview_metrics = Qt.QFontMetrics(preview_font)
         unread_counter_metrics = Qt.QFontMetrics(unread_counter_font)
+        name_height, _, avatar_size = \
+            self._get_additional_metrics(name_metrics, preview_metrics)
 
         top_left = option.rect.topLeft() + Qt.QPoint(
             self.PADDING,
             self.PADDING + self.UNREAD_COUNTER_VERT_PADDING,
+        )
+
+        pic = self.avatar_manager.get_avatar(
+            item.account,
+            item.conversation_address,
+        )
+        backup = painter.worldTransform()
+        avatar_scale_factor = avatar_size / avatar.BASE_SIZE
+        painter.translate(top_left)
+        painter.scale(avatar_scale_factor, avatar_scale_factor)
+        painter.drawPicture(Qt.QPointF(), pic)
+        painter.setWorldTransform(backup)
+
+        top_left += Qt.QPoint(
+            avatar_size + self.AVATAR_PADDING,
+            0,
         )
 
         unread_counter_value = item.get_unread_count()
@@ -211,7 +254,6 @@ class ConversationItemDelegate(Qt.QItemDelegate):
             textcolor = option.palette.text().color()
         painter.setPen(textcolor)
 
-        name_height = name_metrics.ascent() + name_metrics.descent()
         name_rect = Qt.QRect(
             top_left,
             Qt.QPoint(

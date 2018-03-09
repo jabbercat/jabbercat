@@ -372,7 +372,9 @@ class TestConversationsModel(unittest.TestCase):
         self.cs.append(make_mock())
         self.cs.on_unread_count_changed = aioxmpp.callbacks.AdHocSignal()
 
-        self.m = models.ConversationsModel(self.cs)
+        self.avatar = unittest.mock.Mock(spec=jabbercat.avatar.AvatarManager)
+
+        self.m = models.ConversationsModel(self.cs, self.avatar)
 
     def test_uses_model_list_adaptor(self):
         convs = unittest.mock.Mock()
@@ -382,7 +384,7 @@ class TestConversationsModel(unittest.TestCase):
                 unittest.mock.patch("jabbercat.model_adaptor.ModelListAdaptor")
             )
 
-            result = models.ConversationsModel(convs)
+            result = models.ConversationsModel(convs, unittest.mock.Mock())
 
         ModelListAdaptor.assert_called_once_with(convs, result)
 
@@ -486,6 +488,46 @@ class TestConversationsModel(unittest.TestCase):
             self.m.index(1, 0, Qt.QModelIndex()),
             [Qt.Qt.DisplayRole],
         )
+
+    def test_emits_dataChanged_on_avatar_change(self):
+        self.cs[0].account = unittest.mock.sentinel.account1
+        self.cs[0].conversation_address = TEST_JID1
+        self.cs[1].account = unittest.mock.sentinel.account2
+        self.cs[1].conversation_address = TEST_JID1
+        self.cs[2].account = unittest.mock.sentinel.account1
+        self.cs[2].conversation_address = TEST_JID2
+
+        cb = unittest.mock.Mock()
+        self.m.dataChanged.connect(cb)
+
+        self.m._on_avatar_changed(
+            unittest.mock.sentinel.account1,
+            TEST_JID2,
+        )
+
+        cb.assert_called_once_with(
+            self.m.index(2, 0),
+            self.m.index(2, 0),
+            [Qt.Qt.DecorationRole],
+        )
+
+    def test_ignores_avatars_for_non_contact_unknown_addresses(self):
+        self.cs[0].account = unittest.mock.sentinel.account1
+        self.cs[0].conversation_address = TEST_JID1
+        self.cs[1].account = unittest.mock.sentinel.account2
+        self.cs[1].conversation_address = TEST_JID1
+        self.cs[2].account = unittest.mock.sentinel.account1
+        self.cs[2].conversation_address = TEST_JID2
+
+        cb = unittest.mock.Mock()
+        self.m.dataChanged.connect(cb)
+
+        self.m._on_avatar_changed(
+            unittest.mock.sentinel.account2,
+            TEST_JID2,
+        )
+
+        cb.assert_not_called()
 
 
 class TestFlattenModelToSeparators(unittest.TestCase):

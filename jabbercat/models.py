@@ -120,9 +120,14 @@ class ConversationsModel(Qt.QAbstractTableModel):
     COLUMN_COUNT = 1
 
     def __init__(self,
-                 conversations: jclib.conversation.ConversationManager):
+                 conversations: jclib.conversation.ConversationManager,
+                 avatar_manager: jabbercat.avatar.AvatarManager):
         super().__init__()
         self.__conversations = conversations
+        self._avatar_manager = avatar_manager
+        self._avatar_manager.on_avatar_changed.connect(
+            self._on_avatar_changed,
+            self._avatar_manager.on_avatar_changed.WEAK)
         self.__conversations.on_unread_count_changed.connect(
             self._handle_unread_count_changed,
             self.__conversations.on_unread_count_changed.WEAK,
@@ -146,7 +151,7 @@ class ConversationsModel(Qt.QAbstractTableModel):
         index = self.index(self.__conversations.index(conversation_node),
                            0,
                            Qt.QModelIndex())
-        self.dataChanged.emit(index, index, [])  # Qt.Qt.DisplayRole
+        self.dataChanged.emit(index, index, [Qt.Qt.DisplayRole])
 
     def data(self,
              index: Qt.QModelIndex,
@@ -158,6 +163,14 @@ class ConversationsModel(Qt.QAbstractTableModel):
             return self.__conversations[index.row()].label
         elif role == ROLE_OBJECT:
             return self.__conversations[index.row()]
+
+    def _on_avatar_changed(self, account, address):
+        for i, item in enumerate(self.__conversations):
+            if item.account != account or item.conversation_address != address:
+                continue
+            index = self.index(i, 0)
+            self.dataChanged.emit(index, index, [Qt.Qt.DecorationRole])
+            return
 
 
 class RosterTagsModel(Qt.QAbstractListModel):

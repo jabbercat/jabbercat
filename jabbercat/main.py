@@ -166,6 +166,7 @@ class MainWindow(Qt.QMainWindow):
         self.__pagemap = {}
         self.__conversation_model = models.ConversationsModel(
             self.main.conversations,
+            self.main.avatar,
         )
 
         self.sorted_conversations = Qt.QSortFilterProxyModel()
@@ -180,7 +181,7 @@ class MainWindow(Qt.QMainWindow):
             self.sorted_conversations
         )
         self._conversation_item_delegate = \
-            conversations_view.ConversationItemDelegate()
+            conversations_view.ConversationItemDelegate(self.main.avatar)
 
         self.ui.conversations_view.setItemDelegate(
             self._conversation_item_delegate
