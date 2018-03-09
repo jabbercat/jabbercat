@@ -25,7 +25,8 @@ Get in touch
 To get in touch with us, the best way is to
 [join the MUC at jabbercat@conference.zombofant.net](xmpp:jabbercat@conference.zombofant.net?join).
 Of course, issue reports are also somewhat a way to get in touch, but much more
-formal 😺.
+formal 😺. Tip: if you’re already connected with JabberCat, you can easily join
+the MUC from the Help menu.
 
 
 Note: JABBER® is a registered trademark and its use is granted under a
