@@ -8,6 +8,9 @@
     <file>icons/16x16/trayicon.png</file>
     <file>icons/24x24/trayicon.png</file>
     <file>icons/32x32/trayicon.png</file>
+    <file>icons/scalable/state-delivered-to-recipient.svg</file>
+    <file>icons/scalable/state-delivered-to-server.svg</file>
+    <file>icons/scalable/state-error.svg</file>
     <file>img/jabbercat-contour-only.png</file>
     <file>fonts/cat-emoji.ttf</file>
   </qresource>

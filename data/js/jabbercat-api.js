@@ -139,6 +139,22 @@ var message_get_block = function(msg) {
     return msg.parentNode.parentNode;
 };
 
+var message_get_content_el = function(msg) {
+    return msg.lastChild;
+}
+
+var message_get_payload_el = function(msg) {
+    return message_get_content_el(msg).firstChild;
+}
+
+var message_get_body_el = function(msg) {
+    return message_get_payload_el(msg).firstChild;
+}
+
+var message_get_flag_el = function(msg) {
+    return message_get_payload_el(msg).lastChild;
+}
+
 var block_get_messages_container = function(block) {
     return block.children[2];
 };
@@ -460,7 +476,7 @@ var add_frame_attachment = function(message_item, frame) {
     // FIXME: use ResizeObserver here once it’s available
     // cf. https://stackoverflow.com/questions/6492683/
 
-    message_item.children[1].appendChild(frame_wrap_el);
+    message_get_content_el(message_item).appendChild(frame_wrap_el);
 
     return function() {
         console.log("post-insert resize!");
@@ -473,7 +489,7 @@ var add_image_attachment = function(message_item, image) {
     img_el.classList.add("attachment");
     img_el.src = image.url;
 
-    message_item.children[1].appendChild(img_el);
+    message_get_content_el(message_item).appendChild(img_el);
 
     return null;
 };
@@ -506,13 +522,23 @@ var add_message = function(info) {
     timestamp_el.textContent = info.timestamp;
     message_item.appendChild(timestamp_el);
 
-    var body_el = document.createElement("div");
-    body_el.innerHTML = info.body;
+    var payload_el = document.createElement("div");
+    payload_el.classList.add("payload");
 
-    var body_wrap_el = document.createElement("div");
-    body_wrap_el.classList.add("body");
-    body_wrap_el.appendChild(body_el);
-    message_item.appendChild(body_wrap_el);
+    var body_el = document.createElement("div");
+    body_el.classList.add("body");
+    body_el.innerHTML = info.body;
+    payload_el.appendChild(body_el);
+
+    var flag_el = document.createElement("div");
+    flag_el.classList.add("flag");
+    payload_el.appendChild(flag_el);
+
+    var content_el = document.createElement("div");
+    content_el.classList.add("content");
+    content_el.appendChild(payload_el);
+
+    message_item.appendChild(content_el);
 
     message_uid_index[info.message_uid] = message_item;
 
@@ -787,6 +813,53 @@ var part = function(event) {
     scroll_to_bottom();
 }
 
+var flag = function(event) {
+    var message = message_uid_index[event.flagged_message_uid];
+    if (!message) {
+        console.log("flag for unknown message: "+event.flagged_message_uid);
+        return;
+    }
+
+    var flag_type = event.flag;
+
+    var img_src = "qrc:/icons/scalable/state-";
+    var alt;
+    var title;
+    // FIXME: i18n
+    if (flag_type == "DELIVERED_TO_SERVER") {
+        img_src += "delivered-to-server.svg";
+        alt = "(sent)";
+        title = "sent";
+    } else if (flag_type == "DELIVERED_TO_RECIPIENT") {
+        img_src += "delivered-to-recipient.svg";
+        alt = "(delivered)";
+        title = "delivered";
+    } else if (flag_type == "ERROR") {
+        img_src += "error.svg";
+        alt = "(error)";
+        message.classList.add("failed");
+        if (event.message) {
+            title = "failed to deliver: "+event.message;
+        } else {
+            title = "failed to deliver";
+        }
+    } else {
+        console.log("unknown flag type: "+flag_type);
+        return;
+    }
+
+    var flag_el = message_get_flag_el(message);
+
+    var img_el = flag_el.lastChild;
+    if (!img_el) {
+        img_el = document.createElement("img");
+        flag_el.appendChild(img_el);
+    }
+    img_el.src = img_src;
+    img_el.alt = alt;
+    img_el.title = title;
+}
+
 var init = function() {
     account_jid = api_object.account_jid;
     window.document.title = api_object.conversation_jid;
@@ -795,6 +868,7 @@ var init = function() {
     api_object.on_marker.connect(put_marker);
     api_object.on_join.connect(join);
     api_object.on_part.connect(part);
+    api_object.on_flag.connect(flag);
     window.onresize = handle_resize;
     var body = document.body;
     set_font_family(api_object.font_family);

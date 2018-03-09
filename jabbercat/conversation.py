@@ -54,6 +54,7 @@ class MessageViewPageChannelObject(Qt.QObject):
     on_marker = Qt.pyqtSignal(['QVariantMap'])
     on_join = Qt.pyqtSignal(['QVariantMap'])
     on_part = Qt.pyqtSignal(['QVariantMap'])
+    on_flag = Qt.pyqtSignal(['QVariantMap'])
     on_request_html = Qt.pyqtSignal([])
 
     @Qt.pyqtProperty(str, notify=on_font_family_changed)
@@ -477,12 +478,9 @@ class ConversationView(Qt.QWidget):
         self.ui.message_input.clear()
         if (aioxmpp.im.conversation.ConversationFeature.SEND_MESSAGE_TRACKED
                 in self.__conversation.features):
-            print("using tracker")
             _, tracker = self.__conversation.send_message_tracked(msg)
             tracker.set_timeout(60)
-            print("used tracker")
         else:
-            print("tracking not supported")
             yield from self.__conversation.send_message(msg)
 
     def htmlify_body(self, body, display_name):
@@ -589,7 +587,7 @@ class ConversationView(Qt.QWidget):
         })
 
     def handle_live_message(self, timestamp, message_uid, is_self, from_jid,
-                            from_, color_input, message):
+                            from_, color_input, message, tracker=None):
         if not self._page_ready:
             self.logger.debug("dropping message since page isn’t ready")
             return
@@ -639,6 +637,60 @@ class ConversationView(Qt.QWidget):
             if self.isVisible() and self.window().isActiveWindow():
                 self.__node.set_read_up_to(self.__most_recent_message_uid)
             Qt.QApplication.alert(self.window())
+
+        if tracker is not None:
+            self._emit_tracker_event(message_uid, tracker.state)
+            if not tracker.closed:
+                tracker.on_state_changed.connect(
+                    functools.partial(
+                        self._on_tracker_state_changed,
+                        message_uid,
+                    )
+                )
+
+    def _on_tracker_state_changed(self, message_uid, new_state, response):
+        if not self._page_ready:
+            return
+
+        self._emit_tracker_event(message_uid, new_state, response=response)
+
+    def _emit_tracker_event(self, message_uid, new_state, response=None):
+        try:
+            state_name = {
+                aioxmpp.tracking.MessageState.DELIVERED_TO_SERVER:
+                    "DELIVERED_TO_SERVER",
+                aioxmpp.tracking.MessageState.DELIVERED_TO_RECIPIENT:
+                    "DELIVERED_TO_RECIPIENT",
+                aioxmpp.tracking.MessageState.ERROR:
+                    "ERROR",
+            }[new_state]
+        except KeyError:
+            self.logger.debug("unhandled tracker state: %s", new_state)
+            return
+
+        if (new_state == aioxmpp.tracking.MessageState.ERROR and
+                response is not None):
+            # FIXME: use more human-readable names instead of RFC 6120 tags
+            if response.error.text is not None:
+                message = "{}: {}".format(
+                    response.error.condition[1],
+                    response.text
+                )
+            else:
+                message = response.error.condition[1]
+        else:
+            message = None
+
+        self.logger.debug("forwarding flag to view: message_uid=%r, flag=%s",
+                          message_uid,
+                          state_name)
+        self.history.channel.on_flag.emit(
+            {
+                "flagged_message_uid": str(message_uid),
+                "flag": state_name,
+                "message": message,
+            }
+        )
 
     def showEvent(self, event: Qt.QShowEvent):
         self.__node.set_read_up_to(self.__most_recent_message_uid)

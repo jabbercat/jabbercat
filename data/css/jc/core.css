@@ -44,26 +44,44 @@
     padding-left: 0.5em;
 }
 
-#messages > .message-block > .message-block-messages > .message {
+.message {
     display: flex;
     flex-direction: row;
 }
 
-#messages > .message-block > .message-block-messages > .message > div {
+.message > div {
     flex: 0 0 auto;
 }
 
-#messages > .message-block > .message-block-messages > .message > .body {
+.message > .content {
     flex: 1 1 auto;
-    overflow-wrap: break-word;
 }
 
-#messages > .message-block > .message-block-messages > .message > .timestamp {
+.message > .content > .payload {
+    display: flex;
+    align-items: flex-end;
+}
+
+.message > .content > .payload > .body {
+    flex: 0 1 auto;
+}
+
+.message > .content > .payload > .flag {
+    flex: 0 0 auto;
+    text-align: left;
+    padding-left: 0.5em;
+}
+
+.message > .timestamp {
     text-align: right;
     padding-right: 1.5em;
     font-weight: lighter;
     font-size: 85%;
     opacity: 0.8;
+}
+
+.message.failed {
+    text-decoration: line-through;
 }
 
 .screenreader-hidden {
@@ -197,4 +215,15 @@ div.presence-block > div.presence:hover > span {
     display: block;
     background: rgba(0, 0, 0, 0.8);
     color: white;
+}
+
+@media ( max-width: 450px ) {
+    #messages > .message-block > .avatar {
+        display: none;
+    }
+
+    #messages > .message-block > .message-block-messages {
+        margin-left: 0;
+        padding-left: 0;
+    }
 }

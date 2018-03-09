@@ -108,7 +108,9 @@ class TestMessageViewPage(XMLTestCase):
                 '<div class="message-block-messages">'
                 '<div class="message">'
                 '<div class="timestamp">3/8/2018, 11:16:10 AM</div>'
-                '<div class="body"><div><em>test</em></div></div>'
+                '<div class="content"><div class="payload">'
+                '<div class="body"><em>test</em></div>'
+                '<div/></div></div>'
                 '</div>'
                 '</div>'
                 '<div class="clearfix"></div>'
@@ -156,13 +158,17 @@ class TestMessageViewPage(XMLTestCase):
                 '<div class="message-block-messages">'
                 '<div class="message">'
                 '<div class="timestamp">3/8/2018, 11:16:10 AM</div>'
-                '<div class="body"><div><em>foo</em></div></div>'
+                '<div class="content"><div class="payload">'
+                '<div class="body"><em>foo</em></div>'
+                '<div/></div></div>'
                 '</div>'
                 '<div class="message">'
                 '<div class="timestamp">'
                 '<span class="visual-hidden">11:16</span><span>:15</span>'
                 '</div>'
-                '<div class="body"><div><em>bar</em></div></div>'
+                '<div class="content"><div class="payload">'
+                '<div class="body"><em>bar</em></div>'
+                '<div/></div></div>'
                 '</div>'
                 '</div>'
                 '<div class="clearfix"></div>'
@@ -210,7 +216,9 @@ class TestMessageViewPage(XMLTestCase):
                 '<div class="message-block-messages">'
                 '<div class="message">'
                 '<div class="timestamp">3/8/2018, 11:16:10 AM</div>'
-                '<div class="body"><div><em>foo</em></div></div>'
+                '<div class="content"><div class="payload">'
+                '<div class="body"><em>foo</em></div>'
+                '<div/></div></div>'
                 '</div>'
                 '</div>'
                 '<div class="clearfix"></div>'
@@ -223,7 +231,9 @@ class TestMessageViewPage(XMLTestCase):
                 '<div class="timestamp">'
                 '<span class="visual-hidden"></span><span>11:16:15</span>'
                 '</div>'
-                '<div class="body"><div><em>bar</em></div></div>'
+                '<div class="content"><div class="payload">'
+                '<div class="body"><em>bar</em></div>'
+                '<div/></div></div>'
                 '</div>'
                 '</div>'
                 '<div class="clearfix"></div>'
@@ -269,7 +279,9 @@ class TestMessageViewPage(XMLTestCase):
                 '<div class="message-block-messages">'
                 '<div class="message">'
                 '<div class="timestamp">3/8/2018, 11:16:10 AM</div>'
-                '<div class="body"><div><em>foo</em></div></div>'
+                '<div class="content"><div class="payload">'
+                '<div class="body"><em>foo</em></div>'
+                '<div/></div></div>'
                 '</div>'
                 '</div>'
                 '<div class="clearfix"></div>'
@@ -333,7 +345,9 @@ class TestMessageViewPage(XMLTestCase):
                 '<div class="message-block-messages">'
                 '<div class="message">'
                 '<div class="timestamp">3/8/2018, 11:16:10 AM</div>'
-                '<div class="body"><div><em>foo</em></div></div>'
+                '<div class="content"><div class="payload">'
+                '<div class="body"><em>foo</em></div>'
+                '<div/></div></div>'
                 '</div>'
                 '</div>'
                 '<div class="clearfix"></div>'
@@ -350,7 +364,9 @@ class TestMessageViewPage(XMLTestCase):
                 '<div class="timestamp">'
                 '<span class="visual-hidden"></span><span>11:16:15</span>'
                 '</div>'
-                '<div class="body"><div><em>bar</em></div></div>'
+                '<div class="content"><div class="payload">'
+                '<div class="body"><em>bar</em></div>'
+                '<div/></div></div>'
                 '</div>'
                 '</div>'
                 '<div class="clearfix"></div>'
@@ -421,13 +437,17 @@ class TestMessageViewPage(XMLTestCase):
                 '<div class="message-block-messages">'
                 '<div class="message">'
                 '<div class="timestamp">3/8/2018, 11:16:10 AM</div>'
-                '<div class="body"><div><em>foo</em></div></div>'
+                '<div class="content"><div class="payload">'
+                '<div class="body"><em>foo</em></div>'
+                '<div/></div></div>'
                 '</div>'
                 '<div class="message">'
                 '<div class="timestamp">'
                 '<span class="visual-hidden">11:16</span><span>:15</span>'
                 '</div>'
-                '<div class="body"><div><em>bar</em></div></div>'
+                '<div class="content"><div class="payload">'
+                '<div class="body"><em>bar</em></div>'
+                '<div/></div></div>'
                 '</div>'
                 '</div>'
                 '<div class="clearfix"></div>'
@@ -458,7 +478,7 @@ class TestMessageViewPage(XMLTestCase):
             etree.fromstring(
                 '<div xmlns="http://www.w3.org/1999/xhtml" id="messages">'
                 '<div class="presence-block">'
-                '<div class="presence">'
+                '<div class="presence join">'
                 '<img/><span>Romeo Montague has joined.</span>'
                 '</div>'
                 '</div>'
@@ -499,7 +519,7 @@ class TestMessageViewPage(XMLTestCase):
             etree.fromstring(
                 '<div xmlns="http://www.w3.org/1999/xhtml" id="messages">'
                 '<div class="presence-block">'
-                '<div class="presence">'
+                '<div class="presence join">'
                 '<img/><span>Romeo Montague has joined.</span>'
                 '</div>'
                 '</div>'
@@ -509,7 +529,9 @@ class TestMessageViewPage(XMLTestCase):
                 '<div class="message-block-messages">'
                 '<div class="message">'
                 '<div class="timestamp">3/8/2018, 11:16:10 AM</div>'
-                '<div class="body"><div><em>test</em></div></div>'
+                '<div class="content"><div class="payload">'
+                '<div class="body"><em>test</em></div>'
+                '<div/></div></div>'
                 '</div>'
                 '</div>'
                 '<div class="clearfix"></div>'
@@ -565,7 +587,9 @@ class TestMessageViewPage(XMLTestCase):
                 '<div class="message-block-messages">'
                 '<div class="message">'
                 '<div class="timestamp">3/8/2018, 11:16:10 AM</div>'
-                '<div class="body"><div><em>test</em></div></div>'
+                '<div class="content"><div class="payload">'
+                '<div class="body"><em>test</em></div>'
+                '<div/></div></div>'
                 '</div>'
                 '</div>'
                 '<div class="clearfix"></div>'
@@ -575,7 +599,7 @@ class TestMessageViewPage(XMLTestCase):
                 '<span>Juliet Capulet has read up to here.</span>'
                 '</div>'
                 '<div class="presence-block">'
-                '<div class="presence">'
+                '<div class="presence join">'
                 '<img/><span>Romeo Montague has joined.</span>'
                 '</div>'
                 '</div>'
@@ -630,7 +654,9 @@ class TestMessageViewPage(XMLTestCase):
                 '<div class="message-block-messages">'
                 '<div class="message">'
                 '<div class="timestamp">3/8/2018, 11:16:10 AM</div>'
-                '<div class="body"><div><em>test</em></div></div>'
+                '<div class="content"><div class="payload">'
+                '<div class="body"><em>test</em></div>'
+                '<div/></div></div>'
                 '</div>'
                 '</div>'
                 '<div class="clearfix"></div>'
@@ -640,7 +666,7 @@ class TestMessageViewPage(XMLTestCase):
                 '<span>Juliet Capulet has read up to here.</span>'
                 '</div>'
                 '<div class="presence-block">'
-                '<div class="presence">'
+                '<div class="presence join">'
                 '<img/><span>Romeo Montague has joined.</span>'
                 '</div>'
                 '</div>'
@@ -676,10 +702,10 @@ class TestMessageViewPage(XMLTestCase):
             etree.fromstring(
                 '<div xmlns="http://www.w3.org/1999/xhtml" id="messages">'
                 '<div class="presence-block">'
-                '<div class="presence">'
+                '<div class="presence join">'
                 '<img/><span>Romeo Montague has joined.</span>'
                 '</div>'
-                '<div class="presence">'
+                '<div class="presence join">'
                 '<img/><span>Juliet Capulet has joined.</span>'
                 '</div>'
                 '</div>'
@@ -705,7 +731,7 @@ class TestMessageViewPage(XMLTestCase):
             etree.fromstring(
                 '<div xmlns="http://www.w3.org/1999/xhtml" id="messages">'
                 '<div class="presence-block">'
-                '<div class="presence">'
+                '<div class="presence part">'
                 '<img/><span>Romeo Montague has left.</span>'
                 '</div>'
                 '</div>'
@@ -772,10 +798,10 @@ class TestMessageViewPage(XMLTestCase):
             etree.fromstring(
                 '<div xmlns="http://www.w3.org/1999/xhtml" id="messages">'
                 '<div class="presence-block">'
-                '<div class="presence">'
+                '<div class="presence part">'
                 '<img/><span>Juliet Capulet has left.</span>'
                 '</div>'
-                '<div class="presence">'
+                '<div class="presence join">'
                 '<img/><span>Romeo Montague has joined.</span>'
                 '</div>'
                 '</div>'
@@ -821,7 +847,7 @@ class TestMessageViewPage(XMLTestCase):
             etree.fromstring(
                 '<div xmlns="http://www.w3.org/1999/xhtml" id="messages">'
                 '<div class="presence-block">'
-                '<div class="presence">'
+                '<div class="presence join">'
                 '<img/><span>Juliet Capulet has joined.</span>'
                 '</div>'
                 '</div>'
@@ -857,12 +883,215 @@ class TestMessageViewPage(XMLTestCase):
             etree.fromstring(
                 '<div xmlns="http://www.w3.org/1999/xhtml" id="messages">'
                 '<div class="presence-block">'
-                '<div class="presence">'
+                '<div class="presence join">'
                 '<img/><span>Romeo Montague has joined.</span>'
                 '</div>'
-                '<div class="presence">'
+                '<div class="presence part">'
                 '<img/><span>Romeo Montague has left.</span>'
                 '</div>'
+                '</div>'
+                '</div>'
+            ),
+            run_coroutine(self._obtain_html(), timeout=20),
+            ignore_surplus_attr=True,
+        )
+
+    @halt_for_debugging
+    def test_flag_message_as_delivered_to_server(self):
+        self.page.channel.on_message.emit(
+            {
+                "timestamp": datetime(2018, 3, 8, 11, 16, 10).isoformat() + "Z",
+                "from_self": False,
+                "from_jid": "romeo@montague.lit",
+                "display_name": "Romeo Montague",
+                "color_full": "#123456",
+                "color_weak": "#123",
+                "attachments": [],
+                "body": "<em>test</em>",
+                "message_uid": "message-1"
+            }
+        )
+        self.page.channel.on_flag.emit(
+            {
+                "flagged_message_uid": "message-1",
+                "flag": "DELIVERED_TO_SERVER"
+            }
+        )
+        self.assertSubtreeEqual(
+            etree.fromstring(
+                '<div xmlns="http://www.w3.org/1999/xhtml" id="messages">'
+                '<div class="message-block">'
+                '<div class="avatar"><img/></div>'
+                '<div class="from">Romeo Montague</div>'
+                '<div class="message-block-messages">'
+                '<div class="message">'
+                '<div class="timestamp">3/8/2018, 11:16:10 AM</div>'
+                '<div class="content">'
+                '<div class="payload">'
+                '<div class="body"><em>test</em></div>'
+                '<div class="flag">'
+                '<img alt="(sent)" '
+                'src="qrc:/icons/scalable/state-delivered-to-server.svg"/>'
+                '</div>'
+                '</div>'
+                '</div>'
+                '</div>'
+                '</div>'
+                '<div class="clearfix"></div>'
+                '</div>'
+                '</div>'
+            ),
+            run_coroutine(self._obtain_html(), timeout=20),
+            ignore_surplus_attr=True,
+        )
+
+    @halt_for_debugging
+    def test_flag_message_as_delivered_to_recipient(self):
+        self.page.channel.on_message.emit(
+            {
+                "timestamp": datetime(2018, 3, 8, 11, 16, 10).isoformat() + "Z",
+                "from_self": False,
+                "from_jid": "romeo@montague.lit",
+                "display_name": "Romeo Montague",
+                "color_full": "#123456",
+                "color_weak": "#123",
+                "attachments": [],
+                "body": "<em>test</em>",
+                "message_uid": "message-1"
+            }
+        )
+        self.page.channel.on_flag.emit(
+            {
+                "flagged_message_uid": "message-1",
+                "flag": "DELIVERED_TO_RECIPIENT"
+            }
+        )
+        self.assertSubtreeEqual(
+            etree.fromstring(
+                '<div xmlns="http://www.w3.org/1999/xhtml" id="messages">'
+                '<div class="message-block">'
+                '<div class="avatar"><img/></div>'
+                '<div class="from">Romeo Montague</div>'
+                '<div class="message-block-messages">'
+                '<div class="message">'
+                '<div class="timestamp">3/8/2018, 11:16:10 AM</div>'
+                '<div class="content">'
+                '<div class="payload">'
+                '<div class="body"><em>test</em></div>'
+                '<div class="flag">'
+                '<img alt="(delivered)" '
+                'src="qrc:/icons/scalable/state-delivered-to-recipient.svg"/>'
+                '</div>'
+                '</div>'
+                '</div>'
+                '</div>'
+                '</div>'
+                '<div class="clearfix"></div>'
+                '</div>'
+                '</div>'
+            ),
+            run_coroutine(self._obtain_html(), timeout=20),
+            ignore_surplus_attr=True,
+        )
+
+    @halt_for_debugging
+    def test_flag_message_as_error_with_message(self):
+        self.page.channel.on_message.emit(
+            {
+                "timestamp": datetime(2018, 3, 8, 11, 16, 10).isoformat() + "Z",
+                "from_self": False,
+                "from_jid": "romeo@montague.lit",
+                "display_name": "Romeo Montague",
+                "color_full": "#123456",
+                "color_weak": "#123",
+                "attachments": [],
+                "body": "<em>test</em>",
+                "message_uid": "message-1"
+            }
+        )
+        self.page.channel.on_flag.emit(
+            {
+                "flagged_message_uid": "message-1",
+                "flag": "ERROR",
+                "message": "frobnitzed the bar"
+            }
+        )
+        self.assertSubtreeEqual(
+            etree.fromstring(
+                '<div xmlns="http://www.w3.org/1999/xhtml" id="messages">'
+                '<div class="message-block">'
+                '<div class="avatar"><img/></div>'
+                '<div class="from">Romeo Montague</div>'
+                '<div class="message-block-messages">'
+                '<div class="message">'
+                '<div class="timestamp">3/8/2018, 11:16:10 AM</div>'
+                '<div class="content">'
+                '<div class="payload">'
+                '<div class="body"><em>test</em></div>'
+                '<div class="flag">'
+                '<img alt="(error)" title="frobnitzed the bar" '
+                'src="qrc:/icons/scalable/state-error.svg"/>'
+                '</div>'
+                '</div>'
+                '</div>'
+                '</div>'
+                '</div>'
+                '<div class="clearfix"></div>'
+                '</div>'
+                '</div>'
+            ),
+            run_coroutine(self._obtain_html(), timeout=20),
+            ignore_surplus_attr=True,
+        )
+
+    @halt_for_debugging
+    def test_flag_message_as_both(self):
+        self.page.channel.on_message.emit(
+            {
+                "timestamp": datetime(2018, 3, 8, 11, 16, 10).isoformat() + "Z",
+                "from_self": False,
+                "from_jid": "romeo@montague.lit",
+                "display_name": "Romeo Montague",
+                "color_full": "#123456",
+                "color_weak": "#123",
+                "attachments": [],
+                "body": "<em>test</em>",
+                "message_uid": "message-1"
+            }
+        )
+        self.page.channel.on_flag.emit(
+            {
+                "flagged_message_uid": "message-1",
+                "flag": "DELIVERED_TO_SERVER"
+            }
+        )
+        self.page.channel.on_flag.emit(
+            {
+                "flagged_message_uid": "message-1",
+                "flag": "DELIVERED_TO_RECIPIENT"
+            }
+        )
+        self.assertSubtreeEqual(
+            etree.fromstring(
+                '<div xmlns="http://www.w3.org/1999/xhtml" id="messages">'
+                '<div class="message-block">'
+                '<div class="avatar"><img/></div>'
+                '<div class="from">Romeo Montague</div>'
+                '<div class="message-block-messages">'
+                '<div class="message failed">'
+                '<div class="timestamp">3/8/2018, 11:16:10 AM</div>'
+                '<div class="content">'
+                '<div class="payload">'
+                '<div class="body"><em>test</em></div>'
+                '<div class="flag">'
+                '<img alt="(delivered)" '
+                'src="qrc:/icons/scalable/state-delivered-to-recipient.svg"/>'
+                '</div>'
+                '</div>'
+                '</div>'
+                '</div>'
+                '</div>'
+                '<div class="clearfix"></div>'
                 '</div>'
                 '</div>'
             ),
