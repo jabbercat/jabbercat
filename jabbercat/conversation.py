@@ -10,6 +10,7 @@ from datetime import datetime, timedelta
 import aioxmpp.im.conversation
 import aioxmpp.im.p2p
 import aioxmpp.im.service
+import aioxmpp.misc
 import aioxmpp.structs
 import aioxmpp.xso
 
@@ -459,7 +460,20 @@ class ConversationView(Qt.QWidget):
         msg = aioxmpp.Message(type_="chat")
         msg.body[None] = body
         msg.xep0333_markable = True
-        print(msg.xep0333_markable)
+        url_match = self.URL_RE.match(body)
+        if url_match is not None:
+            info = url_match.groupdict()
+            url = info.get(
+                "url_name",
+                info.get(
+                    "url_nonword",
+                    info.get("url_paren")
+                )
+            )
+            if url:
+                msg.xep0066_oob = aioxmpp.misc.OOBExtension()
+                msg.xep0066_oob.url = url
+
         self.ui.message_input.clear()
         if (aioxmpp.im.conversation.ConversationFeature.SEND_MESSAGE_TRACKED
                 in self.__conversation.features):
