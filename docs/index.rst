@@ -37,3 +37,9 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
+
+Attributions
+============
+
+The screenshot features content licensed under `CC-BY-2.0 <https://creativecommons.org/licenses/by/2.0/deed.en>`_:
+`Romeo & Juliet <https://commons.wikimedia.org/wiki/File:Romeo_%26_Juliet_(3640665883).jpg>`_.
