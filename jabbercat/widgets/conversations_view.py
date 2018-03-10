@@ -265,7 +265,7 @@ class ConversationItemDelegate(Qt.QItemDelegate):
         painter.setFont(name_font)
         name = name_metrics.elidedText(
             str(item.label),
-            Qt.Qt.ElideMiddle,
+            Qt.Qt.ElideRight,
             name_rect.width()
         )
 
