@@ -75,7 +75,7 @@ ArchLinux
 .. code-block:: console
 
     # pacman -S python-pyqt5 python-pyopenssl python-xdg python-keyring \
-        python-sqlalchemy python-virtualenv
+        python-sqlalchemy python-virtualenv python-pyasn1 python-pyasn1-modules
 
 Debian/Ubuntu
 ~~~~~~~~~~~~~
