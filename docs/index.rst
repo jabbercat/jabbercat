@@ -31,6 +31,14 @@ We suggest that you head over to the :ref:`testing-guide` now.
    testing/index.rst
 
 
+Contact
+=======
+
+* Join our Jabber group chat: `xmpp:jabbercat@conference.zombofant.net?join`_
+* `Send an email to the lead developer <mailto:jonas@wielicki.name>`_
+* Contact the lead developer via Jabber: `xmpp:jonas@wielicki.name`_. Note: Add them to your contacts first.
+
+
 Indices and tables
 ==================
 
