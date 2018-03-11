@@ -225,7 +225,7 @@ class MessageView(Qt.QWebEngineView):
 
 
 YOUTUBE_FULL_RE = re.compile(
-    r"https?://(www\.)?youtube(-nocookie)?\.com/watch\?"
+    r"https?://((www|m)\.)?youtube(-nocookie)?\.com/watch\?"
     r"(?P<query>[^#]+)(#(?P<frag>.+))?",
     re.I
 )
