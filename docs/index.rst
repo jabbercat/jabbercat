@@ -38,6 +38,11 @@ Contact
 * `Send an email to the lead developer <mailto:jonas@wielicki.name>`_
 * Contact the lead developer via Jabber: `jonas@wielicki.name <xmpp:jonas@wielicki.name>`_. Note: Add them to your contacts first.
 
+Contribution
+============
+
+See `our repository at GitHub <https://github.com/jabbercat/jabbercat>`_.
+
 
 Indices and tables
 ==================
