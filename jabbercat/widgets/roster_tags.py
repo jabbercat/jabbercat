@@ -16,6 +16,9 @@ class RosterTagsBox(Qt.QWidget):
         self.ui.tag_input.returnPressed.connect(
             self._tag_input_return_pressed
         )
+        self.ui.tag_add.clicked.connect(
+            self._tag_input_return_pressed
+        )
 
         self._proxy_model = Qt.QSortFilterProxyModel()
         self._proxy_model.setSortRole(Qt.Qt.DisplayRole)
