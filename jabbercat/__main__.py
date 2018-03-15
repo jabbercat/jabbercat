@@ -28,63 +28,60 @@ def get_git_version(path: pathlib.Path):
     return commit_id
 
 
+def format_dep_version(name, pkg, version=None):
+    print(
+        "{}: {} (git: {}), {}".format(
+            name,
+            getattr(pkg, "__version__", version),
+            get_git_version(pathlib.Path(pkg.__path__[0]).parent) or "N/A",
+            pkg.__path__,
+        )
+    )
+
+
 def print_version():
     import platform
     import sys
 
+    import PyQt5
+
     print("Platform: {}".format(platform.platform()))
     print("Python: {}".format(sys.version))
 
-    print("PyQt5: {} (Qt: {})".format(Qt.PYQT_VERSION_STR,
-                                      Qt.QT_VERSION_STR))
+    print(
+        "PyQt5: {} (Qt: {}), ".format(
+            Qt.PYQT_VERSION_STR,
+            Qt.QT_VERSION_STR,
+            PyQt5.__path__,
+        )
+    )
 
-    print("Quamash: {} (git: {})".format(
-        quamash.__version__,
-        get_git_version(pathlib.Path(quamash.__path__[0]).parent) or "N/A"
-    ))
+    format_dep_version("Quamash", quamash)
 
     import aiosasl
 
-    print("aiosasl: {} (git: {})".format(
-        aiosasl.__version__,
-        get_git_version(pathlib.Path(aiosasl.__path__[0]).parent) or "N/A"
-    ))
+    format_dep_version("aiosasl", aiosasl)
 
     import aioopenssl
 
-    print("aioopenssl: {} (git: {})".format(
-        aioopenssl.__version__,
-        get_git_version(pathlib.Path(aioopenssl.__path__[0]).parent) or "N/A"
-    ))
+    format_dep_version("aioopenssl", aioopenssl)
 
     import aioxmpp
 
-    print("aioxmpp: {} (git: {})".format(
-        aioxmpp.__version__,
-        get_git_version(pathlib.Path(aioxmpp.__path__[0]).parent) or "N/A"
-    ))
+    format_dep_version("aioxmpp", aioxmpp)
 
     import sqlalchemy
 
-    print("SQLAlchemy: {} (git: {})".format(
-        sqlalchemy.__version__,
-        get_git_version(pathlib.Path(sqlalchemy.__path__[0]).parent) or "N/A"
-    ))
+    format_dep_version("sqlalchemy", sqlalchemy)
 
     import jclib
 
-    print("jclib: {} (git: {})".format(
-        None,
-        get_git_version(pathlib.Path(jclib.__path__[0]).parent) or "N/A"
-    ))
+    format_dep_version("jclib", jclib)
 
     import jabbercat
     import jabbercat.version as jc_version
 
-    print("JabberCat: {} (git: {})".format(
-        jc_version.version,
-        get_git_version(pathlib.Path(jabbercat.__path__[0]).parent) or "N/A"
-    ))
+    format_dep_version("jabbercat", jabbercat, jc_version.version)
 
 
 def main():
