@@ -101,7 +101,12 @@ Gentoo
 Fedora
 ~~~~~~
 
-Sorry, no guidelines here. Feel free to recommend some.
+.. code-block:: console
+
+    # dnf install python-qt5 python3-qt5-webengine python3-sqlalchemy \
+        python3-virtualenv qtchooser python3-keyring python3-pyxdg \
+        python3-pyasn1 python3-pyasn1-modules
+
 
 Setting up a virtual environment
 --------------------------------
