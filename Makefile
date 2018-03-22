@@ -49,6 +49,8 @@ data/js/emoji.json: data/emoji-java/src/main/resources/emojis.json data/gemoji/d
 	echo "that 'failed to load emoji database' you might‘ve just seen was "
 	echo "normal and NOT an error"
 
+
+debug-run: run-debug
 run-debug: logfile_name=debug-logs/jabbercat-$(shell date '+%Y-%m-%dT%H-%M-%S').log
 run-debug: all debug-logs
 	@echo
@@ -65,4 +67,4 @@ test: all
 	QTWEBENGINE_REMOTE_DEBUGGING=1234 LANG=C.UTF-8 LANGUAGE=C.UTF-8 LC_DATE=C.UTF-8 LC_TIME=C.UTF-8 TZ=Etc/UTC nosetests3 $(TESTS)
 
 
-.PHONY: lupdate docs-html run-debug debug-logs
+.PHONY: lupdate docs-html run-debug debug-logs debug-run
