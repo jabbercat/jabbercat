@@ -634,9 +634,10 @@ class ConversationView(Qt.QWidget):
             self.__most_recent_message_uid = message_uid
             self.__most_recent_message_ts = timestamp
 
-            if self.isVisible() and self.window().isActiveWindow():
+            if self.isVisible() and self.window().isActiveWindow() or is_self:
                 self.__node.set_read_up_to(self.__most_recent_message_uid)
-            Qt.QApplication.alert(self.window())
+            if not is_self:
+                Qt.QApplication.alert(self.window())
 
         if tracker is not None:
             self._emit_tracker_event(message_uid, tracker.state)
