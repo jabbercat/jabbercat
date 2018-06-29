@@ -68,7 +68,7 @@ class AccountsModel(Qt.QAbstractTableModel):
 
         if role == Qt.Qt.DisplayRole:
             if column == self.COLUMN_ADDRESS:
-                return str(account.jid)
+                return str(account.jid.bare())
         elif role == Qt.Qt.CheckStateRole:
             if column == self.COLUMN_ENABLED:
                 if account.enabled:
