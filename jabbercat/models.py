@@ -1,14 +1,17 @@
 import bisect
 import collections.abc
 import enum
+import html
 import typing
 import unicodedata
 
 import aioxmpp.callbacks
+import aioxmpp.structs
 
 import jclib.conversation
 import jclib.identity
 import jclib.instrumentable_list
+import jclib.metadata
 import jclib.roster
 import jclib.utils
 
@@ -555,19 +558,89 @@ class FlattenModelToSeparators(Qt.QAbstractProxyModel):
 class RosterModel(Qt.QAbstractListModel):
     on_label_edited = aioxmpp.callbacks.Signal()
 
+    PRESENCE_SHOW_STR = {
+        aioxmpp.structs.PresenceShow.AWAY: "away",
+        aioxmpp.structs.PresenceShow.DND: "do not disturb",
+        aioxmpp.structs.PresenceShow.EXTENDED_AWAY: "away for longer",
+        aioxmpp.structs.PresenceShow.FREE_FOR_CHAT: "wanting to chat",
+    }
+
     def __init__(self,
                  items: jclib.instrumentable_list.AbstractModelListView[
                      jclib.roster.AbstractRosterItem],
-                 avatar_manager: jabbercat.avatar.AvatarManager):
+                 avatar_manager: jabbercat.avatar.AvatarManager,
+                 metadata: jclib.metadata.MetadataFrontend):
         super().__init__()
         self._items = items
         self._avatar_manager = avatar_manager
         self._avatar_manager.on_avatar_changed.connect(
             self._on_avatar_changed,
             self._avatar_manager.on_avatar_changed.WEAK)
+        self._metadata = metadata
         self.__adaptor = model_adaptor.ModelListAdaptor(
             self._items, self
         )
+
+    def _format_tooltip(self, item):
+        picture = self._avatar_manager.get_avatar(
+            item.account, item.address,
+        )
+        canvas = Qt.QImage(48, 48, Qt.QImage.Format_ARGB32_Premultiplied)
+        canvas.fill(0)
+        painter = Qt.QPainter(canvas)
+        painter.drawPicture(0, 0, picture)
+        painter.end()
+
+        buffer_ = Qt.QBuffer()
+        buffer_.open(Qt.QIODevice.WriteOnly)
+        assert buffer_.isOpen()
+        assert buffer_.isWritable()
+        canvas.save(buffer_, "PNG")
+        buffer_.close()
+
+        parts = []
+        parts.append("<table><tr><td><img width='48' height='48' src='data:image/png;base64,")
+        parts.append(bytes(buffer_.data().toBase64()).decode("ascii"))
+        parts.append("'/></td><td>")
+        parts.append("<h3>{}</h3>".format(html.escape(item.label)))
+        parts.append("<dl>")
+
+        is_contact = isinstance(item, jclib.roster.ContactRosterItem)
+        is_muc = isinstance(item, jclib.roster.MUCRosterItem)
+
+        if is_contact:
+            parts.append("<p>Contact</p>")
+        elif is_muc:
+            parts.append("<p>Group chat</p>")
+
+        parts.append("<dt>Account</dt>")
+        parts.append(
+            "<dd>{}</dd>".format(html.escape(str(item.account.jid.bare())))
+        )
+
+        if item.label != str(item.address):
+            parts.append("<dt>Address</dt>")
+            parts.append("<dd>{}</dd>".format(html.escape(str(item.address))))
+
+        if is_contact:
+            presence = self._metadata.get(
+                jclib.metadata.PresenceMetadata.STANZA,
+                item.account,
+                item.address,
+            )
+            if presence is not None:
+                state = aioxmpp.structs.PresenceState.from_stanza(presence)
+                parts.append("<dt>Status</dt>")
+                parts.append("<dd>{}</dd>".format(
+                    html.escape("unavailable" if not state.available else (
+                        self.PRESENCE_SHOW_STR.get(state.show.value) or
+                        "available"
+                    ))
+                ))
+
+        parts.append("</dl></td></tr></table>")
+
+        return "".join(parts)
 
     def flags(self, index):
         flags = super().flags(index)
@@ -587,6 +660,8 @@ class RosterModel(Qt.QAbstractListModel):
 
         if role == Qt.Qt.DisplayRole or role == Qt.Qt.EditRole:
             return item.label
+        elif role == Qt.Qt.ToolTipRole:
+            return self._format_tooltip(item)
         elif role == ROLE_OBJECT:
             return item
         elif role == ROLE_TAGS:

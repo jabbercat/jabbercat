@@ -84,7 +84,8 @@ class MainWindow(Qt.QMainWindow):
         self._tags_menu.setTitle(self.tr("Filter"))
         self._tags_menu.source_model = self.checked_tags
 
-        self.roster_model = models.RosterModel(main.roster, main.avatar)
+        self.roster_model = models.RosterModel(main.roster, main.avatar,
+                                               main.metadata)
         self.roster_model.on_label_edited.connect(
             self._roster_label_edited,
         )
