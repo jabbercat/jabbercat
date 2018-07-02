@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>333</width>
-    <height>35</height>
+    <height>36</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -15,11 +15,7 @@
   </property>
   <layout class="QHBoxLayout" name="horizontalLayout">
    <item>
-    <widget class="QProgressBar" name="progress_bar">
-     <property name="value">
-      <number>24</number>
-     </property>
-    </widget>
+    <widget class="ProgressIndicator" name="progress_bar" native="true"/>
    </item>
    <item>
     <widget class="QToolButton" name="show_task_manager">
@@ -48,6 +44,14 @@
    </item>
   </layout>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>ProgressIndicator</class>
+   <extends>QWidget</extends>
+   <header>jabbercat.widgets.progress_indicator</header>
+   <container>1</container>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections/>
 </ui>
