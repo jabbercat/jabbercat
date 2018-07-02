@@ -124,13 +124,15 @@ class ConversationsModel(Qt.QAbstractTableModel):
 
     def __init__(self,
                  conversations: jclib.conversation.ConversationManager,
-                 avatar_manager: jabbercat.avatar.AvatarManager):
+                 avatar_manager: jabbercat.avatar.AvatarManager,
+                 metadata: jclib.metadata.MetadataFrontend):
         super().__init__()
         self.__conversations = conversations
         self._avatar_manager = avatar_manager
         self._avatar_manager.on_avatar_changed.connect(
             self._on_avatar_changed,
             self._avatar_manager.on_avatar_changed.WEAK)
+        self._metadata = metadata
         self.__conversations.on_unread_count_changed.connect(
             self._handle_unread_count_changed,
             self.__conversations.on_unread_count_changed.WEAK,
@@ -163,7 +165,13 @@ class ConversationsModel(Qt.QAbstractTableModel):
             return None
 
         if role == Qt.Qt.DisplayRole:
-            return self.__conversations[index.row()].label
+            # return self.__conversations[index.row()].label
+            conversation = self.__conversations[index.row()]
+            name = self._metadata.get(jclib.roster.RosterMetadata.NAME,
+                                      conversation.account,
+                                      conversation.address)
+            name = name or str(conversation.address)
+            return name
         elif role == ROLE_OBJECT:
             return self.__conversations[index.row()]
 

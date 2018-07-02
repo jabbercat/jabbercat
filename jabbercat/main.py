@@ -168,6 +168,7 @@ class MainWindow(Qt.QMainWindow):
         self.__conversation_model = models.ConversationsModel(
             self.main.conversations,
             self.main.avatar,
+            self.main.metadata,
         )
 
         self.sorted_conversations = Qt.QSortFilterProxyModel()
@@ -728,6 +729,9 @@ class QtMain(jclib.main.Main):
             self.accounts,
             self.client,
             self.writeman,
+        )
+        self.metadata.register_provider(
+            jclib.roster.RosterNameMetadataProvider(self.roster)
         )
         self.avatar = jabbercat.avatar.AvatarManager(
             self.client,
