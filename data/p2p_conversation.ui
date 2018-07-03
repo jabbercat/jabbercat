@@ -34,7 +34,7 @@
     </widget>
    </item>
    <item>
-    <widget class="QFrame" name="history_frame">
+    <widget class="NestedFocusFrame" name="history_frame">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
        <horstretch>0</horstretch>
@@ -73,6 +73,14 @@
    </item>
   </layout>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>NestedFocusFrame</class>
+   <extends>QFrame</extends>
+   <header>jabbercat.widgets.misc</header>
+   <container>1</container>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections/>
 </ui>
