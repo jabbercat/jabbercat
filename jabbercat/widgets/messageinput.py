@@ -2,19 +2,9 @@ from .. import Qt
 
 
 class MemberCompleter(Qt.QCompleter):
-    def eventFilter(self, o, e):
-        if e.type() == Qt.QEvent.KeyPress:
-            print(o is self.widget(),
-                  o is self.popup(),
-                  e.type() == Qt.QEvent.KeyPress,
-                  e.isAccepted(),
-                  self.currentIndex().isValid())
-        return super().eventFilter(o, e)
-
     def complete(self, rect: Qt.QRect = Qt.QRect()):
         super().complete(rect)
         if self.popup().isVisible():
-            print("complete", "is visible")
             if self.currentIndex().isValid():
                 self.popup().setCurrentIndex(self.currentIndex())
                 self.popup().selectionModel().select(
@@ -36,7 +26,6 @@ class MessageInput(Qt.QTextEdit):
         return self._completer
 
     def _completer_activated(self, arg):
-        print("_completer_activated", arg)
         completion_cursor = self._completion_cursor()
         completion_cursor.deleteChar()
         completion_cursor.insertText(arg)
