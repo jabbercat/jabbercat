@@ -145,7 +145,6 @@ class PythonConsole(Qt.QDialog):
                 )
             except SyntaxError:
                 result = True
-            print(result)
             if result:
                 # force execution
                 self._execute_triggered()
