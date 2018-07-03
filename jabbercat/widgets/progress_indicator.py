@@ -13,6 +13,7 @@ class ProgressIndicator(Qt.QWidget):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._internal_value = 0
+        self._p1 = 0
         self._animation = Qt.QPropertyAnimation(
             self,
             "internalValue".encode("utf-8"),
@@ -32,8 +33,16 @@ class ProgressIndicator(Qt.QWidget):
 
     @internalValue.setter
     def internalValue(self, value: float):
+        STEPS = 180
+        STEPS_TO_ARC_MAX = 32
+
         self._internal_value = value
-        self.update()
+        new_p1 = int(
+            ((easing_func(self._internal_value % 1) * 2) % 1) * STEPS
+        ) * STEPS_TO_ARC_MAX
+        if new_p1 != self._p1:
+            self._p1 = new_p1
+            self.update()
 
     def sizeHint(self):
         return Qt.QSize(16, 16)
@@ -61,7 +70,6 @@ class ProgressIndicator(Qt.QWidget):
                                pen_width/2)
 
         ring_rect = outer_rect.marginsRemoved(margins)
-        inner_rect = ring_rect.marginsRemoved(margins)
 
         painter.setPen(Qt.QPen(
             self.palette().highlight(),
@@ -73,15 +81,18 @@ class ProgressIndicator(Qt.QWidget):
         if self._animation.state() == Qt.QAbstractAnimation.Running:
             v = self._internal_value % 1
 
-            p1 = (easing_func(v) * 2) % 1
+            p1_a = self._p1
+            p1 = p1_a / ARC_MAX
             p2 = (easing_func((v - 0.15) % 1) * 2) % 1
 
             painter.drawArc(
                 ring_rect,
-                ARC_MAX * p1,
+                p1_a,
                 -((p1 - p2) % 1) * ARC_MAX,
             )
         else:
+            inner_rect = ring_rect.marginsRemoved(margins)
+
             v = (self._value - self._min) / (self._max - self._min)
             v = max(min(v, 1), 0)
             painter.drawArc(
