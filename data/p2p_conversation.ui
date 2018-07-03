@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>568</width>
+    <width>643</width>
     <height>484</height>
    </rect>
   </property>
@@ -34,23 +34,37 @@
     </widget>
    </item>
    <item>
-    <widget class="NestedFocusFrame" name="history_frame">
-     <property name="sizePolicy">
-      <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
-       <horstretch>0</horstretch>
-       <verstretch>0</verstretch>
-      </sizepolicy>
-     </property>
-     <property name="frameShape">
-      <enum>QFrame::StyledPanel</enum>
-     </property>
-     <property name="frameShadow">
-      <enum>QFrame::Sunken</enum>
-     </property>
-    </widget>
+    <layout class="QHBoxLayout" name="horizontalLayout">
+     <item>
+      <widget class="NestedFocusFrame" name="history_frame">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+         <horstretch>1</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="frameShape">
+        <enum>QFrame::StyledPanel</enum>
+       </property>
+       <property name="frameShadow">
+        <enum>QFrame::Sunken</enum>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QListView" name="member_view">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+      </widget>
+     </item>
+    </layout>
    </item>
    <item>
-    <widget class="QTextEdit" name="message_input">
+    <widget class="MessageInput" name="message_input">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
        <horstretch>0</horstretch>
@@ -59,9 +73,6 @@
      </property>
      <property name="sizeAdjustPolicy">
       <enum>QAbstractScrollArea::AdjustToContents</enum>
-     </property>
-     <property name="tabChangesFocus">
-      <bool>true</bool>
      </property>
      <property name="acceptRichText">
       <bool>false</bool>
@@ -79,6 +90,11 @@
    <extends>QFrame</extends>
    <header>jabbercat.widgets.misc</header>
    <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>MessageInput</class>
+   <extends>QTextEdit</extends>
+   <header>jabbercat.widgets.messageinput</header>
   </customwidget>
  </customwidgets>
  <resources/>

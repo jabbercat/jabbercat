@@ -17,9 +17,13 @@ import aioxmpp.xso
 import jclib.archive
 import jclib.conversation
 import jclib.identity
+import jclib.instrumentable_list
+import jclib.metadata
+import jclib.roster
 import jclib.utils
 
-from . import Qt, utils, models, avatar, emoji
+from . import Qt, utils, models, avatar, emoji, model_adaptor
+from .widgets import messageinput
 
 from .ui import p2p_conversation
 
@@ -31,6 +35,96 @@ def _connect_and_store_token(tokens, signal, handler):
     tokens.append(
         (signal, signal.connect(handler))
     )
+
+
+class MemberList(jclib.instrumentable_list.ModelListView):
+    def __init__(self):
+        self._backend = jclib.instrumentable_list.ModelList()
+        super().__init__(self._backend)
+        self._conversation = None
+        self._tokens = []
+
+    def _connect(self):
+        self._backend[:] = self._conversation.members
+        _connect_and_store_token(
+            self._tokens,
+            self._conversation.on_enter,
+            self._on_enter,
+        )
+        _connect_and_store_token(
+            self._tokens,
+            self._conversation.on_join,
+            self._on_join,
+        )
+        _connect_and_store_token(
+            self._tokens,
+            self._conversation.on_leave,
+            self._on_leave,
+        )
+
+    def _disconnect(self):
+        for signal, token in self._tokens:
+            signal.disconnect(token)
+        self._backend.clear()
+
+    def _on_enter(self, **kwargs):
+        self._backend.append(self._conversation.me)
+
+    def _on_join(self, member, **kwargs):
+        self._backend.append(member)
+
+    def _on_leave(self, member, **kwargs):
+        self._backend.remove(member)
+
+    def _on_nick_changed(self, member, old_nick, new_nickm, **kwargs):
+        member_index = self._backend.index(member)
+        self._backend.refresh_data(slice(member_index, member_index+1))
+
+    @property
+    def conversation(self):
+        return self._conversation
+
+    @conversation.setter
+    def conversation(self, value):
+        if self._conversation:
+            self._disconnect()
+        self._conversation = value
+        if self._conversation:
+            self._connect()
+
+
+class MemberModel(Qt.QAbstractListModel):
+    def __init__(self,
+                 members: MemberList,
+                 account: jclib.identity.Account,
+                 metadata: jclib.metadata.MetadataFrontend):
+        super().__init__()
+        self.__members = members
+        self.__account = account
+        self.__metadata = metadata
+        self.__adaptor = model_adaptor.ModelListAdaptor(self.__members, self)
+
+    def rowCount(self, index):
+        if index.isValid():
+            return 0
+        return len(self.__members)
+
+    def data(self,
+             index: Qt.QModelIndex,
+             role: Qt.Qt.ItemDataRole=Qt.Qt.DisplayRole):
+        if not index.isValid():
+            return
+
+        member = self.__members[index.row()]
+
+        if role == Qt.Qt.DisplayRole:
+            if hasattr(member, "nick"):
+                return member.nick
+            return self.__metadata.get(
+                jclib.roster.RosterMetadata.NAME,
+                self.__account,
+                member.direct_jid or member.conversation_jid,
+            )
 
 
 class MessageInfo(Qt.QTextBlockUserData):
@@ -296,6 +390,7 @@ class ConversationView(Qt.QWidget):
     def __init__(self,
                  conversation_node,
                  avatars: avatar.AvatarManager,
+                 metadata: jclib.metadata.MetadataFrontend,
                  web_profile: Qt.QWebEngineProfile,
                  parent=None):
         super().__init__(parent=parent)
@@ -323,6 +418,26 @@ class ConversationView(Qt.QWidget):
         frame_layout.addWidget(self.history_view)
 
         self.ui.message_input.installEventFilter(self)
+
+        self.__member_list = MemberList()
+        self.__member_model = MemberModel(
+            self.__member_list,
+            conversation_node.account,
+            metadata,
+        )
+        self.ui.member_view.setModel(self.__member_model)
+
+        if isinstance(conversation_node,
+                      jclib.conversation.P2PConversationNode):
+            # this is a single-user thing
+            self.ui.member_view.hide()
+        else:
+            # this is a multi-user thing
+            completer = messageinput.MemberCompleter()
+            completer.setModel(self.__member_model)
+            completer.setCompletionRole(Qt.Qt.DisplayRole)
+            completer.setCompletionColumn(0)
+            self.ui.message_input.completer = completer
 
         # self.ui.history.setMaximumBlockCount(100)
 
@@ -389,6 +504,7 @@ class ConversationView(Qt.QWidget):
 
     def _ready(self):
         self.__conversation = self.__node.conversation
+        self.__member_list.conversation = self.__conversation
         _connect_and_store_token(
             self.__conv_tokens,
             self.__conversation.on_join,
@@ -405,6 +521,7 @@ class ConversationView(Qt.QWidget):
             signal.disconnect(token)
         self.__conv_tokens.clear()
         self.__conversation = None
+        self.__member_list.conversation = None
 
     def _member_to_event(self, member, **kwargs):
         color_full, color_weak = self.make_css_colors(
