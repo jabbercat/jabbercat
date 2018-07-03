@@ -33,10 +33,20 @@ class MessageInput(Qt.QTextEdit):
         completion_cursor.insertText(", ")
 
     def _completion_cursor(self):
-        word_cursor = self.textCursor()
-        # FIXME: this doesn’t work well with all types of nicknames...
-        word_cursor.select(Qt.QTextCursor.WordUnderCursor)
-        return word_cursor
+        SPACES = ' \t\n'
+
+        cursor = self.textCursor()
+        orig_pos = cursor.position()
+        doc = cursor.document()
+        while (not cursor.atStart() and
+               doc.characterAt(cursor.position()) not in SPACES):
+            cursor.movePosition(Qt.QTextCursor.PreviousCharacter)
+
+        if doc.characterAt(cursor.position()) in SPACES:
+            cursor.movePosition(Qt.QTextCursor.NextCharacter)
+
+        cursor.setPosition(orig_pos, Qt.QTextCursor.KeepAnchor)
+        return cursor
 
     @completer.setter
     def completer(self, new):
