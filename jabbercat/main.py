@@ -34,6 +34,7 @@ from .widgets import (
     conversations_view,
     roster_view,
     tagsmenu,
+    collapsible,
 )
 
 from .ui.main import Ui_Main
@@ -62,10 +63,6 @@ class MainWindow(Qt.QMainWindow):
         self._trayicon = Qt.QSystemTrayIcon()
         self._trayicon.setIcon(Qt.QApplication.windowIcon())
         self._trayicon.show()
-
-        Qt.QApplication.instance().focusChanged.connect(
-            self.applicationFocusChanged
-        )
 
         self.tags_model = models.TagsModel(main.roster.tags)
 
@@ -278,37 +275,6 @@ class MainWindow(Qt.QMainWindow):
     def _select_magic_bar(self):
         self.ui.magic_bar.selectAll()
         self.ui.magic_bar.setFocus()
-
-    def _hide_roster(self):
-        if self.ui.magic_bar.text().strip():
-            return
-        if len(self.main.conversations) == 0:
-            return
-
-        sizes = self.ui.splitter.sizes()
-        self._old_roster_size = sizes[0]
-        sizes[0] = 0
-        self.ui.splitter.setSizes(sizes)
-
-    def _show_roster(self):
-        sizes = self.ui.splitter.sizes()
-        if sizes[0]:
-            return  # already visible
-        if self._old_roster_size is None:
-            self._old_roster_size = 100  # bandaid
-        sizes[0] = self._old_roster_size
-        self.ui.splitter.setSizes(sizes)
-
-    def showEvent(self, event: Qt.QEvent):
-        self._hide_roster()
-
-    def applicationFocusChanged(self, old: Qt.QWidget, new: Qt.QWidget):
-        if old == self.ui.roster_view and new != self.ui.magic_bar:
-            self._hide_roster()
-        elif old == self.ui.magic_bar and new != self.ui.roster_view:
-            self._hide_roster()
-        elif new == self.ui.magic_bar:
-            self._show_roster()
 
     def eventFilter(self, obj: Qt.QObject, event: Qt.QEvent) -> bool:
         if obj is self.ui.magic_bar:

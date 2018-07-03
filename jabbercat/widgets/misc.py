@@ -138,3 +138,52 @@ class AccountSelectorBox(Qt.QComboBox):
         )
 
     currentAccountChanged = Qt.pyqtSignal()
+
+
+class NestedFocusFrame(Qt.QFrame):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setAttribute(Qt.Qt.WA_Hover)
+        Qt.QApplication.instance().focusChanged.connect(self._app_focus_changed)
+        self._has_child_focus = False
+
+    on_has_child_focus_changed = Qt.pyqtSignal([bool])
+
+    @Qt.pyqtProperty(bool)
+    def has_child_focus(self):
+        return self._has_child_focus
+
+    @has_child_focus.setter
+    def has_child_focus(self, new_value):
+        new_value = bool(new_value)
+        if self._has_child_focus == new_value:
+            return
+
+        self._has_child_focus = new_value
+        self.on_has_child_focus_changed.emit(new_value)
+        print("has_child_focus", new_value)
+        self.update()
+
+    def _app_focus_changed(self, old: Qt.QWidget, new: Qt.QWidget):
+        print("_app_focus_changed", old, new)
+        while new is not None and new is not self:
+            new = new.parentWidget()
+
+        self.has_child_focus = new is self
+
+    def paintEvent(self, event: Qt.QPaintEvent):
+        opt = Qt.QStyleOptionFrame()
+        self.initStyleOption(opt)
+        if self._has_child_focus:
+            opt.state = (opt.state |
+                         Qt.QStyle.State_HasFocus |
+                         Qt.QStyle.State_Enabled |
+                         Qt.QStyle.State_Active)
+
+        painter = Qt.QPainter(self)
+        self.style().drawControl(
+            Qt.QStyle.CE_ShapedFrame,
+            opt,
+            painter,
+            self,
+        )

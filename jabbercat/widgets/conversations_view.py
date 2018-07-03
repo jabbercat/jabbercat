@@ -54,9 +54,9 @@ class ConversationItemDelegate(Qt.QItemDelegate):
         )
         return name_text_height, preview_text_height, avatar_size
 
-    def sizeHint(self, option, index):
+    def simpleSizeHint(self, font):
         name_font, preview_font, unread_counter_font = self._get_fonts(
-            option.font
+            font
         )
         name_metrics = Qt.QFontMetrics(name_font)
 
@@ -82,6 +82,9 @@ class ConversationItemDelegate(Qt.QItemDelegate):
         )
 
         return Qt.QSize(min_width, total_height)
+
+    def sizeHint(self, option, index):
+        return self.simpleSizeHint(option.font)
 
     def _draw_unread_counter(self,
                              painter: Qt.QPainter,
@@ -296,3 +299,41 @@ class ConversationsView(Qt.QListView):
         if event is not None and event.type() == Qt.QEvent.MouseButtonPress:
             return Qt.QItemSelectionModel.ClearAndSelect
         return Qt.QItemSelectionModel.NoUpdate
+
+    def setModel(self, model):
+        old_model = self.model()
+        if old_model is not None:
+            old_model.rowsRemoved.disconnect(self._rows_removed)
+            old_model.rowsInserted.disconnect(self._rows_inserted)
+            old_model.modelReset.disconnect(self._model_reset)
+        super().setModel(model)
+        if model is not None:
+            model.rowsRemoved.connect(self._rows_removed)
+            model.rowsInserted.connect(self._rows_inserted)
+            model.modelReset.connect(self._model_reset)
+        self.updateGeometry()
+
+    def _rows_inserted(self, parent, first, last):
+        self.updateGeometry()
+
+    def _rows_removed(self, parent, first, last):
+        self.updateGeometry()
+
+    def _model_reset(self):
+        self.updateGeometry()
+
+    def sizeHint(self):
+        origSize = super().sizeHint()
+
+        model = self.model()
+        if model is None:
+            return origSize
+
+        delegate = self.itemDelegate()
+        if not isinstance(delegate, ConversationItemDelegate):
+            return origSize
+
+        nrows = model.rowCount(Qt.QModelIndex())
+        height = delegate.simpleSizeHint(self.font()).height()
+        result = Qt.QSize(origSize.width(), height * nrows)
+        return result
