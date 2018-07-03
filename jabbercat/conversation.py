@@ -46,16 +46,19 @@ class MemberList(jclib.instrumentable_list.ModelListView):
 
     def _connect(self):
         self._backend[:] = self._conversation.members
-        _connect_and_store_token(
-            self._tokens,
-            self._conversation.on_enter,
-            self._on_enter,
-        )
-        _connect_and_store_token(
-            self._tokens,
-            self._conversation.on_join,
-            self._on_join,
-        )
+        if self._conversation.me is None:
+            _connect_and_store_token(
+                self._tokens,
+                self._conversation.on_enter,
+                self._on_enter,
+            )
+        else:
+            _connect_and_store_token(
+                self._tokens,
+                self._conversation.on_join,
+                self._on_join,
+            )
+
         _connect_and_store_token(
             self._tokens,
             self._conversation.on_leave,
@@ -68,7 +71,12 @@ class MemberList(jclib.instrumentable_list.ModelListView):
         self._backend.clear()
 
     def _on_enter(self, **kwargs):
-        self._backend.append(self._conversation.me)
+        self._backend[:] = self._conversation.members
+        _connect_and_store_token(
+            self._tokens,
+            self._conversation.on_join,
+            self._on_join,
+        )
 
     def _on_join(self, member, **kwargs):
         self._backend.append(member)
