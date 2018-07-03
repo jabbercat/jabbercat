@@ -13,6 +13,7 @@ class MemberCompleter(Qt.QCompleter):
                 )
 
 
+# loosely based on https://stackoverflow.com/a/28981607/1248008
 class MessageInput(Qt.QTextEdit):
     def __init__(self, parent=None):
         super().__init__(parent)
