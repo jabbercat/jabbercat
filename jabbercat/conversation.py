@@ -435,7 +435,14 @@ class ConversationView(Qt.QWidget):
             conversation_node.account,
             metadata,
         )
-        self.ui.member_view.setModel(self.__member_model)
+
+        self.__sorted_member_model = Qt.QSortFilterProxyModel()
+        self.__sorted_member_model.setSortRole(Qt.Qt.DisplayRole)
+        self.__sorted_member_model.setSortCaseSensitivity(Qt.Qt.CaseInsensitive)
+        self.__sorted_member_model.setSourceModel(self.__member_model)
+        self.__sorted_member_model.sort(0, Qt.Qt.AscendingOrder)
+
+        self.ui.member_view.setModel(self.__sorted_member_model)
 
         if isinstance(conversation_node,
                       jclib.conversation.P2PConversationNode):
@@ -444,7 +451,7 @@ class ConversationView(Qt.QWidget):
         else:
             # this is a multi-user thing
             completer = messageinput.MemberCompleter()
-            completer.setModel(self.__member_model)
+            completer.setModel(self.__sorted_member_model)
             completer.setCompletionRole(Qt.Qt.DisplayRole)
             completer.setCompletionColumn(0)
             self.ui.message_input.completer = completer
