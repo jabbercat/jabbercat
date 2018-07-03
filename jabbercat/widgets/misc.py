@@ -27,7 +27,12 @@ class _PlaceholderMixin:
             return
 
         p = Qt.QPainter(self.viewport())
-        p.drawText(self.rect(), Qt.Qt.AlignCenter, self.placeholder_text)
+        color = self.palette().color(Qt.QPalette.WindowText)
+        color.setAlphaF(0.8)
+        p.setPen(Qt.QPen(color))
+        p.drawText(self.rect(),
+                   Qt.Qt.AlignCenter | Qt.Qt.TextWordWrap,
+                   self.placeholder_text)
 
 
 class PlaceholderTreeView(_PlaceholderMixin, Qt.QTreeView):

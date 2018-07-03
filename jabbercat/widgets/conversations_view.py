@@ -1,6 +1,7 @@
 import typing
 
 from .. import Qt, models, avatar
+from .misc import PlaceholderListView
 
 
 class ConversationItemDelegate(Qt.QItemDelegate):
@@ -290,7 +291,7 @@ class ConversationItemDelegate(Qt.QItemDelegate):
         )
 
 
-class ConversationsView(Qt.QListView):
+class ConversationsView(PlaceholderListView):
     def selectionCommand(
             self,
             index: Qt.QModelIndex,
@@ -333,7 +334,7 @@ class ConversationsView(Qt.QListView):
         if not isinstance(delegate, ConversationItemDelegate):
             return origSize
 
-        nrows = model.rowCount(Qt.QModelIndex())
+        nrows = max(model.rowCount(Qt.QModelIndex()), 1)
         height = delegate.simpleSizeHint(self.font()).height()
         result = Qt.QSize(origSize.width(), height * nrows)
         return result

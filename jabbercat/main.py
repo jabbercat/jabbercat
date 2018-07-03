@@ -263,6 +263,10 @@ class MainWindow(Qt.QMainWindow):
             Qt.QApplication.aboutQt,
         )
 
+        self.ui.conversations_view.placeholder_text = (
+            "Start a conversation by double-clicking an item from the roster!"
+        )
+
     def _relabel_magic_bar(self):
         self.ui.magic_bar.setPlaceholderText(
             self.tr("Search ({shortcut})...").format(
