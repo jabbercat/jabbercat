@@ -444,6 +444,8 @@ class ConversationView(Qt.QWidget):
 
         self.ui.member_view.setModel(self.__sorted_member_model)
 
+        self._ui_initialised = False
+
         if isinstance(conversation_node,
                       jclib.conversation.P2PConversationNode):
             # this is a single-user thing
@@ -473,6 +475,9 @@ class ConversationView(Qt.QWidget):
                 compact=True,
             )
             self.ui.member_view.setItemDelegate(item_delegate_compact)
+
+            self.ui.splitter.setCollapsible(0, False)
+            self.ui.splitter.setCollapsible(1, True)
 
         # self.ui.history.setMaximumBlockCount(100)
 
@@ -533,6 +538,20 @@ class ConversationView(Qt.QWidget):
     def showEvent(self, event: Qt.QShowEvent):
         self._update_zoom_factor()
         return super().showEvent(event)
+
+    def resizeEvent(self, event: Qt.QResizeEvent):
+        super().resizeEvent(event)
+        if not self._ui_initialised:
+            width = self.width()
+            if width < 200:
+                return
+            self._ui_initialised = True
+            if self.ui.member_view.isVisibleTo(self):
+                self.logger.debug("setting sizes!")
+                sizes = self.ui.splitter.sizes()
+                sizes[0] = self.width() - 150
+                sizes[1] = 150
+                self.ui.splitter.setSizes(sizes)
 
     def _screen_changed(self):
         self._update_zoom_factor()
