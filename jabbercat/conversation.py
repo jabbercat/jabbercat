@@ -532,12 +532,11 @@ class ConversationView(Qt.QWidget):
         max_count = 100
         for argv in self.__node.get_last_messages(max_count=max_count,
                                                   max_age=start_at):
-            print(argv)
             self.handle_live_message(*argv)
 
     def showEvent(self, event: Qt.QShowEvent):
         self._update_zoom_factor()
-        return super().showEvent(event)
+        super().showEvent(event)
 
     def resizeEvent(self, event: Qt.QResizeEvent):
         super().resizeEvent(event)
