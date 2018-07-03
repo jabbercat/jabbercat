@@ -26,6 +26,8 @@ class MessageInput(Qt.QTextEdit):
     def completer(self):
         return self._completer
 
+    activated = Qt.pyqtSignal()
+
     def _completer_activated(self, arg):
         completion_cursor = self._completion_cursor()
         completion_cursor.deleteChar()
@@ -85,6 +87,11 @@ class MessageInput(Qt.QTextEdit):
                            Qt.Qt.Key_Return,
                            Qt.Qt.Key_Enter):
             self._completion_inhibited = False
+
+        if (event.key() in (Qt.Qt.Key_Enter, Qt.Qt.Key_Return) and
+                event.modifiers() == Qt.Qt.NoModifier):
+            self.activated.emit()
+            return
 
         super().keyPressEvent(event)
         if self._completer and not self._completion_inhibited:

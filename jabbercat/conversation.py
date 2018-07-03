@@ -427,7 +427,7 @@ class ConversationView(Qt.QWidget):
         self.history_view.setContextMenuPolicy(Qt.Qt.NoContextMenu)
         frame_layout.addWidget(self.history_view)
 
-        self.ui.message_input.installEventFilter(self)
+        self.ui.message_input.activated.connect(self._message_input_activated)
 
         self.__member_list = MemberList()
         self.__member_model = MemberModel(
@@ -582,19 +582,9 @@ class ConversationView(Qt.QWidget):
             self._member_to_event(member)
         )
 
-    def eventFilter(self, obj, ev):
-        if obj is not self.ui.message_input:
-            return False
-        if ev.type() != Qt.QEvent.KeyPress:
-            return False
-
-        if ev.key() == Qt.Qt.Key_Return:
-            if ev.modifiers() == Qt.Qt.NoModifier:
-                if not self.ui.message_input.document().isEmpty():
-                    self._send_message()
-                return True
-
-        return False
+    def _message_input_activated(self):
+        if not self.ui.message_input.document().isEmpty():
+            self._send_message()
 
     def set_focus_to_message_input(self):
         self.ui.message_input.setFocus()
