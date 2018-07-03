@@ -277,7 +277,7 @@ class TaskStatusWidget(Qt.QWidget):
             self._show_task_manager_clicked
         )
 
-        self._popup = TasksPopup()
+        self._popup = TasksPopup(self)
 
         self._update()
 
@@ -290,9 +290,9 @@ class TaskStatusWidget(Qt.QWidget):
             return
 
         pos = self.ui.show_task_manager.mapToGlobal(
-            Qt.QPoint(0, 0)
+            Qt.QPoint(self.ui.show_task_manager.width(), 0)
         )
-        pos.setX(self.window().pos().x())
+        pos.setX(pos.x() - self._popup.width())
         pos -= Qt.QPoint(0, self._popup.height())
 
         geometry = Qt.QApplication.desktop().screenGeometry(self)
