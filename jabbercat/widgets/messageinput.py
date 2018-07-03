@@ -57,9 +57,8 @@ class MessageInput(Qt.QTextEdit):
     def keyPressEvent(self, event: Qt.QKeyEvent):
         if (self._completer and self._completer.popup() and
                 self._completer.popup().isVisible()):
-            if event.key() in (Qt.Qt.Key_Enter, Qt.Qt.Key_Tab,
-                               Qt.Qt.Key_Backtab,
-                               Qt.Qt.Key_Return):
+            if event.key() in (Qt.Qt.Key_Tab,
+                               Qt.Qt.Key_Backtab):
                 event.ignore()
                 return
             if event.key() == Qt.Qt.Key_Escape:
@@ -82,6 +81,7 @@ class MessageInput(Qt.QTextEdit):
             completion_cursor = self._completion_cursor()
             text = completion_cursor.selectedText()
             if not text:
+                self._completer.popup().hide()
                 return
             self._completer.setCompletionPrefix(text)
             popup = self._completer.popup()
