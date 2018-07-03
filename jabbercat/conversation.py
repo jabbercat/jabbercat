@@ -23,7 +23,7 @@ import jclib.roster
 import jclib.utils
 
 from . import Qt, utils, models, avatar, emoji, model_adaptor
-from .widgets import messageinput
+from .widgets import messageinput, member_list
 
 from .ui import p2p_conversation
 
@@ -133,6 +133,8 @@ class MemberModel(Qt.QAbstractListModel):
                 self.__account,
                 member.direct_jid or member.conversation_jid,
             )
+        elif role == models.ROLE_OBJECT:
+            return member
 
 
 class MessageInfo(Qt.QTextBlockUserData):
@@ -446,6 +448,24 @@ class ConversationView(Qt.QWidget):
             completer.setCompletionRole(Qt.Qt.DisplayRole)
             completer.setCompletionColumn(0)
             self.ui.message_input.completer = completer
+
+            item_delegate_wide = member_list.MemberItemDelegate(
+                avatars,
+                conversation_node.account,
+                metadata,
+                completer,
+                compact=False,
+            )
+            completer.popup().setItemDelegate(item_delegate_wide)
+
+            item_delegate_compact = member_list.MemberItemDelegate(
+                avatars,
+                conversation_node.account,
+                metadata,
+                self.ui.member_view,
+                compact=True,
+            )
+            self.ui.member_view.setItemDelegate(item_delegate_compact)
 
         # self.ui.history.setMaximumBlockCount(100)
 
