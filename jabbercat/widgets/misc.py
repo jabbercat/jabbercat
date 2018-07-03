@@ -143,6 +143,8 @@ class AccountSelectorBox(Qt.QComboBox):
 class NestedFocusFrame(Qt.QFrame):
     def __init__(self, parent=None):
         super().__init__(parent)
+        # WA_Hover is needed for Breeze (and possibly other QStyles) to paint
+        # the frame according to the focus state. Don’t ask me why they do that.
         self.setAttribute(Qt.Qt.WA_Hover)
         Qt.QApplication.instance().focusChanged.connect(self._app_focus_changed)
         self._has_child_focus = False
