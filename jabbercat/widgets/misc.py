@@ -161,11 +161,9 @@ class NestedFocusFrame(Qt.QFrame):
 
         self._has_child_focus = new_value
         self.on_has_child_focus_changed.emit(new_value)
-        print("has_child_focus", new_value)
         self.update()
 
     def _app_focus_changed(self, old: Qt.QWidget, new: Qt.QWidget):
-        print("_app_focus_changed", old, new)
         while new is not None and new is not self:
             new = new.parentWidget()
 
