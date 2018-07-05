@@ -73,6 +73,11 @@
     padding-left: 0.5em;
 }
 
+.message > .content > .payload > .flag > img {
+    height: 1em;
+    vertical-align: baseline;
+}
+
 .message > .timestamp {
     text-align: right;
     padding-right: 1.5em;
