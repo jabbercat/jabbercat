@@ -691,13 +691,6 @@ class MainWindow(Qt.QMainWindow):
         return result
 
 
-@asyncio.coroutine
-def infinite_task():
-    jclib.tasks.manager.update_text("infinite task")
-    while True:
-        yield from asyncio.sleep(10)
-
-
 class QtMain(jclib.main.Main):
     Client = client.Client
 
