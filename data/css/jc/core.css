@@ -64,6 +64,7 @@
 
 .message > .content > .payload > .body {
     flex: 0 1 auto;
+    white-space: pre-wrap;
 }
 
 .message > .content > .payload > .flag {
