@@ -44,6 +44,19 @@ class ProgressIndicator(Qt.QWidget):
             self._p1 = new_p1
             self.update()
 
+    @Qt.pyqtProperty(bool)
+    def isIndeterminate(self):
+        return self._max <= self._min
+
+    def event(self, event: Qt.QEvent):
+        if event.type() == Qt.QEvent.WindowActivate:
+            if self._animation.state() == Qt.QAbstractAnimation.Paused:
+                self._animation.resume()
+        elif event.type() == Qt.QEvent.WindowDeactivate:
+            if self._animation.state() == Qt.QAbstractAnimation.Running:
+                self._animation.pause()
+        return super().event(event)
+
     def sizeHint(self):
         return Qt.QSize(16, 16)
 
@@ -78,7 +91,7 @@ class ProgressIndicator(Qt.QWidget):
             Qt.Qt.FlatCap,
         ))
 
-        if self._animation.state() == Qt.QAbstractAnimation.Running:
+        if self.isIndeterminate:
             v = self._internal_value % 1
 
             p1_a = self._p1
