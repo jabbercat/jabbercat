@@ -691,31 +691,21 @@ class MainWindow(Qt.QMainWindow):
         return result
 
 
+@asyncio.coroutine
+def infinite_task():
+    jclib.tasks.manager.update_text("infinite task")
+    while True:
+        yield from asyncio.sleep(10)
+
+
 class QtMain(jclib.main.Main):
     Client = client.Client
 
     def __init__(self, loop):
         super().__init__(loop)
-        self.roster = jclib.roster.RosterManager(
-            self.accounts,
-            self.client,
-            self.writeman,
-        )
-        self.metadata.register_provider(
-            jclib.roster.RosterNameMetadataProvider(self.roster)
-        )
         self.avatar = jabbercat.avatar.AvatarManager(
             self.client,
             self.writeman,
-        )
-        self.archive = jclib.archive.MessageManager(
-            self.accounts,
-            self.client,
-        )
-        self.conversations = jclib.conversation.ConversationManager(
-            self.accounts,
-            self.client,
-            self.archive,
         )
         self.avatar_urls = webintegration.AvatarURLSchemeHandler(
             self.accounts,
