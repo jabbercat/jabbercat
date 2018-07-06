@@ -751,6 +751,19 @@ class ConversationView(Qt.QWidget):
 
     def handle_live_message(self, timestamp, message_uid, is_self, from_jid,
                             from_, color_input, message, tracker=None):
+        if (self.__most_recent_message_ts is None or
+                timestamp >= self.__most_recent_message_ts):
+            self.__most_recent_message_uid = message_uid
+            self.__most_recent_message_ts = timestamp
+
+            if (self.isVisible() and
+                    self.window().isActiveWindow() and
+                    self._page_ready) or is_self:
+                self.__node.set_read_up_to(self.__most_recent_message_uid)
+
+            if not is_self:
+                Qt.QApplication.alert(self.window())
+
         if not self._page_ready:
             self.logger.debug("dropping message since page isn’t ready")
             return
@@ -791,16 +804,6 @@ class ConversationView(Qt.QWidget):
         self.logger.debug("sending data to JS: %r", data)
 
         self.history.channel.on_message.emit(data)
-
-        if (self.__most_recent_message_ts is None or
-                timestamp >= self.__most_recent_message_ts):
-            self.__most_recent_message_uid = message_uid
-            self.__most_recent_message_ts = timestamp
-
-            if self.isVisible() and self.window().isActiveWindow() or is_self:
-                self.__node.set_read_up_to(self.__most_recent_message_uid)
-            if not is_self:
-                Qt.QApplication.alert(self.window())
 
         if tracker is not None:
             self._emit_tracker_event(message_uid, tracker.state)
