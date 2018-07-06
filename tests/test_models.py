@@ -363,7 +363,9 @@ class TestConversationsModel(unittest.TestCase):
     def setUp(self):
         def make_mock():
             return unittest.mock.Mock([
-                "label"
+                "label",
+                "account",
+                "address",
             ])
 
         self.cs = jclib.instrumentable_list.ModelList()
@@ -373,8 +375,9 @@ class TestConversationsModel(unittest.TestCase):
         self.cs.on_unread_count_changed = aioxmpp.callbacks.AdHocSignal()
 
         self.avatar = unittest.mock.Mock(spec=jabbercat.avatar.AvatarManager)
+        self.metadata = unittest.mock.Mock(spec=jclib.metadata.MetadataFrontend)
 
-        self.m = models.ConversationsModel(self.cs, self.avatar)
+        self.m = models.ConversationsModel(self.cs, self.avatar, self.metadata)
 
     def test_uses_model_list_adaptor(self):
         convs = unittest.mock.Mock()
@@ -384,7 +387,9 @@ class TestConversationsModel(unittest.TestCase):
                 unittest.mock.patch("jabbercat.model_adaptor.ModelListAdaptor")
             )
 
-            result = models.ConversationsModel(convs, unittest.mock.Mock())
+            result = models.ConversationsModel(convs,
+                                               unittest.mock.Mock(),
+                                               unittest.mock.Mock())
 
         ModelListAdaptor.assert_called_once_with(convs, result)
 
@@ -434,18 +439,23 @@ class TestConversationsModel(unittest.TestCase):
 
     def test_data_label_column_display_role(self):
         for i, conv in enumerate(self.cs):
-            self.assertEqual(
-                self.m.data(
-                    self.m.index(i, self.m.COLUMN_LABEL),
-                    Qt.Qt.DisplayRole,
-                ),
-                conv.label,
+            value = self.m.data(
+                self.m.index(i, self.m.COLUMN_LABEL),
+                Qt.Qt.DisplayRole,
+            )
+
+            self.metadata.get.assert_called_once_with(
+                jclib.roster.RosterMetadata.NAME,
+                conv.account,
+                conv.address
             )
 
             self.assertEqual(
-                self.m.data(self.m.index(i, self.m.COLUMN_LABEL)),
-                conv.label,
+                value,
+                self.metadata.get(),
             )
+
+            self.metadata.get.reset_mock()
 
     def test_data_label_column_object_role(self):
         for i, conv in enumerate(self.cs):
@@ -889,7 +899,8 @@ class TestRosterModel(unittest.TestCase):
             for i in range(3)
         )
         self.avatar = unittest.mock.Mock(spec=jabbercat.avatar.AvatarManager)
-        self.m = models.RosterModel(self.roster, self.avatar)
+        self.metadata = unittest.mock.Mock(spec=jclib.metadata.MetadataFrontend)
+        self.m = models.RosterModel(self.roster, self.avatar, self.metadata)
         self.listener = make_listener(self.m)
 
     def test_uses_model_list_adaptor(self):
@@ -900,7 +911,7 @@ class TestRosterModel(unittest.TestCase):
                 unittest.mock.patch("jabbercat.model_adaptor.ModelListAdaptor")
             )
 
-            result = models.RosterModel(items, self.avatar)
+            result = models.RosterModel(items, self.avatar, self.metadata)
 
         ModelListAdaptor.assert_called_once_with(items, result)
 
@@ -1105,7 +1116,8 @@ class TestRosterFilterModel(unittest.TestCase):
         self.roster[2].tags = ["foo", "baz"]
 
         self.avatar = unittest.mock.Mock(spec=jabbercat.avatar.AvatarManager)
-        self.rm = models.RosterModel(self.roster, self.avatar)
+        self.metadata = unittest.mock.Mock(spec=jclib.metadata.MetadataFrontend)
+        self.rm = models.RosterModel(self.roster, self.avatar, self.metadata)
         self.rfm = models.RosterFilterModel()
         self.rfm.setSourceModel(self.rm)
 
