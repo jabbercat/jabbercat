@@ -415,17 +415,8 @@ class ConversationView(Qt.QWidget):
         frame_layout = Qt.QHBoxLayout()
         frame_layout.setContentsMargins(0, 0, 0, 0)
         self.ui.history_frame.setLayout(frame_layout)
-
-        self.history_view = MessageView(self.ui.history_frame)
-        self.history = MessageViewPage(web_profile,
-                                       logging.getLogger(__name__),
-                                       conversation_node.account.jid,
-                                       conversation_node.conversation_address,
-                                       self.history_view)
-        self._update_zoom_factor()
-        self.history_view.setPage(self.history)
-        self.history_view.setContextMenuPolicy(Qt.Qt.NoContextMenu)
-        frame_layout.addWidget(self.history_view)
+        self.__web_profile = web_profile
+        self.create_view()
 
         self.ui.message_input.activated.connect(self._message_input_activated)
 
@@ -481,9 +472,6 @@ class ConversationView(Qt.QWidget):
 
         # self.ui.history.setMaximumBlockCount(100)
 
-        self.history.channel.on_ready.connect(
-            self.handle_page_ready,
-        )
         self._page_ready = False
 
         self.__most_recent_message_ts = None
@@ -521,6 +509,21 @@ class ConversationView(Qt.QWidget):
 
         if self.__node.conversation is not None:
             self._ready()
+
+    def create_view(self):
+        self.history_view = MessageView(self.ui.history_frame)
+        self.history = MessageViewPage(self.__web_profile,
+                                       logging.getLogger(__name__),
+                                       self.__node.account.jid,
+                                       self.__node.conversation_address,
+                                       self.history_view)
+        self.history.channel.on_ready.connect(
+            self.handle_page_ready,
+        )
+        self._update_zoom_factor()
+        self.history_view.setPage(self.history)
+        self.history_view.setContextMenuPolicy(Qt.Qt.NoContextMenu)
+        self.ui.history_frame.layout().addWidget(self.history_view)
 
     def _update_zoom_factor(self):
         self.history.setZoomFactor(1./self.devicePixelRatioF())
