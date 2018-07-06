@@ -416,7 +416,6 @@ class ConversationView(Qt.QWidget):
         frame_layout.setContentsMargins(0, 0, 0, 0)
         self.ui.history_frame.setLayout(frame_layout)
         self.__web_profile = web_profile
-        self.create_view()
 
         self.ui.message_input.activated.connect(self._message_input_activated)
 
@@ -507,6 +506,7 @@ class ConversationView(Qt.QWidget):
         self.__conv_tokens = []
         self.__msgidmap = {}
 
+        self.create_view()
         if self.__node.conversation is not None:
             self._ready()
 
