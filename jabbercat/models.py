@@ -16,6 +16,7 @@ import jclib.roster
 import jclib.utils
 
 import jabbercat.avatar
+import jabbercat.utils
 
 from . import Qt, model_adaptor, utils
 
@@ -593,22 +594,12 @@ class RosterModel(Qt.QAbstractListModel):
         picture = self._avatar_manager.get_avatar(
             item.account, item.address,
         )
-        canvas = Qt.QImage(48, 48, Qt.QImage.Format_ARGB32_Premultiplied)
-        canvas.fill(0)
-        painter = Qt.QPainter(canvas)
-        painter.drawPicture(0, 0, picture)
-        painter.end()
 
-        buffer_ = Qt.QBuffer()
-        buffer_.open(Qt.QIODevice.WriteOnly)
-        assert buffer_.isOpen()
-        assert buffer_.isWritable()
-        canvas.save(buffer_, "PNG")
-        buffer_.close()
+        picture_base64 = jabbercat.utils.qtpicture_to_base64_png(picture)
 
         parts = []
         parts.append("<table><tr><td><img width='48' height='48' src='data:image/png;base64,")
-        parts.append(bytes(buffer_.data().toBase64()).decode("ascii"))
+        parts.append(picture_base64)
         parts.append("'/></td><td>")
         parts.append("<h3>{}</h3>".format(html.escape(item.label)))
         parts.append("<dl>")
