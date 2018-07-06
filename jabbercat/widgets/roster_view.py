@@ -260,6 +260,9 @@ class RosterItemDelegate(Qt.QItemDelegate):
         if (option.state & Qt.QStyle.State_Selected and
                 option.state & Qt.QStyle.State_Active):
             painter.setPen(option.palette.highlightedText().color())
+        elif hasattr(item, "subscription") and item.subscription != "both":
+            painter.setPen(option.palette.color(Qt.QPalette.Disabled,
+                                                Qt.QPalette.Text))
         else:
             painter.setPen(option.palette.text().color())
 
