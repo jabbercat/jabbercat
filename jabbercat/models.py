@@ -646,6 +646,17 @@ class RosterModel(Qt.QAbstractListModel):
                     ))
                 ))
 
+            if item.subscription != "both":
+                parts.append("<dt>Note</dt>")
+                if item.subscription == "to":
+                    parts.append("<dd>does not see your status</dd>")
+                elif item.subscription == "from":
+                    parts.append(
+                        "<dd>can see your status, but not vice versa</dd>"
+                    )
+                else:
+                    parts.append("<dd>no status information is exchanged</dd>")
+
         parts.append("</dl></td></tr></table>")
 
         return "".join(parts)
