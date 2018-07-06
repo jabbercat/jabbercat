@@ -1,3 +1,4 @@
+import functools
 import logging
 import urllib.parse
 
@@ -19,6 +20,11 @@ class AvatarURLSchemeHandler(Qt.QWebEngineUrlSchemeHandler):
         super().__init__(parent)
         self._accounts = accounts
         self._avatar_manager = avatar_manager
+        self._buffers = set()
+
+    def buffer_closing(self, buf):
+        self._buffers.discard(buf)
+        buf.deleteLater()
 
     @utils.asyncify
     async def requestStarted(self, request: Qt.QWebEngineUrlRequestJob):
@@ -66,7 +72,7 @@ class AvatarURLSchemeHandler(Qt.QWebEngineUrlSchemeHandler):
         painter.drawPicture(0, 0, picture)
         painter.end()
 
-        buffer_ = Qt.QBuffer(request)
+        buffer_ = Qt.QBuffer()
         buffer_.open(Qt.QIODevice.WriteOnly)
         assert buffer_.isOpen()
         assert buffer_.isWritable()
@@ -82,3 +88,10 @@ class AvatarURLSchemeHandler(Qt.QWebEngineUrlSchemeHandler):
                      account_address)
 
         request.reply(b"image/png", buffer_)
+
+        buffer_.aboutToClose.connect(
+            functools.partial(
+                self.buffer_closing,
+                buffer_,
+            )
+        )
