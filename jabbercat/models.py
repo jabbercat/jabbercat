@@ -776,6 +776,10 @@ class RosterFilterModel(Qt.QSortFilterProxyModel):
             source.index(source_row, 0, source_parent), ROLE_OBJECT
         )
 
+        if isinstance(item, jclib.roster.SubscriptionRequestItem):
+            # filter inbound subscription requests
+            return False
+
         if self._filter_by_text is not None:
             if (not self._contains_normalized(self._filter_by_text,
                                               str(item.address)) and
