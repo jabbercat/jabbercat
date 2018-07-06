@@ -522,8 +522,53 @@ class ConversationView(Qt.QWidget):
         )
         self._update_zoom_factor()
         self.history_view.setPage(self.history)
-        self.history_view.setContextMenuPolicy(Qt.Qt.NoContextMenu)
+        self.history_view.setContextMenuPolicy(Qt.Qt.CustomContextMenu)
+        self.history_view.customContextMenuRequested.connect(
+            self._history_view_context_menu
+        )
         self.ui.history_frame.layout().addWidget(self.history_view)
+
+    def _history_view_context_menu(self, pos):
+        cmd = self.history.contextMenuData()
+        media_type = cmd.mediaType()
+
+        menu = Qt.QMenu(self.history_view)
+        menu.addAction(
+            self.history_view.pageAction(Qt.QWebEnginePage.SelectAll)
+        )
+
+        if cmd.selectedText():
+            menu.addAction(
+                self.history_view.pageAction(Qt.QWebEnginePage.Copy)
+            )
+            menu.addAction(
+                self.history_view.pageAction(Qt.QWebEnginePage.Unselect)
+            )
+
+        if not cmd.linkUrl().isEmpty():
+            menu.addAction(self.history_view.pageAction(
+                Qt.QWebEnginePage.CopyLinkToClipboard
+            ))
+
+        if media_type == Qt.QWebEngineContextMenuData.MediaTypeImage:
+            menu.addAction(self.history_view.pageAction(
+                Qt.QWebEnginePage.CopyImageUrlToClipboard
+            ))
+
+        if media_type in (Qt.QWebEngineContextMenuData.MediaTypeVideo,
+                          Qt.QWebEngineContextMenuData.MediaTypeAudio):
+            menu.addAction(self.history_view.pageAction(
+                Qt.QWebEnginePage.ToggleMediaPlayPause
+            ))
+            menu.addAction(self.history_view.pageAction(
+                Qt.QWebEnginePage.ToggleMediaControls
+            ))
+            menu.addAction(self.history_view.pageAction(
+                Qt.QWebEnginePage.ToggleMediaMute
+            ))
+
+        menu.popup(self.history_view.mapToGlobal(pos))
+        menu.aboutToHide.connect(menu.deleteLater)
 
     def _update_zoom_factor(self):
         self.history.setZoomFactor(1./self.devicePixelRatioF())
