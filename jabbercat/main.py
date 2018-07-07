@@ -295,6 +295,10 @@ class MainWindow(Qt.QMainWindow):
                 if event.key() == Qt.Qt.Key_Down:
                     self.ui.roster_view.setFocus()
                     return True
+            elif event.type() == Qt.QEvent.FocusIn:
+                if self.ui.roster_view_collapse.checkState() == Qt.Qt.Unchecked:
+                    self.ui.roster_view_collapse.click()
+
         return super().eventFilter(obj, event)
 
     def _open_python_console(self):
