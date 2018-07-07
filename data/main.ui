@@ -176,6 +176,8 @@
     </property>
     <addaction name="action_add_contact"/>
     <addaction name="action_invite_contact"/>
+    <addaction name="separator"/>
+    <addaction name="action_manage_contact_requests"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
     <property name="title">
@@ -309,7 +311,7 @@
   </action>
   <action name="action_join_support_muc">
    <property name="text">
-    <string>Join JabberCat support MUC …</string>
+    <string>&amp;Join JabberCat support MUC …</string>
    </property>
    <property name="toolTip">
     <string>Join a MUC where you can get JabberCat support right from the developers.</string>
@@ -329,6 +331,11 @@
    </property>
    <property name="toolTip">
     <string>Always open this conversation on start. For group chats, this syncs to other devices.</string>
+   </property>
+  </action>
+  <action name="action_manage_contact_requests">
+   <property name="text">
+    <string>Manage contact requests…</string>
    </property>
   </action>
  </widget>

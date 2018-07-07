@@ -1025,3 +1025,89 @@ class CheckModelSet:
     @property
     def checked(self) -> typing.Set:
         return self._internal_set
+
+
+class RequestType(enum.Enum):
+    OUTBOUND = 'outbound'
+    INBOUND = 'inbound'
+
+
+class ContactRequestModel(Qt.QAbstractTableModel):
+    COLUMN_ACCOUNT = 0
+    COLUMN_LABEL = 1
+    COLUMN_TYPE = 2
+    COLUMN_COUNT = 3
+
+    def __init__(self,
+                 roster: jclib.instrumentable_list.AbstractModelListView,
+                 parent: Qt.QObject = None):
+        super().__init__(parent)
+        self._roster = roster
+        self.__adaptor = model_adaptor.ModelListAdaptor(self._roster, self)
+
+        self._roster.data_changed.connect(self._data_changed)
+
+    def _data_changed(self, _, index1, index2, column1, column2, roles):
+        return self.dataChanged.emit(
+            self.index(index1, column1 or 0),
+            self.index(index2, column2 or self.COLUMN_COUNT - 1),
+            roles or [],
+        )
+
+    def columnCount(self, index: Qt.QModelIndex):
+        return self.COLUMN_COUNT
+
+    def rowCount(self, index: Qt.QModelIndex):
+        if index.isValid():
+            return 0
+
+        return len(self._roster)
+
+    @staticmethod
+    def _get_type(item):
+        if isinstance(item, jclib.roster.SubscriptionRequestItem):
+            return RequestType.INBOUND
+        elif hasattr(item, "ask") and item.ask:
+            return RequestType.OUTBOUND
+
+    def data(self,
+             index: Qt.QModelIndex,
+             role: Qt.Qt.ItemDataRole = Qt.Qt.DisplayRole):
+        if not index.isValid():
+            return
+
+        item = self._roster[index.row()]
+        column = index.column()
+
+        if role == Qt.Qt.DisplayRole:
+            if column == self.COLUMN_ACCOUNT:
+                return str(item.account.jid)
+            elif column == self.COLUMN_LABEL:
+                return str(item.address)
+            elif column == self.COLUMN_TYPE:
+                type_ = self._get_type(item)
+                if type_ is not None:
+                    return type_.value
+        elif role == ROLE_OBJECT:
+            if column == self.COLUMN_LABEL:
+                return item
+            else:
+                return self._get_type(item)
+
+    def headerData(self, section: int,
+                   orientation: Qt.Qt.Orientation,
+                   role: Qt.Qt.ItemDataRole = Qt.Qt.DisplayRole):
+        if orientation != Qt.Qt.Horizontal:
+            return
+
+        if role != Qt.Qt.DisplayRole:
+            return
+
+        try:
+            return (
+                "Account",
+                "Address",
+                "Direction",
+            )[section]
+        except IndexError:
+            return

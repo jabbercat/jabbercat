@@ -25,6 +25,7 @@ from aioxmpp.testutils import (
 
 TEST_JID1 = aioxmpp.JID.fromstr("romeo@montague.lit")
 TEST_JID2 = aioxmpp.JID.fromstr("juliet@capulet.lit")
+TEST_JID3 = aioxmpp.JID.fromstr("foo@bar.example")
 
 
 class TestAccountsModel(unittest.TestCase):
@@ -1577,4 +1578,217 @@ class TestCheckModelSet(unittest.TestCase):
         self.assertCountEqual(
             {"bar"},
             self.s.checked,
+        )
+
+
+class TestContactRequestModel(unittest.TestCase):
+    def make_mock(self, spec, address, subscription="none"):
+        m = unittest.mock.Mock(spec=spec)
+        m.account = unittest.mock.Mock(["jid"])
+        m.address = address
+        if hasattr(m, "subscription"):
+            m.subscription = subscription
+        if hasattr(m, "ask"):
+            m.ask = False
+        return m
+
+    def setUp(self):
+        self.roster = jclib.instrumentable_list.ModelList()
+        self.roster[:] = [
+            self.make_mock(jclib.roster.SubscriptionRequestItem, TEST_JID1),
+            self.make_mock(jclib.roster.ContactRosterItem, TEST_JID2),
+        ]
+        self.m = models.ContactRequestModel(self.roster)
+        self.listener = make_listener(self.m)
+
+    def test_uses_model_list_adaptor(self):
+        items = unittest.mock.Mock(["data_changed"])
+
+        with contextlib.ExitStack() as stack:
+            ModelListAdaptor = stack.enter_context(
+                unittest.mock.patch("jabbercat.model_adaptor.ModelListAdaptor")
+            )
+
+            result = models.ContactRequestModel(items)
+
+        ModelListAdaptor.assert_called_once_with(items, result)
+
+    def test_column_count(self):
+        self.assertEqual(
+            self.m.columnCount(Qt.QModelIndex()),
+            3,
+        )
+
+    def test_row_count_on_root_follows_roster(self):
+        self.assertEqual(
+            self.m.rowCount(Qt.QModelIndex()),
+            len(self.roster),
+        )
+
+        self.roster.append(unittest.mock.sentinel.item)
+
+        self.assertEqual(
+            self.m.rowCount(Qt.QModelIndex()),
+            len(self.roster),
+        )
+
+    def test_index_for_root_parent(self):
+        index = self.m.index(1, 0, Qt.QModelIndex())
+        self.assertTrue(index.isValid())
+
+    def test_row_count_on_items_is_zero(self):
+        for i in range(len(self.roster)):
+            index = self.m.index(i, 0, Qt.QModelIndex())
+            self.assertEqual(self.m.rowCount(index), 0)
+
+    def test_data_returns_address_for_label_display_role(self):
+        for i, item in enumerate(self.roster):
+            value = self.m.data(
+                self.m.index(i, self.m.COLUMN_LABEL, Qt.QModelIndex()),
+                Qt.Qt.DisplayRole,
+            )
+
+            self.assertEqual(
+                value,
+                str(item.address),
+            )
+
+    def test_data_returns_account_jid_for_account_display_role(self):
+        for i, item in enumerate(self.roster):
+            value = self.m.data(
+                self.m.index(i, self.m.COLUMN_ACCOUNT, Qt.QModelIndex()),
+                Qt.Qt.DisplayRole,
+            )
+
+            self.assertEqual(
+                value,
+                str(item.account.jid),
+            )
+
+    def test_data_returns_inbound_for_type_display_role_on_subscription_request_items(self):  # NOQA
+        self.assertEqual(
+            self.m.data(
+                self.m.index(0, self.m.COLUMN_TYPE, Qt.QModelIndex()),
+                Qt.Qt.DisplayRole
+            ),
+            "inbound",
+        )
+
+    def test_data_returns_outbound_for_type_display_role_on_ask_roster_items(self):  # NOQA
+        m = self.make_mock(
+            jclib.roster.ContactRosterItem,
+            TEST_JID3,
+            "from",
+        )
+        m.ask = True
+        self.roster.append(m)
+
+        self.assertEqual(
+            self.m.data(
+                self.m.index(2, self.m.COLUMN_TYPE, Qt.QModelIndex()),
+                Qt.Qt.DisplayRole
+            ),
+            "outbound",
+        )
+
+    def test_data_returns_item_for_label_object_role(self):  # NOQA
+        for i, item in enumerate(self.roster):
+            self.assertIs(
+                self.m.data(
+                    self.m.index(i, self.m.COLUMN_LABEL, Qt.QModelIndex()),
+                    models.ROLE_OBJECT,
+                ),
+                item,
+            )
+
+    def test_data_returns_None_for_type_display_role_on_unknown_contact_roster_items(self):  # NOQA
+        self.assertIsNone(
+            self.m.data(
+                self.m.index(1, self.m.COLUMN_TYPE, Qt.QModelIndex()),
+                Qt.Qt.DisplayRole
+            ),
+        )
+
+    def test_data_returns_None_for_type_display_role_on_unknown_muc_roster_items(self):  # NOQA
+        m = self.make_mock(
+            jclib.roster.MUCRosterItem,
+            TEST_JID3,
+        )
+        self.roster.append(m)
+
+        self.assertIsNone(
+            self.m.data(
+                self.m.index(2, self.m.COLUMN_TYPE, Qt.QModelIndex()),
+                Qt.Qt.DisplayRole
+            ),
+        )
+
+    def test_data_returns_inbound_for_type_object_role_on_subscription_request_items(self):  # NOQA
+        self.assertEqual(
+            self.m.data(
+                self.m.index(0, self.m.COLUMN_TYPE, Qt.QModelIndex()),
+                models.ROLE_OBJECT
+            ),
+            models.RequestType.INBOUND,
+        )
+
+    def test_data_returns_outbound_for_type_object_role_on_ask_roster_items(self):  # NOQA
+        m = self.make_mock(
+            jclib.roster.ContactRosterItem,
+            TEST_JID3,
+            "from",
+        )
+        m.ask = True
+        self.roster.append(m)
+
+        self.assertEqual(
+            self.m.data(
+                self.m.index(2, self.m.COLUMN_TYPE, Qt.QModelIndex()),
+                models.ROLE_OBJECT
+            ),
+            models.RequestType.OUTBOUND,
+        )
+
+    def test_data_returns_None_for_type_object_role_on_unknown_contact_roster_items(self):  # NOQA
+        self.assertIsNone(
+            self.m.data(
+                self.m.index(1, self.m.COLUMN_TYPE, Qt.QModelIndex()),
+                models.ROLE_OBJECT
+            ),
+        )
+
+    def test_data_returns_None_for_type_object_role_on_unknown_muc_roster_items(self):  # NOQA
+        m = self.make_mock(
+            jclib.roster.MUCRosterItem,
+            TEST_JID3,
+        )
+        self.roster.append(m)
+
+        self.assertIsNone(
+            self.m.data(
+                self.m.index(2, self.m.COLUMN_TYPE, Qt.QModelIndex()),
+                models.ROLE_OBJECT
+            ),
+        )
+
+    def test_data_returns_None_for_label_other_roles(self):
+        for i in range(len(self.roster)):
+            value = self.m.data(
+                self.m.index(i, self.m.COLUMN_LABEL, Qt.QModelIndex()),
+                unittest.mock.sentinel.garbage_role,
+            )
+
+            self.assertIsNone(value)
+
+    def test_forward_data_changed_signal(self):
+        mock = unittest.mock.Mock()
+
+        self.m.dataChanged.connect(mock)
+
+        self.roster.refresh_data(slice(1, 2))
+
+        mock.assert_called_once_with(
+            self.m.index(1, 0),
+            self.m.index(1, self.m.COLUMN_COUNT - 1),
+            [],
         )

@@ -28,6 +28,7 @@ from .dialogs import (
     roster_tags,
     add_contact,
     python_console,
+    contact_requests,
 )
 
 from .widgets import (
@@ -85,6 +86,10 @@ class MainWindow(Qt.QMainWindow):
                                                main.metadata)
         self.roster_model.on_label_edited.connect(
             self._roster_label_edited,
+        )
+
+        self.contact_requests = contact_requests.DlgContactRequests(
+            main.roster,
         )
 
         self.filtered_roster = models.RosterFilterModel()
@@ -158,6 +163,10 @@ class MainWindow(Qt.QMainWindow):
 
         self.ui.action_manage_accounts.triggered.connect(
             self.account_manager.open
+        )
+
+        self.ui.action_manage_contact_requests.triggered.connect(
+            self.contact_requests.open,
         )
 
         self.__convmap = {}
