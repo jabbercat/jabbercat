@@ -802,9 +802,6 @@ class RosterFilterModel(Qt.QSortFilterProxyModel):
     def filter_by_text(self):
         self._filter_by_text = None
 
-    def _contains_normalized(self, normed: str, other: str):
-        return normed in self._normalize_for_find(other)
-
     def filterAcceptsRow(self,
                          source_row: int,
                          source_parent: Qt.QModelIndex):
