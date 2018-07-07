@@ -276,6 +276,50 @@ class MainWindow(Qt.QMainWindow):
             "Start a conversation by double-clicking an item from the roster!"
         )
 
+        self.ui.action_next_conversation.triggered.connect(
+            self._select_next_conversation,
+        )
+        self.addAction(self.ui.action_next_conversation)
+
+        self.ui.action_prev_conversation.triggered.connect(
+            self._select_prev_conversation,
+        )
+        self.addAction(self.ui.action_prev_conversation)
+
+    def _get_current_conversation_index(self):
+        index = self.ui.conversations_view.currentIndex()
+        if not index.isValid():
+            selected = self.ui.conversations_view.selectionModel(
+            ).selectedIndexes()
+            if len(selected) == 0:
+                return
+
+            index = selected[0]
+
+        return index
+
+    def _select_next_conversation(self):
+        index = self._get_current_conversation_index()
+        if index is None:
+            return
+
+        index = index.sibling(index.row()+1, index.column())
+        if not index.isValid():
+            return
+        self.ui.conversations_view.setCurrentIndex(index)
+        self._conversation_item_activated(index)
+
+    def _select_prev_conversation(self):
+        index = self._get_current_conversation_index()
+        if index is None:
+            return
+
+        index = index.sibling(index.row()-1, index.column())
+        if not index.isValid():
+            return
+        self.ui.conversations_view.setCurrentIndex(index)
+        self._conversation_item_activated(index)
+
     def _relabel_magic_bar(self):
         self.ui.magic_bar.setPlaceholderText(
             self.tr("Search ({shortcut})...").format(

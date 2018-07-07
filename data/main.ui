@@ -338,6 +338,22 @@
     <string>Manage contact requests…</string>
    </property>
   </action>
+  <action name="action_prev_conversation">
+   <property name="text">
+    <string>Previous conversation</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+PgUp</string>
+   </property>
+  </action>
+  <action name="action_next_conversation">
+   <property name="text">
+    <string>Next Conversation</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+PgDown</string>
+   </property>
+  </action>
  </widget>
  <customwidgets>
   <customwidget>
