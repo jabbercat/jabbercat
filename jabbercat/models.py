@@ -1,9 +1,11 @@
 import bisect
 import collections.abc
 import enum
-import html
 import typing
 import unicodedata
+
+import lxml.builder
+import lxml.etree
 
 import aioxmpp.callbacks
 import aioxmpp.structs
@@ -568,10 +570,14 @@ class RosterModel(Qt.QAbstractListModel):
     on_label_edited = aioxmpp.callbacks.Signal()
 
     PRESENCE_SHOW_STR = {
-        aioxmpp.structs.PresenceShow.AWAY: "away",
-        aioxmpp.structs.PresenceShow.DND: "do not disturb",
-        aioxmpp.structs.PresenceShow.EXTENDED_AWAY: "away for longer",
-        aioxmpp.structs.PresenceShow.FREE_FOR_CHAT: "wanting to chat",
+        aioxmpp.structs.PresenceShow.AWAY:
+            Qt.translate("PresenceShowStr", "away"),
+        aioxmpp.structs.PresenceShow.DND:
+            Qt.translate("PresenceShowStr", "do not disturb"),
+        aioxmpp.structs.PresenceShow.EXTENDED_AWAY:
+            Qt.translate("PresenceShowStr", "away for longer"),
+        aioxmpp.structs.PresenceShow.FREE_FOR_CHAT:
+            Qt.translate("PresenceShowStr", "wanting to chat"),
     }
 
     def __init__(self,
@@ -595,31 +601,46 @@ class RosterModel(Qt.QAbstractListModel):
             item.account, item.address,
         )
 
-        picture_base64 = jabbercat.utils.qtpicture_to_base64_png(picture)
+        picture_base64 = jabbercat.utils.qtpicture_to_data_uri(picture)
+
+        H = lxml.builder.ElementMaker()
+
+        avatar = H.img(width="48", height="48", src=picture_base64)
 
         parts = []
-        parts.append("<table><tr><td><img width='48' height='48' src='data:image/png;base64,")
-        parts.append(picture_base64)
-        parts.append("'/></td><td>")
-        parts.append("<h3>{}</h3>".format(html.escape(item.label)))
-        parts.append("<dl>")
+        parts.append(H.h3(item.label))
+
+        dl_parts = []
 
         is_contact = isinstance(item, jclib.roster.ContactRosterItem)
         is_muc = isinstance(item, jclib.roster.MUCRosterItem)
 
         if is_contact:
-            parts.append("<p>Contact</p>")
+            dl_parts.append(H.p(
+                Qt.translate("models.RosterModel.Tooltip",
+                             "Contact")
+            ))
         elif is_muc:
-            parts.append("<p>Group chat</p>")
+            dl_parts.append(H.p(
+                Qt.translate("models.RosterModel.Tooltip",
+                             "Group Chat")
+            ))
 
-        parts.append("<dt>Account</dt>")
-        parts.append(
-            "<dd>{}</dd>".format(html.escape(str(item.account.jid.bare())))
-        )
+        dl_parts.append(H.dt(
+            Qt.translate("models.RosterModel.Tooltip",
+                         "Account")
+        ))
+
+        dl_parts.append(H.dd(str(item.account.jid.bare())))
 
         if item.label != str(item.address):
-            parts.append("<dt>Address</dt>")
-            parts.append("<dd>{}</dd>".format(html.escape(str(item.address))))
+            dl_parts.append(H.dt(
+                Qt.translate("models.RosterModel.Tooltip",
+                             "Address")
+            ))
+            dl_parts.append(H.dd(
+                str(item.address)
+            ))
 
         if is_contact:
             presence = self._metadata.get(
@@ -629,17 +650,23 @@ class RosterModel(Qt.QAbstractListModel):
             )
             if presence is not None:
                 state = aioxmpp.structs.PresenceState.from_stanza(presence)
-                parts.append("<dt>Status</dt>")
-                parts.append("<dd>{}</dd>".format(
-                    html.escape("unavailable" if not state.available else (
+                dl_parts.append(H.dt(
+                    Qt.translate(
+                        "models.RosterModel.Tooltip",
+                        "Status")
+                ))
+                dl_parts.append(H.dd(
+                    Qt.translate("PresenceShowStr", "unavailable")
+                    if not state.available else (
                         self.PRESENCE_SHOW_STR.get(state.show.value) or
-                        "available"
-                    ))
+                        Qt.translate("PresenceShowStr", "available")
+                    )
                 ))
 
-        parts.append("</dl></td></tr></table>")
+        parts.append(H.dl(*dl_parts))
+        res = H.table(H.tr(H.td(avatar), H.td(*parts)))
 
-        return "".join(parts)
+        return lxml.etree.tounicode(res, method="html")
 
     def flags(self, index):
         flags = super().flags(index)

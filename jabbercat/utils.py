@@ -314,7 +314,7 @@ def text_to_qtcolor(text):
     return Qt.QColor(r * 255, g * 255, b * 255)
 
 
-def qtpicture_to_base64_png(picture, w=48, h=48):
+def qtpicture_to_data_uri(picture, w=48, h=48):
     canvas = Qt.QImage(w, h, Qt.QImage.Format_ARGB32_Premultiplied)
     canvas.fill(0)
     painter = Qt.QPainter(canvas)
@@ -328,4 +328,5 @@ def qtpicture_to_base64_png(picture, w=48, h=48):
     canvas.save(buffer_, "PNG")
     buffer_.close()
 
-    return bytes(buffer_.data().toBase64()).decode("ascii")
+    return ("data:image/png;base64," +
+            bytes(buffer_.data().toBase64()).decode("ascii"))

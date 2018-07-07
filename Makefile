@@ -15,10 +15,10 @@ clean:
 	rm -rf $(UIC_PYTHON_FILES)
 
 lupdate:
-	pylupdate5 -verbose mlxc-qt.pro
+	pylupdate5 -verbose jabbercat.pro
 
 lrelease: $(TS_FILES)
-	lrelease-qt5 mlxc-qt.pro
+	lrelease-qt5 jabbercat.pro
 
 $(UIC_PYTHON_FILES): jabbercat/ui/%.py: data/%.ui
 	$(BUILDUI) $< $@

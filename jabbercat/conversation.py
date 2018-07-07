@@ -7,6 +7,9 @@ import urllib.parse
 
 from datetime import datetime, timedelta
 
+import lxml.builder
+import lxml.etree
+
 import aioxmpp.im.conversation
 import aioxmpp.im.p2p
 import aioxmpp.im.service
@@ -129,40 +132,54 @@ class MemberModel(Qt.QAbstractListModel):
 
     def _format_tooltip(self, member):
         picture = self.__avatar_manager.get_avatar(
-            self.__account, member.direct_jid or member.conversation_jid,
+            self.__account,
+            member.direct_jid or member.conversation_jid,
+            getattr(member, "nick", None)
         )
 
-        picture_base64 = jabbercat.utils.qtpicture_to_base64_png(picture)
+        picture_base64 = jabbercat.utils.qtpicture_to_data_uri(picture)
 
         label = self._display_name(member)
 
+        H = lxml.builder.ElementMaker()
+
+        avatar = H.img(width="48", height="48", src=picture_base64)
+
         parts = []
-        parts.append("<table><tr><td>")
-        parts.append("<img width='48' height='48' src='data:image/png;base64,{}'>".format(picture_base64))
-        parts.append("</td><td>")
-        parts.append("<h3>{}</h3>".format(html.escape(label)))
-        parts.append("<dl>")
+        parts.append(H.h3(label))
+
+        dl_parts = []
         if member.conversation_jid:
-            parts.append("<dt>Conversation JID</dt>")
-            parts.append(
-                "<dd>{}</dd>".format(html.escape(str(member.conversation_jid)))
-            )
+            dl_parts.append(H.dt(
+                Qt.translate("conversation.MemberModel.Tooltip",
+                             "Conversation JID")
+            ))
+            dl_parts.append(H.dd(
+                str(member.conversation_jid)
+            ))
 
         if member.direct_jid:
-            parts.append("<dt>Direct JID</dt>")
-            parts.append(
-                "<dd>{}</dd>".format(html.escape(str(member.direct_jid)))
-            )
+            dl_parts.append(H.dt(
+                Qt.translate("conversation.MemberModel.Tooltip",
+                             "Direct JID")
+            ))
+            dl_parts.append(H.dd(
+                str(member.direct_jid)
+            ))
 
         if member.affiliation is not None:
-            parts.append("<dt>Affiliation</dt>")
-            parts.append(
-                "<dd>{}</dd>".format(html.escape(str(member.affiliation)))
-            )
+            dl_parts.append(H.dt(
+                Qt.translate("conversation.MemberModel.Tooltip",
+                             "Affiliation")
+            ))
+            dl_parts.append(H.dd(
+                str(member.affiliation)
+            ))
 
-        parts.append("</dl></td></tr></table>")
+        parts.append(H.dl(*dl_parts))
+        res = H.table(H.tr(H.td(avatar), H.td(*parts)))
 
-        return "".join(parts)
+        return lxml.etree.tounicode(res, method="html")
 
     def rowCount(self, index):
         if index.isValid():
@@ -178,7 +195,7 @@ class MemberModel(Qt.QAbstractListModel):
         member = self.__members[index.row()]
 
         if role == Qt.Qt.DisplayRole:
-            return self._display_name()
+            return self._display_name(member)
         elif role == Qt.Qt.ToolTipRole:
             return self._format_tooltip(member)
         elif role == models.ROLE_OBJECT:
