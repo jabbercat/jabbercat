@@ -44,6 +44,13 @@ class RosterItemDelegate(Qt.QItemDelegate):
     def flush_caches(self):
         self._cache.clear()
 
+    def _desaturate_tag_color(self, colour: Qt.QColor) -> Qt.QColor:
+        colour = Qt.QColor(colour)
+        h, s, v, a = colour.getHsvF()
+        s *= 0.5
+        colour.setHsvF(h, s, v, a)
+        return colour
+
     def layout_tags(self, font_metrics: Qt.QFontMetrics, tags, width):
         tags = tuple(sorted(
             ((tag_full,
@@ -65,7 +72,7 @@ class RosterItemDelegate(Qt.QItemDelegate):
         ]
 
         text_colours = [
-            utils.text_to_qtcolor(normalized_tag)
+            self._desaturate_tag_color(utils.text_to_qtcolor(normalized_tag))
             for _, normalized_tag in tags
         ]
 
@@ -339,13 +346,8 @@ class RosterItemDelegate(Qt.QItemDelegate):
                 tags_layout["texts"],
                 self._tag_rects(tag_metrics, top_left, tags_layout),
                 tags_layout["text_colours"]):
-            colour = Qt.QColor(colour)
             if tag_rect.contains(cursor_pos):
                 colour = colour.lighter(125)
-
-            h, s, v, a = colour.getHsvF()
-            s = s * 0.5
-            colour.setHsvF(h, s, v, a)
 
             painter.setPen(Qt.QPen(Qt.Qt.NoPen))
             painter.setBrush(Qt.QBrush(colour))
