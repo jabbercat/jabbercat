@@ -339,8 +339,13 @@ class RosterItemDelegate(Qt.QItemDelegate):
                 tags_layout["texts"],
                 self._tag_rects(tag_metrics, top_left, tags_layout),
                 tags_layout["text_colours"]):
+            colour = Qt.QColor(colour)
             if tag_rect.contains(cursor_pos):
                 colour = colour.lighter(125)
+
+            h, s, v, a = colour.getHsvF()
+            s = s * 0.5
+            colour.setHsvF(h, s, v, a)
 
             painter.setPen(Qt.QPen(Qt.Qt.NoPen))
             painter.setBrush(Qt.QBrush(colour))
