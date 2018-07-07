@@ -90,6 +90,8 @@ class MessageInput(Qt.QTextEdit):
 
         if (event.key() in (Qt.Qt.Key_Enter, Qt.Qt.Key_Return) and
                 event.modifiers() == Qt.Qt.NoModifier):
+            if self._completer:
+                self._completer.popup().hide()
             self.activated.emit()
             return
 
