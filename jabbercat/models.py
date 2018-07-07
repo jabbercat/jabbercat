@@ -1,5 +1,4 @@
 import bisect
-import collections.abc
 import enum
 import typing
 import unicodedata
