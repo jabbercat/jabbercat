@@ -306,6 +306,9 @@ class MainWindow(Qt.QMainWindow):
         index = index.sibling(index.row()+1, index.column())
         if not index.isValid():
             return
+        # we need to set focus on the conversations_view first, because other-
+        # wise the search may would get focus, which has side effects
+        self.ui.conversations_view.setFocus()
         self.ui.conversations_view.setCurrentIndex(index)
         self._conversation_item_activated(index)
 
@@ -317,6 +320,9 @@ class MainWindow(Qt.QMainWindow):
         index = index.sibling(index.row()-1, index.column())
         if not index.isValid():
             return
+        # we need to set focus on the conversations_view first, because other-
+        # wise the search may would get focus, which has side effects
+        self.ui.conversations_view.setFocus()
         self.ui.conversations_view.setCurrentIndex(index)
         self._conversation_item_activated(index)
 
