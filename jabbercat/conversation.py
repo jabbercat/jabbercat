@@ -7,6 +7,9 @@ import urllib.parse
 
 from datetime import datetime, timedelta
 
+import lxml.builder
+import lxml.etree
+
 import aioxmpp.im.conversation
 import aioxmpp.im.p2p
 import aioxmpp.im.service
@@ -21,6 +24,8 @@ import jclib.instrumentable_list
 import jclib.metadata
 import jclib.roster
 import jclib.utils
+
+import jabbercat.avatar
 
 from . import Qt, utils, models, avatar, emoji, model_adaptor
 from .widgets import messageinput, member_list
@@ -105,12 +110,76 @@ class MemberModel(Qt.QAbstractListModel):
     def __init__(self,
                  members: MemberList,
                  account: jclib.identity.Account,
-                 metadata: jclib.metadata.MetadataFrontend):
+                 metadata: jclib.metadata.MetadataFrontend,
+                 avatar_manager: jabbercat.avatar.AvatarManager):
         super().__init__()
         self.__members = members
         self.__account = account
         self.__metadata = metadata
+        self.__avatar_manager = avatar_manager
         self.__adaptor = model_adaptor.ModelListAdaptor(self.__members, self)
+
+    def _display_name(self, member):
+        if hasattr(member, "nick"):
+            label = member.nick
+        else:
+            label = self.__metadata.get(
+                jclib.roster.RosterMetadata.NAME,
+                self.__account,
+                member.direct_jid or member.conversation_jid,
+            )
+        return label
+
+    def _format_tooltip(self, member):
+        picture = self.__avatar_manager.get_avatar(
+            self.__account,
+            member.direct_jid or member.conversation_jid,
+            getattr(member, "nick", None)
+        )
+
+        picture_base64 = jabbercat.utils.qtpicture_to_data_uri(picture)
+
+        label = self._display_name(member)
+
+        H = lxml.builder.ElementMaker()
+
+        avatar = H.img(width="48", height="48", src=picture_base64)
+
+        parts = []
+        parts.append(H.h3(label))
+
+        dl_parts = []
+        if member.conversation_jid:
+            dl_parts.append(H.dt(
+                Qt.translate("conversation.MemberModel.Tooltip",
+                             "Conversation JID")
+            ))
+            dl_parts.append(H.dd(
+                str(member.conversation_jid)
+            ))
+
+        if member.direct_jid:
+            dl_parts.append(H.dt(
+                Qt.translate("conversation.MemberModel.Tooltip",
+                             "Direct JID")
+            ))
+            dl_parts.append(H.dd(
+                str(member.direct_jid)
+            ))
+
+        if member.affiliation is not None:
+            dl_parts.append(H.dt(
+                Qt.translate("conversation.MemberModel.Tooltip",
+                             "Affiliation")
+            ))
+            dl_parts.append(H.dd(
+                str(member.affiliation)
+            ))
+
+        parts.append(H.dl(*dl_parts))
+        res = H.table(H.tr(H.td(avatar), H.td(*parts)))
+
+        return lxml.etree.tounicode(res, method="html")
 
     def rowCount(self, index):
         if index.isValid():
@@ -126,13 +195,9 @@ class MemberModel(Qt.QAbstractListModel):
         member = self.__members[index.row()]
 
         if role == Qt.Qt.DisplayRole:
-            if hasattr(member, "nick"):
-                return member.nick
-            return self.__metadata.get(
-                jclib.roster.RosterMetadata.NAME,
-                self.__account,
-                member.direct_jid or member.conversation_jid,
-            )
+            return self._display_name(member)
+        elif role == Qt.Qt.ToolTipRole:
+            return self._format_tooltip(member)
         elif role == models.ROLE_OBJECT:
             return member
 
@@ -424,6 +489,7 @@ class ConversationView(Qt.QWidget):
             self.__member_list,
             conversation_node.account,
             metadata,
+            avatars,
         )
 
         self.__sorted_member_model = Qt.QSortFilterProxyModel()

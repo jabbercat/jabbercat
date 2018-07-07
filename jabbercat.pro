@@ -1,7 +1,9 @@
 lupdate_only {
     SOURCES += jabbercat/client.py
+    SOURCES += jabbercat/conversation.py
     SOURCES += jabbercat/main.py
     SOURCES += jabbercat/model_adaptor.py
+    SOURCES += jabbercat/models.py
     SOURCES += jabbercat/utils.py
 }
 
