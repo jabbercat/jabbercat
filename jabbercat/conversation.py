@@ -609,8 +609,6 @@ class ConversationView(Qt.QWidget):
             address is not None and self.__conversation is not None
         )
 
-    @utils.asyncify
-    @asyncio.coroutine
     def _send_file_triggered(self, *args):
         file_names, _ = Qt.QFileDialog.getOpenFileNames(
             self
@@ -624,8 +622,6 @@ class ConversationView(Qt.QWidget):
         if http_upload_address is None:
             # TODO: show proper error here
             return
-
-        tasks = []
 
         for name in file_names:
             jclib.tasks.manager.start(self._upload_and_send(
