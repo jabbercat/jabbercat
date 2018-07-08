@@ -3,6 +3,7 @@ import functools
 import html
 import logging
 import re
+import pathlib
 import urllib.parse
 
 from datetime import datetime, timedelta
@@ -10,6 +11,7 @@ from datetime import datetime, timedelta
 import lxml.builder
 import lxml.etree
 
+import aioxmpp
 import aioxmpp.im.conversation
 import aioxmpp.im.p2p
 import aioxmpp.im.service
@@ -19,6 +21,7 @@ import aioxmpp.xso
 
 import jclib.archive
 import jclib.conversation
+import jclib.httpupload
 import jclib.identity
 import jclib.instrumentable_list
 import jclib.metadata
@@ -574,6 +577,11 @@ class ConversationView(Qt.QWidget):
         self.__conv_tokens = []
         self.__msgidmap = {}
 
+        self.ui.btnSendFile.setDefaultAction(self.ui.action_send_file)
+        self.ui.action_send_file.triggered.connect(
+            self._send_file_triggered,
+        )
+
         self.create_view()
         if self.__node.conversation is not None:
             self._ready()
@@ -600,6 +608,54 @@ class ConversationView(Qt.QWidget):
         self.ui.action_send_file.setEnabled(
             address is not None and self.__conversation is not None
         )
+
+    @utils.asyncify
+    @asyncio.coroutine
+    def _send_file_triggered(self, *args):
+        file_names, _ = Qt.QFileDialog.getOpenFileNames(
+            self
+        )
+
+        http_upload_address = self.__metadata.get(
+            jclib.metadata.ServiceMetadata.HTTP_UPLOAD_ADDRESS,
+            self.__node.account,
+            None)
+
+        if http_upload_address is None:
+            # TODO: show proper error here
+            return
+
+        tasks = []
+
+        for name in file_names:
+            jclib.tasks.manager.start(self._upload_and_send(
+                http_upload_address,
+                pathlib.Path(name),
+            ))
+
+    async def _upload_and_send(self,
+                               service: aioxmpp.JID,
+                               path: pathlib.Path):
+        jclib.tasks.manager.update_text("Analysing {}".format(path.name))
+        content_type = await jclib.httpupload.guess_mime_type(path)
+        content_type = content_type or "application/octet-stream"
+
+        jclib.tasks.manager.update_text("Uploading {}".format(path.name))
+        # TODO: determine proper MIME type
+        get_url = await jclib.httpupload.upload_file(
+            self.__node.account.client,
+            service,
+            path,
+            content_type=content_type,
+        )
+        msg = aioxmpp.Message(
+            type_=aioxmpp.MessageType.CHAT
+        )
+        msg.body[None] = get_url
+        msg.xep0066_oob = aioxmpp.misc.OOBExtension()
+        msg.xep0066_oob.url = get_url
+
+        await self._send_message_stanza(msg)
 
     def create_view(self):
         self.history_view = MessageView(self.ui.history_frame)
@@ -759,11 +815,20 @@ class ConversationView(Qt.QWidget):
     def set_focus_to_message_input(self):
         self.ui.message_input.setFocus()
 
+    @asyncio.coroutine
+    def _send_message_stanza(self, st):
+        if (aioxmpp.im.conversation.ConversationFeature.SEND_MESSAGE_TRACKED
+                in self.__conversation.features):
+            _, tracker = self.__conversation.send_message_tracked(st)
+            tracker.set_timeout(60)
+        else:
+            yield from self.__conversation.send_message(st)
+
     @utils.asyncify
     @asyncio.coroutine
     def _send_message(self):
         body = self.ui.message_input.toPlainText()
-        msg = aioxmpp.Message(type_="chat")
+        msg = aioxmpp.Message(type_=aioxmpp.MessageType.CHAT)
         msg.body[None] = body
         msg.xep0333_markable = True
         url_match = self.URL_RE.match(body)
@@ -781,12 +846,7 @@ class ConversationView(Qt.QWidget):
                 msg.xep0066_oob.url = url
 
         self.ui.message_input.clear()
-        if (aioxmpp.im.conversation.ConversationFeature.SEND_MESSAGE_TRACKED
-                in self.__conversation.features):
-            _, tracker = self.__conversation.send_message_tracked(msg)
-            tracker.set_timeout(60)
-        else:
-            yield from self.__conversation.send_message(msg)
+        yield from self._send_message_stanza(msg)
 
     def htmlify_body(self, body, display_name):
         out_lines = []
