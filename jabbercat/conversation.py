@@ -484,6 +484,8 @@ class ConversationView(Qt.QWidget):
 
         self.ui.message_input.activated.connect(self._message_input_activated)
 
+        self.__metadata = metadata
+
         self.__member_list = MemberList()
         self.__member_model = MemberModel(
             self.__member_list,
@@ -575,6 +577,29 @@ class ConversationView(Qt.QWidget):
         self.create_view()
         if self.__node.conversation is not None:
             self._ready()
+
+        metadata.changed_signal(
+            jclib.metadata.ServiceMetadata.HTTP_UPLOAD_ADDRESS
+        ).connect(
+            self._http_upload_address_changed,
+            aioxmpp.callbacks.AdHocSignal.WEAK
+        )
+        self._http_upload_address_changed(
+            None, self.__node.account, None,
+            metadata.get(
+                jclib.metadata.ServiceMetadata.HTTP_UPLOAD_ADDRESS,
+                self.__node.account,
+                None,
+            )
+        )
+
+    def _http_upload_address_changed(self, key, account, peer, address):
+        if account is not self.__node.account:
+            return
+
+        self.ui.action_send_file.setEnabled(
+            address is not None and self.__conversation is not None
+        )
 
     def create_view(self):
         self.history_view = MessageView(self.ui.history_frame)
@@ -682,6 +707,11 @@ class ConversationView(Qt.QWidget):
             self.__conversation.on_leave,
             self._conv_leave,
         )
+        http_upload_address = self.__metadata.get(
+            jclib.metadata.ServiceMetadata.HTTP_UPLOAD_ADDRESS,
+            self.__node.account,
+            None)
+        self.ui.action_send_file.setEnabled(http_upload_address is not None)
 
     def _stale(self):
         for signal, token in self.__conv_tokens:
@@ -689,6 +719,7 @@ class ConversationView(Qt.QWidget):
         self.__conv_tokens.clear()
         self.__conversation = None
         self.__member_list.conversation = None
+        self.ui.action_send_file.setEnabled(False)
 
     def _member_to_event(self, member, **kwargs):
         color_full, color_weak = self.make_css_colors(
