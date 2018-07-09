@@ -39,9 +39,9 @@ from .ui import p2p_conversation
 logger = logging.getLogger(__name__)
 
 
-def _connect_and_store_token(tokens, signal, handler):
+def _connect_and_store_token(tokens, signal, handler, mode=None):
     tokens.append(
-        (signal, signal.connect(handler))
+        (signal, signal.connect(handler, mode or signal.WEAK))
     )
 
 

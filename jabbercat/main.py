@@ -536,6 +536,7 @@ class MainWindow(Qt.QMainWindow):
         page = self.__convmap.pop(wrapper)
         self.ui.conversation_pages.removeWidget(page)
         del self.__pagemap[page]
+        page.deleteLater()
 
     def _activate_conversation_page(
             self, page,
