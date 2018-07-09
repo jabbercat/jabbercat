@@ -3,6 +3,7 @@ import collections.abc
 import enum
 import typing
 import unicodedata
+import itertools
 
 import lxml.builder
 import lxml.etree
@@ -814,12 +815,12 @@ class RosterFilterModel(Qt.QSortFilterProxyModel):
             # filter inbound subscription requests
             return False
 
-        if self._filter_by_text is not None:
-            if (not self._contains_normalized(self._filter_by_text,
-                                              str(item.address)) and
-                    not self._contains_normalized(self._filter_by_text,
-                                                  item.label)):
-                return False
+        if self._filter_by_text:
+            query_args = [[str(item.address)], [item.label], item.tags]
+            normalized = [self._normalize_for_comparison(s)
+                          for s in itertools.chain.from_iterable(query_args)]
+            text_input = self._normalize_for_comparison(self._filter_by_text)
+            return any(text_input in n for n in normalized)
 
         filter_tags = self._tags_filter_set.checked
         if set(item.tags) & filter_tags != filter_tags:
