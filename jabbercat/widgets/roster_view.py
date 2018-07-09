@@ -4,6 +4,7 @@ import random
 
 import jclib.utils
 
+import jabbercat.avatar
 import jabbercat.utils as utils
 
 from .. import Qt, models
@@ -23,6 +24,10 @@ class RosterItemDelegate(Qt.QItemDelegate):
     NAME_FONT_SIZE = 1.1
 
     MAX_AVATAR_SIZE = 48
+    SMALL_AVATAR_SIZE = 24
+
+    AVATAR_SMALL_THRESHOLD = 120
+    AVATAR_ZERO_THRESHOLD = 60
 
     on_tag_clicked = aioxmpp.callbacks.Signal()
 
@@ -185,13 +190,26 @@ class RosterItemDelegate(Qt.QItemDelegate):
                 0
             )
 
+    def _calculate_avatar_size(self, rect):
+        width = rect.width()
+        if width < self.AVATAR_ZERO_THRESHOLD:
+            return 0
+        elif width < self.AVATAR_SMALL_THRESHOLD:
+            avatar_size = self.SMALL_AVATAR_SIZE
+        else:
+            avatar_size = self.MAX_AVATAR_SIZE
+
+        avatar_size = min(rect.height() - self.PADDING * 2,
+                          avatar_size)
+
+        return avatar_size
+
     def _hits_tag(self, local_pos, option, item):
         name_font, tag_font = self._get_fonts(option.font)
         name_metrics = Qt.QFontMetrics(name_font)
         tag_metrics = Qt.QFontMetrics(tag_font)
 
-        avatar_size = min(option.rect.height() - self.PADDING * 2,
-                          self.MAX_AVATAR_SIZE)
+        avatar_size = self._calculate_avatar_size(option.rect)
 
         top_left = option.rect.topLeft() + Qt.QPoint(
             self.LEFT_PADDING + self.SPACING * 2 + avatar_size,
@@ -249,20 +267,37 @@ class RosterItemDelegate(Qt.QItemDelegate):
             name,
         )
 
-        avatar_size = min(option.rect.height() - self.PADDING * 2,
-                          self.MAX_AVATAR_SIZE)
+        avatar_size = self._calculate_avatar_size(option.rect)
 
-        avatar_origin = option.rect.topLeft()
-        avatar_origin = avatar_origin + Qt.QPoint(
-            self.PADDING + self.SPACING,
-            option.rect.height() / 2 - avatar_size / 2
-        )
+        if avatar_size > 0:
+            avatar_origin = option.rect.topLeft()
+            avatar_origin = avatar_origin + Qt.QPoint(
+                self.PADDING + self.SPACING,
+                # option.rect.height() / 2 - avatar_size / 2
+                self.PADDING,
+            )
 
-        pic = self.avatar_manager.get_avatar(
-            item.account,
-            item.address,
-        )
-        painter.drawPicture(avatar_origin, pic)
+            pic = self.avatar_manager.get_avatar(
+                item.account,
+                item.address,
+            )
+
+            backup = painter.worldTransform()
+            avatar_scale_factor = avatar_size / jabbercat.avatar.BASE_SIZE
+            painter.translate(avatar_origin)
+            painter.scale(avatar_scale_factor, avatar_scale_factor)
+            painter.drawPicture(Qt.QPointF(), pic)
+            painter.setWorldTransform(backup)
+
+            top_left = option.rect.topLeft() + Qt.QPoint(
+                self.LEFT_PADDING + self.SPACING * 2 + avatar_size,
+                self.PADDING
+            )
+        else:
+            top_left = option.rect.topLeft() + Qt.QPoint(
+                self.LEFT_PADDING,
+                self.PADDING
+            )
 
         if (option.state & Qt.QStyle.State_Selected and
                 option.state & Qt.QStyle.State_Active):
@@ -277,11 +312,6 @@ class RosterItemDelegate(Qt.QItemDelegate):
         painter.setFont(name_font)
 
         tag_metrics = Qt.QFontMetrics(tag_font)
-
-        top_left = option.rect.topLeft() + Qt.QPoint(
-            self.LEFT_PADDING + self.SPACING * 2 + avatar_size,
-            self.PADDING
-        )
 
         name_rect = Qt.QRect(
             top_left,
