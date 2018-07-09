@@ -94,7 +94,7 @@
         <item>
          <widget class="CollapsibleButton" name="roster_view_collapse">
           <property name="text">
-           <string>Roster</string>
+           <string>Contacts</string>
           </property>
           <property name="checked">
            <bool>true</bool>
