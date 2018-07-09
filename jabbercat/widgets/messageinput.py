@@ -31,8 +31,13 @@ class MessageInput(Qt.QTextEdit):
     def _completer_activated(self, arg):
         completion_cursor = self._completion_cursor()
         completion_cursor.deleteChar()
+        at_start = completion_cursor.atStart()
         completion_cursor.insertText(arg)
-        completion_cursor.insertText(", ")
+
+        if at_start:
+            completion_cursor.insertText(", ")
+        else:
+            completion_cursor.insertText(" ")
 
     def _completion_cursor(self):
         SPACES = ' \t\n'
