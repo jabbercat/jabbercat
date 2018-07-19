@@ -12,6 +12,7 @@ import lxml.builder
 import lxml.etree
 
 import aioxmpp
+import aioxmpp.forms
 import aioxmpp.im.conversation
 import aioxmpp.im.p2p
 import aioxmpp.im.service
@@ -31,7 +32,7 @@ import jclib.utils
 import jabbercat.avatar
 
 from . import Qt, utils, models, avatar, emoji, model_adaptor
-from .widgets import messageinput, member_list
+from .widgets import messageinput, member_list, forms
 
 from .ui import p2p_conversation
 
@@ -457,6 +458,63 @@ def urls_to_attachments(urls):
             yield attachment
 
 
+class MUCConfigurationDialog(forms.FormDialog):
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.setWindowModality(Qt.Qt.NonModal)
+        self.buttons.addButton(Qt.QDialogButtonBox.Save)
+        self.buttons.addButton(Qt.QDialogButtonBox.Cancel)
+
+    async def _fetch_room_config(self, muc_client, address):
+        jclib.tasks.manager.update_text(
+            "Fetching configuration of {}".format(address)
+        )
+        return (await muc_client.get_room_config(address))
+
+    async def _set_room_config(self, muc_client, address, config):
+        jclib.tasks.manager.update_text(
+            "Setting configuration of {}".format(address)
+        )
+        await muc_client.set_room_config(address, config)
+
+    @utils.asyncify_blocking
+    async def done(self, r: int):
+        if r != Qt.QDialog.Accepted:
+            return super().done(r)
+
+        self._config.type_ = aioxmpp.forms.DataType.SUBMIT
+        try:
+            await jclib.tasks.manager.start(self._set_room_config(
+                self._muc_client,
+                self._address,
+                self._config
+            )).asyncio_task
+        except aioxmpp.errors.XMPPError as exc:
+            box = Qt.QMessageBox(
+                Qt.QMessageBox.Critical,
+                "Error",
+                str(exc),
+                Qt.QMessageBox.Ok,
+                self,
+
+            )
+            box.setWindowModality(Qt.Qt.WindowModal)
+            box.setAttribute(Qt.Qt.WA_DeleteOnClose)
+            box.show()
+        else:
+            return super().done(r)
+
+    async def run(self, muc_client, address: aioxmpp.JID):
+        self._muc_client = muc_client
+        self._address = address
+        self._config = await jclib.tasks.manager.start(self._fetch_room_config(
+            self._muc_client,
+            self._address,
+        )).asyncio_task
+
+        return (await super().run(self._config))
+
+
 class ConversationView(Qt.QWidget):
     URL_RE = re.compile(
         r"([<\(\[\{{](?P<url_paren>{url})[>\)\]\}}]|(\W)(?P<url_nonword>{url})\3|\b(?P<url_name>{url})\b)".format(
@@ -539,6 +597,11 @@ class ConversationView(Qt.QWidget):
 
             self.ui.splitter.setCollapsible(0, False)
             self.ui.splitter.setCollapsible(1, True)
+
+            self.addAction(self.ui.action_configure_room)
+            self.ui.action_configure_room.triggered.connect(
+                self._configure_room
+            )
 
         # self.ui.history.setMaximumBlockCount(100)
 
@@ -653,6 +716,15 @@ class ConversationView(Qt.QWidget):
 
         await self._send_message_stanza(msg)
 
+    @utils.asyncify
+    async def _configure_room(self, _):
+        muc_client = self.__conversation.service
+
+        dialog = MUCConfigurationDialog(self)
+        await dialog.run(muc_client, self.__conversation.jid)
+        dialog.deleteLater()
+        del dialog
+
     def create_view(self):
         self.history_view = MessageView(self.ui.history_frame)
         self.history = MessageViewPage(self.__web_profile,
@@ -764,6 +836,7 @@ class ConversationView(Qt.QWidget):
             self.__node.account,
             None)
         self.ui.action_send_file.setEnabled(http_upload_address is not None)
+        self.ui.action_configure_room.setEnabled(True)
 
     def _stale(self):
         for signal, token in self.__conv_tokens:
@@ -772,6 +845,7 @@ class ConversationView(Qt.QWidget):
         self.__conversation = None
         self.__member_list.conversation = None
         self.ui.action_send_file.setEnabled(False)
+        self.ui.action_configure_room.setEnabled(False)
 
     def _member_to_event(self, member, **kwargs):
         color_full, color_weak = self.make_css_colors(

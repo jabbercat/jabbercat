@@ -10,6 +10,9 @@
     <height>484</height>
    </rect>
   </property>
+  <property name="contextMenuPolicy">
+   <enum>Qt::ActionsContextMenu</enum>
+  </property>
   <property name="windowTitle">
    <string>Form</string>
   </property>
@@ -132,6 +135,17 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+O</string>
+   </property>
+  </action>
+  <action name="action_configure_room">
+   <property name="icon">
+    <iconset theme="document-properties"/>
+   </property>
+   <property name="text">
+    <string>Configure room…</string>
+   </property>
+   <property name="toolTip">
+    <string>Configure this multi-user chat group</string>
    </property>
   </action>
   <zorder>splitter</zorder>
