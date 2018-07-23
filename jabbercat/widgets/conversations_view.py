@@ -191,6 +191,7 @@ class ConversationItemDelegate(Qt.QItemDelegate):
 
     def paint(self, painter, option, index):
         item = index.data(models.ROLE_OBJECT)
+        unread_counter_value = item.get_unread_count()
         name_font, preview_font, unread_counter_font = self._get_fonts(
             option.font
         )
@@ -206,6 +207,9 @@ class ConversationItemDelegate(Qt.QItemDelegate):
             Qt.QRect(option.rect.topLeft() + padding_point,
                      option.rect.bottomRight() - padding_point)
         )
+
+        if unread_counter_value > 0:
+            name_font.setWeight(Qt.QFont.Bold)
 
         name_metrics = Qt.QFontMetrics(name_font)
         preview_metrics = Qt.QFontMetrics(preview_font)
@@ -234,7 +238,6 @@ class ConversationItemDelegate(Qt.QItemDelegate):
             0,
         )
 
-        unread_counter_value = item.get_unread_count()
         name_right_x = option.rect.right() - self.PADDING
 
         painter.setRenderHint(Qt.QPainter.Antialiasing, True)
