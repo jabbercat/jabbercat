@@ -1,6 +1,7 @@
 import asyncio
 import functools
 import html
+import logging
 
 import aioxmpp
 import aioxmpp.adhoc
@@ -12,6 +13,9 @@ from .. import Qt, utils, models
 
 from ..ui import dlg_adhoc_browser, dlg_adhoc_execute
 from ..widgets import misc, forms
+
+
+logger = logging.getLogger(__name__)
 
 
 class AdHocCommandFlow(Qt.QDialog):
@@ -231,7 +235,14 @@ class DlgAdhocBrowser(Qt.QDialog):
         disco_client = client.summon(aioxmpp.DiscoClient)
         adhoc_client = client.summon(aioxmpp.AdHocClient)
 
-        services = await disco_client.query_items(target_address)
+        try:
+            services = (await disco_client.query_items(target_address)).items
+        except aioxmpp.XMPPCancelError as exc:
+            logger.debug("failed to fetch services of %s: %s",
+                         target_address,
+                         exc)
+            services = []
+
         try:
             commands = await adhoc_client.get_commands(target_address)
         except aioxmpp.XMPPCancelError as exc:
@@ -239,7 +250,7 @@ class DlgAdhocBrowser(Qt.QDialog):
                 raise
             commands = []
 
-        self._services.replace(services.items)
+        self._services.replace(services)
         self._commands.replace(commands)
 
     def _scan_clicked(self, *_):
