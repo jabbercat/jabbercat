@@ -29,6 +29,7 @@ from .dialogs import (
     add_contact,
     python_console,
     contact_requests,
+    adhoc_browser,
 )
 
 from .widgets import (
@@ -56,6 +57,11 @@ class MainWindow(Qt.QMainWindow):
         self.account_manager = account_manager.DlgAccountManager(
             main.client,
             main.accounts,
+        )
+        self._adhoc_browser = adhoc_browser.DlgAdhocBrowser(
+            main.accounts,
+            main.client,
+            self,
         )
 
         watermark = Qt.QImage(":/img/jabbercat-contour-only.png")
@@ -285,6 +291,8 @@ class MainWindow(Qt.QMainWindow):
             self._select_prev_conversation,
         )
         self.addAction(self.ui.action_prev_conversation)
+
+        self.ui.action_adhoc_browser.triggered.connect(self._adhoc_browser.show)
 
     def _get_current_conversation_index(self):
         index = self.ui.conversations_view.currentIndex()

@@ -195,8 +195,15 @@
     <addaction name="separator"/>
     <addaction name="action_open_python_console"/>
    </widget>
+   <widget class="QMenu" name="menuExpert_Tools">
+    <property name="title">
+     <string>E&amp;xpert Tools</string>
+    </property>
+    <addaction name="action_adhoc_browser"/>
+   </widget>
    <addaction name="menuJabberCat"/>
    <addaction name="menuContacts"/>
+   <addaction name="menuExpert_Tools"/>
    <addaction name="menuHelp"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
@@ -358,6 +365,11 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+PgDown</string>
+   </property>
+  </action>
+  <action name="action_adhoc_browser">
+   <property name="text">
+    <string>Ad-hoc commands…</string>
    </property>
   </action>
  </widget>

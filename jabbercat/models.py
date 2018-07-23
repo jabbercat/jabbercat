@@ -1108,3 +1108,51 @@ class ContactRequestModel(Qt.QAbstractTableModel):
             )[section]
         except IndexError:
             return
+
+
+class DiscoItemsModel(Qt.QAbstractTableModel):
+    COLUMN_NAME = 0
+    COLUMN_JID = 1
+    COLUMN_NODE = 2
+    COLUMN_COUNT = 3
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self._items = []
+
+    def replace(self, items):
+        self.beginResetModel()
+        self._items[:] = items
+        self.endResetModel()
+
+    def rowCount(self, parent):
+        if parent.isValid():
+            return 0
+        return len(self._items)
+
+    def columnCount(self, parent):
+        return self.COLUMN_COUNT
+
+    def data(self, index, role):
+        if role != Qt.Qt.DisplayRole:
+            return
+        if not index.isValid():
+            return
+
+        item = self._items[index.row()]
+        return {
+            self.COLUMN_NAME: item.name,
+            self.COLUMN_JID: str(item.jid),
+            self.COLUMN_NODE: item.node or "",
+        }.get(index.column())
+
+    def headerData(self, section, orientation, role):
+        if orientation != Qt.Qt.Horizontal:
+            return
+        if role != Qt.Qt.DisplayRole:
+            return
+        return {
+            self.COLUMN_NAME: "Name",
+            self.COLUMN_JID: "JID",
+            self.COLUMN_NODE: "Node",
+        }.get(section)

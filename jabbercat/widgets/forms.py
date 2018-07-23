@@ -85,6 +85,99 @@ class ListSingleWidget(Qt.QWidget):
             self._radios[index].setChecked(True)
 
 
+class ListMultiWidget(Qt.QWidget):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.sizePolicy().setVerticalPolicy(Qt.QSizePolicy.Preferred)
+        layout = Qt.QBoxLayout(Qt.QBoxLayout.TopToBottom)
+        layout.setContentsMargins(0, 0, 0, 0)
+        self.setLayout(layout)
+        layout.setSizeConstraint(Qt.QLayout.SetMinimumSize)
+        self.sizePolicy().setHorizontalPolicy(Qt.QSizePolicy.Expanding)
+
+        self._listview = None
+        self._checkboxes = None
+        self._option_values = []
+
+    def clear(self):
+        layout = self.layout()
+
+        if self._listview:
+            layout.removeWidget(self._listview)
+            self._listview.deleteLater()
+            self._listview = None
+
+        if self._checkboxes:
+            for cb in self._checkboxes:
+                cb.deleteLater()
+            self._checkboxes.clear()
+            self._checkboxes = None
+
+        self._option_values.clear()
+
+    def set_options(self, options):
+        self.clear()
+
+        layout = self.layout()
+
+        self._option_values = [value for value, _ in options]
+
+        if len(options) >= 5:
+            # use drop down
+            self._listview = Qt.QListView(self)
+            model = Qt.QStandardItemModel(self._listview)
+            self._listview.setModel(model)
+            for value, text in options:
+                item = Qt.QStandardItem(text)
+                item.setCheckable(True)
+                model.appendRow(item)
+            layout.addWidget(self._listview)
+
+        else:
+            self._checkboxes = [
+                Qt.QCheckBox(text, self)
+                for _, text in options
+            ]
+            for cb in self._checkboxes:
+                layout.addWidget(cb)
+
+    @property
+    def current_options(self):
+        if self._listview is not None:
+            model = self._listview.model()
+            return {
+                self._option_values[i]
+                for i in range(model.rowCount())
+                if model.data(
+                    model.index(i, 0), Qt.Qt.CheckStateRole) == Qt.Qt.Checked
+            }
+        else:
+            return {
+                self._option_values[i]
+                for i in range(model.rowCount())
+                if self._checkboxes[i].isChecked()
+            }
+
+    @current_options.setter
+    def current_options(self, values):
+        values = set(values)
+        if self._listview is not None:
+            model = self._listview.model()
+            for i in range(model.rowCount()):
+                key = self._option_values[i]
+                if key in values:
+                    model.setData(model.index(i, 0),
+                                  Qt.Qt.CheckStateRole,
+                                  Qt.Qt.Checked)
+                else:
+                    model.setData(model.index(i, 0),
+                                  Qt.Qt.Unchecked,
+                                  Qt.Qt.CheckStateRole)
+        else:
+            for i, cb in enumerate(self._checkboxes):
+                cb.setChecked(self._option_values[i] in values)
+
+
 class FormArea(Qt.QScrollArea):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -164,12 +257,17 @@ class FormArea(Qt.QScrollArea):
                 current_layout.addRow(label, widget)
 
             elif field.type_ == aioxmpp.forms.FieldType.LIST_MULTI:
-                if len(field.options) >= 5:
-                    # use a series of check boxes
-                    pass
-                else:
-                    # use a list box with a check model
-                    pass
+                label = self._make_label(field.label)
+                widget = ListMultiWidget(self._main_widget)
+                widget.set_options(
+                    [
+                        (value, text)
+                        for value, text in field.options.items()
+                    ]
+                )
+                if field.values:
+                    widget.current_options = field.values
+                current_layout.addRow(label, widget)
 
             elif field.type_ in (aioxmpp.forms.FieldType.TEXT_SINGLE,
                                  aioxmpp.forms.FieldType.JID_SINGLE,
@@ -191,7 +289,12 @@ class FormArea(Qt.QScrollArea):
 
             elif field.type_ in (aioxmpp.forms.FieldType.TEXT_MULTI,
                                  aioxmpp.forms.FieldType.JID_MULTI):
-                pass
+                label = self._make_label(field.label)
+                widget = Qt.QPlainTextEdit(self._main_widget)
+                widget.setPlainText(
+                    "\n".join(field.values)
+                )
+                current_layout.addRow(label, widget)
 
             elif field.type_ == aioxmpp.forms.FieldType.BOOLEAN:
                 widget = Qt.QCheckBox(field.label, self._main_widget)
@@ -228,9 +331,14 @@ class FormArea(Qt.QScrollArea):
                 ]
             elif field.type_ in (aioxmpp.forms.FieldType.LIST_SINGLE,):
                 option = widget.current_option
-                print(option)
                 if option is not None:
                     field.values[:] = [option]
+            elif field.type_ in (aioxmpp.forms.FieldType.LIST_MULTI,):
+                options = widget.current_options
+                field.values[:] = options
+            elif field.type_ in (aioxmpp.forms.FieldType.JID_MULTI,
+                                 aioxmpp.forms.FieldType.TEXT_MULTI):
+                field.values[:] = widget.toPlainText().split("\n")
 
             else:
                 print("cannot handle this!", field.type_)
