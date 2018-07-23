@@ -41,7 +41,7 @@ def asyncify_blocking(fn):
         self.setCursor(Qt.Qt.WaitCursor)
         try:
             task = asyncio.async(fn(self, *args, **kwargs))
-        except:
+        except:  # NOQA
             self.setEnabled(True)
             self.setCursor(prev_cursor)
             raise
