@@ -52,6 +52,10 @@ class TasksModel(Qt.QAbstractListModel):
         self.dataChanged.emit(index, index)
 
     def _task_done(self, task):
+        if task.asyncio_task.cancelled():
+            self._remove_task(task)
+            return
+
         exception = task.asyncio_task.exception()
 
         if (exception is not None and
