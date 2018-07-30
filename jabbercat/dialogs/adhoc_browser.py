@@ -242,6 +242,11 @@ class DlgAdhocBrowser(Qt.QDialog):
                          target_address,
                          exc)
             services = []
+        else:
+            services = [
+                item for item in services
+                if item.node is None
+            ]
 
         try:
             commands = await adhoc_client.get_commands(target_address)
