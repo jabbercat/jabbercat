@@ -39,6 +39,9 @@ from .ui import p2p_conversation
 
 logger = logging.getLogger(__name__)
 
+# TODO move this somewhere
+def contains_word(haystack: str, needle: str):
+    return re.search(r"\b{}\b".format(re.escape(needle)), haystack, re.I)
 
 def _connect_and_store_token(tokens, signal, handler, mode=None):
     tokens.append(
@@ -1033,7 +1036,8 @@ class ConversationView(Qt.QWidget):
                     self._page_ready) or is_self:
                 self.__node.set_read_up_to(self.__most_recent_message_uid)
 
-            if not is_self:
+            nickname = self.__conversation.me.nick
+            if not is_self and contains_word(message.body.any(), nickname):
                 Qt.QApplication.alert(self.window())
 
         if not self._page_ready:
