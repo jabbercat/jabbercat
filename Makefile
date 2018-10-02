@@ -5,6 +5,9 @@ UIC_PYTHON_FILES=$(patsubst data/%.ui,jabbercat/ui/%.py,$(UIC_SOURCE_FILES))
 
 RESOURCE_SOURCES=$(addprefix data/,$(shell xpath -e 'RCC/qresource/file/text()' data/resources.qrc 2>/dev/null))
 
+_RCC5!=which qtchooser 2>/dev/null && echo -run-tool=rcc -qt=5 || which rcc-qt5 2>/dev/null
+RCC5?=$(_RCC5)
+
 TS_FILES=$(wildcard translations/*.ts)
 
 TESTS?=tests/
@@ -24,7 +27,7 @@ $(UIC_PYTHON_FILES): jabbercat/ui/%.py: data/%.ui
 	$(BUILDUI) $< $@
 
 resources.rcc: data/resources.qrc $(RESOURCE_SOURCES)
-	cd data; qtchooser -run-tool=rcc -qt=5 --binary -o ../$@ resources.qrc
+	cd data; $(RCC5) --binary -o ../$@ resources.qrc
 
 docs-html:
 	cd docs; make html
