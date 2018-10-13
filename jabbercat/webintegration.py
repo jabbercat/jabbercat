@@ -95,3 +95,5 @@ class AvatarURLSchemeHandler(Qt.QWebEngineUrlSchemeHandler):
                 buffer_,
             )
         )
+
+        self._buffers.add(buffer_)
