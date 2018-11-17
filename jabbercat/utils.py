@@ -28,7 +28,7 @@ def asyncified_unblock(dlg, cursor, task):
 def asyncify(fn):
     @functools.wraps(fn)
     def wrapper(*args, **kwargs):
-        task = asyncio.async(fn(*args, **kwargs))
+        task = asyncio.ensure_future(fn(*args, **kwargs))
         task.add_done_callback(asyncified_done)
     return wrapper
 
@@ -40,7 +40,7 @@ def asyncify_blocking(fn):
         self.setEnabled(False)
         self.setCursor(Qt.Qt.WaitCursor)
         try:
-            task = asyncio.async(fn(self, *args, **kwargs))
+            task = asyncio.ensure_future(fn(self, *args, **kwargs))
         except:  # NOQA
             self.setEnabled(True)
             self.setCursor(prev_cursor)
