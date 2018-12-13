@@ -61,7 +61,7 @@ run-debug: all debug-logs
 	@echo "open http://localhost:1234 in a Chromium-like browser to debug message view issues"
 	@echo
 	python3 -m jabbercat --version | tee $(logfile_name)
-	PYTHONUNBUFFERED=x QTWEBENGINE_REMOTE_DEBUGGING=1234 python3 -m jabbercat 2>&1 | tee -a $(logfile_name) || true
+	PYTHONUNBUFFERED=x QTWEBENGINE_REMOTE_DEBUGGING=1234 PYTHONASYNCIODEBUG=1 python3 -m jabbercat 2>&1 | tee -a $(logfile_name) || true
 	@echo
 	@echo "=== logs have been written to $(logfile_name) ==="
 	@echo
