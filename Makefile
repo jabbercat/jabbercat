@@ -49,8 +49,8 @@ data/gemoji/db/emoji.json: data/gemoji
 
 data/js/emoji.json: data/emoji-java/src/main/resources/emojis.json data/gemoji/db/emoji.json
 	PYTHONPATH=. python3 utils/build-emojidb.py --emoji-java data/emoji-java/src/main/resources/emojis.json --gemoji data/gemoji/db/emoji.json "$@"
-	echo "that 'failed to load emoji database' you might‘ve just seen was "
-	echo "normal and NOT an error"
+	@echo "that 'failed to load emoji database' you might‘ve just seen was "
+	@echo "normal and NOT an error"
 
 
 debug-run: run-debug
